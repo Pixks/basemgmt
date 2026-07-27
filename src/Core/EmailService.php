@@ -1,0 +1,148 @@
+<?php
+
+declare(strict_types=1);
+
+namespace BaseMgmt\Core;
+
+defined('ABSPATH') || exit;
+
+/**
+ * Global email service for the plugin.
+ *
+ * All plugin email notifications go through this class, ensuring consistent
+ * branding (header colour, logo, footer) configurable by the administrator.
+ *
+ * Usage:
+ *   EmailService::send(
+ *       'recipient@example.com',
+ *       'Temat',
+ *       'reservation_created',        // template slug
+ *       ['reservation' => $data, ...] // template variables
+ *   );
+ */
+final class EmailService {
+
+	private const SETTINGS_KEY = 'basemgmt_email_settings';
+
+	// ── Settings ──────────────────────────────────────────────────────────────
+
+	public static function get_settings(): array {
+		$site_name = get_bloginfo('name');
+		return wp_parse_args(get_option(self::SETTINGS_KEY, []), [
+			'from_name'       => $site_name,
+			'from_email'      => get_option('admin_email'),
+			'header_color'    => '#2271b1',
+			'logo_url'        => '',
+			'header_title'    => $site_name,
+			'footer_text'     => sprintf(
+				/* translators: %s site name */
+				__('Wiadomość wysłana automatycznie przez system %s.', 'basemgmt'),
+				$site_name
+			),
+			'admin_notify_email' => get_option('admin_email'),
+		]);
+	}
+
+	public static function save_settings(array $data): void {
+		update_option(self::SETTINGS_KEY, [
+			'from_name'          => sanitize_text_field($data['from_name']          ?? ''),
+			'from_email'         => sanitize_email($data['from_email']              ?? ''),
+			'header_color'       => sanitize_hex_color($data['header_color']        ?? '#2271b1') ?? '#2271b1',
+			'logo_url'           => esc_url_raw($data['logo_url']                   ?? ''),
+			'header_title'       => sanitize_text_field($data['header_title']       ?? ''),
+			'footer_text'        => sanitize_textarea_field($data['footer_text']    ?? ''),
+			'admin_notify_email' => sanitize_email($data['admin_notify_email']      ?? ''),
+		]);
+	}
+
+	// ── Send ──────────────────────────────────────────────────────────────────
+
+	/**
+	 * Send a plugin email using a named template.
+	 *
+	 * @param string   $to       Recipient email.
+	 * @param string   $subject  Email subject.
+	 * @param string   $template Template slug (maps to templates/email/{slug}.php).
+	 * @param array    $data     Variables available inside the template.
+	 * @return bool
+	 */
+	public static function send(string $to, string $subject, string $template, array $data = []): bool {
+		if ( ! is_email($to) ) return false;
+
+		$body = self::render($template, $data);
+		if ( ! $body ) return false;
+
+		$settings = self::get_settings();
+
+		add_filter('wp_mail_content_type', fn() => 'text/html');
+		add_filter('wp_mail_from',         fn() => $settings['from_email']);
+		add_filter('wp_mail_from_name',    fn() => $settings['from_name']);
+
+		$result = wp_mail($to, $subject, $body);
+
+		remove_all_filters('wp_mail_content_type');
+		remove_all_filters('wp_mail_from');
+		remove_all_filters('wp_mail_from_name');
+
+		return $result;
+	}
+
+	/**
+	 * Send to multiple recipients.
+	 *
+	 * @param string[] $to_list
+	 */
+	public static function send_many(array $to_list, string $subject, string $template, array $data = []): void {
+		foreach ( $to_list as $to ) {
+			self::send($to, $subject, $template, $data);
+		}
+	}
+
+	// ── Render ────────────────────────────────────────────────────────────────
+
+	/**
+	 * Renders template slug into full HTML (base layout + content).
+	 * Returns empty string if template file not found.
+	 */
+	public static function render(string $template_slug, array $data = []): string {
+		$template_file = BASEMGMT_DIR . 'templates/email/' . $template_slug . '.php';
+
+		if ( ! is_readable($template_file) ) {
+			return '';
+		}
+
+		$settings = self::get_settings();
+
+		// Render the inner content block.
+		$content = self::capture($template_file, $data + ['settings' => $settings]);
+
+		// Wrap in base layout.
+		$base_file = BASEMGMT_DIR . 'templates/email/base.php';
+		if ( ! is_readable($base_file) ) {
+			return $content;
+		}
+
+		return self::capture($base_file, [
+			'content'  => $content,
+			'subject'  => $data['subject']  ?? '',
+			'settings' => $settings,
+		]);
+	}
+
+	/**
+	 * Captures template output into a string.
+	 */
+	private static function capture(string $file, array $vars): string {
+		// phpcs:ignore WordPress.PHP.DontExtract.extract_extract
+		extract($vars, EXTR_SKIP);
+		ob_start();
+		include $file;
+		return (string) ob_get_clean();
+	}
+
+	// ── Subject helpers ───────────────────────────────────────────────────────
+
+	public static function subject(string $text): string {
+		return sprintf('[%s] %s', get_bloginfo('name'), $text);
+	}
+}

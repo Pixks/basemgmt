@@ -8,6 +8,10 @@ use BaseMgmt\Auth\SessionManager;
 use BaseMgmt\Modules\Announcements\AnnouncementRepository;
 use BaseMgmt\Modules\Camps\CampRepository;
 use BaseMgmt\Modules\Camps\DailyCountRepository;
+use BaseMgmt\Modules\Reservations\ReservationRepository;
+use BaseMgmt\Modules\Weather\ImgwAlertsSync;
+use BaseMgmt\Modules\Weather\WeatherAlertRepository;
+use BaseMgmt\Modules\Weather\WeatherService;
 
 defined('ABSPATH') || exit;
 
@@ -15,34 +19,59 @@ defined('ABSPATH') || exit;
  * Manages WP-Cron events for the plugin.
  *
  * Events:
- *   bm_daily_reminders      – daily, checks for camps that haven't submitted today
- *   bm_expire_announcements – hourly, expires overdue announcements
- *   bm_cleanup_sessions     – daily, purges expired session records
+ *   bm_daily_reminders       – daily, checks for camps missing today's report
+ *   bm_expire_announcements  – hourly, expires overdue announcements
+ *   bm_cleanup_sessions      – daily, purges expired session records
+ *   bm_refresh_weather       – hourly, refreshes weather data cache
+ *   bm_expire_weather_alerts – hourly, deactivates expired weather alerts
+ *   bm_check_missing_reports – daily, fires hook for missing report processing
  */
 final class Scheduler {
+
+	private const ALL_HOOKS = [
+		'bm_daily_reminders',
+		'bm_expire_announcements',
+		'bm_cleanup_sessions',
+		'bm_refresh_weather',
+		'bm_expire_weather_alerts',
+		'bm_check_missing_reports',
+		'bm_sync_imgw_alerts',
+		'bm_expire_reservations',
+	];
 
 	/** Called during plugin activation. */
 	public static function register_schedules(): void {
 		if ( ! wp_next_scheduled('bm_daily_reminders') ) {
-			wp_schedule_event(
-				strtotime('today 08:00:00'),
-				'daily',
-				'bm_daily_reminders'
-			);
+			wp_schedule_event(strtotime('today 08:00:00'), 'daily', 'bm_daily_reminders');
 		}
-
 		if ( ! wp_next_scheduled('bm_expire_announcements') ) {
 			wp_schedule_event(time(), 'hourly', 'bm_expire_announcements');
 		}
-
 		if ( ! wp_next_scheduled('bm_cleanup_sessions') ) {
 			wp_schedule_event(time(), 'daily', 'bm_cleanup_sessions');
+		}
+		if ( ! wp_next_scheduled('bm_refresh_weather') ) {
+			wp_schedule_event(time(), 'hourly', 'bm_refresh_weather');
+		}
+		if ( ! wp_next_scheduled('bm_expire_weather_alerts') ) {
+			wp_schedule_event(time(), 'hourly', 'bm_expire_weather_alerts');
+		}
+		if ( ! wp_next_scheduled('bm_check_missing_reports') ) {
+			wp_schedule_event(strtotime('today 08:30:00'), 'daily', 'bm_check_missing_reports');
+		}
+
+		// IMGW sync – interval is configurable; schedule only if enabled.
+		self::reschedule_imgw_sync();
+
+		// Expire past pending reservations – daily at 00:05.
+		if ( ! wp_next_scheduled('bm_expire_reservations') ) {
+			wp_schedule_event(strtotime('today 00:05:00'), 'daily', 'bm_expire_reservations');
 		}
 	}
 
 	/** Called during plugin deactivation. */
 	public static function clear_schedules(): void {
-		foreach (['bm_daily_reminders', 'bm_expire_announcements', 'bm_cleanup_sessions'] as $hook) {
+		foreach ( self::ALL_HOOKS as $hook ) {
 			$ts = wp_next_scheduled($hook);
 			if ( $ts ) {
 				wp_unschedule_event($ts, $hook);
@@ -50,28 +79,50 @@ final class Scheduler {
 		}
 	}
 
-	/** Registers cron event hooks on 'init'. Called by Bootstrap. */
-	public function schedule_events(): void {
-		// Events already scheduled at activation; this is a no-op but hook is kept
-		// for future runtime schedule adjustments.
+	/**
+	 * (Re)schedule the IMGW sync cron based on current settings.
+	 * Safe to call multiple times – it only reschedules when interval changes.
+	 */
+	public static function reschedule_imgw_sync(): void {
+		$settings = ImgwAlertsSync::get_settings();
+		$hook     = 'bm_sync_imgw_alerts';
+
+		$ts = wp_next_scheduled($hook);
+		if ( ! $settings['enabled'] ) {
+			if ( $ts ) {
+				wp_unschedule_event($ts, $hook);
+			}
+			return;
+		}
+
+		$interval = $settings['sync_interval'] ?: 'hourly';
+
+		// If already scheduled with same interval, nothing to do.
+		if ( $ts ) {
+			$scheduled_interval = wp_get_schedule($hook);
+			if ( $scheduled_interval === $interval ) {
+				return;
+			}
+			wp_unschedule_event($ts, $hook);
+		}
+
+		wp_schedule_event(time(), $interval, $hook);
 	}
+
+	/** No-op on 'init'; schedules already registered at activation. */
+	public function schedule_events(): void {}
 
 	// ── Cron callbacks ────────────────────────────────────────────────────────
 
-	/**
-	 * Sends a reminder email to the admin for each active camp
-	 * that hasn't submitted a headcount today.
-	 */
 	public function send_daily_reminders(): void {
 		$camps = CampRepository::get_all(['status' => 'active']);
-
 		if ( empty($camps) ) {
 			return;
 		}
 
 		$missing = [];
 		foreach ( $camps as $camp ) {
-			if ( ! DailyCountRepository::submitted_today((int) $camp->id) ) {
+			if ( ! DailyCountRepository::is_submitted_today((int) $camp->id) ) {
 				$missing[] = $camp->name;
 			}
 		}
@@ -86,21 +137,16 @@ final class Scheduler {
 			__('[%s] Brak dziennego meldunku', 'basemgmt'),
 			get_bloginfo('name')
 		);
-		$body    = __("Następujące obozy nie wysłały dziennego stanu liczebności:\n\n", 'basemgmt');
-		$body   .= implode("\n", $missing);
-		$body   .= "\n\n" . __('Zaloguj się do panelu, aby sprawdzić szczegóły.', 'basemgmt');
+		$body  = __("Następujące obozy nie wysłały meldunku dziennego:\n\n", 'basemgmt');
+		$body .= implode("\n", $missing);
+		$body .= "\n\n" . __('Zaloguj się do panelu, aby sprawdzić szczegóły.', 'basemgmt');
 
 		wp_mail($to, $subject, $body);
 
-		/**
-		 * Fires after daily reminder emails are sent.
-		 *
-		 * @param string[] $missing Names of camps that haven't reported.
-		 */
+		/** @param string[] $missing Camp names that haven't submitted. */
 		do_action('bm_daily_reminders_sent', $missing);
 	}
 
-	/** Expires announcements whose valid_until date has passed. */
 	public function expire_announcements(): void {
 		$count = AnnouncementRepository::expire_overdue();
 		if ( $count > 0 ) {
@@ -108,8 +154,50 @@ final class Scheduler {
 		}
 	}
 
-	/** Cleans up expired session rows. */
 	public function cleanup_sessions(): void {
 		SessionManager::cleanup_expired();
+	}
+
+	/** Refresh weather data from API (cached by WeatherService). */
+	public function refresh_weather(): void {
+		if ( ! WeatherService::is_configured() ) {
+			return;
+		}
+		$service = new WeatherService();
+		$service->refresh();
+	}
+
+	/** Deactivate weather alerts whose valid_until has passed. */
+	public function expire_weather_alerts(): void {
+		$count = WeatherAlertRepository::deactivate_expired();
+		if ( $count > 0 ) {
+			do_action('bm_weather_alerts_expired', $count);
+		}
+	}
+
+	/** Check for missing reports and fire extension hook. */
+	public function check_missing_reports(): void {
+		$today   = gmdate('Y-m-d');
+		$missing = DailyCountRepository::get_missing_camps_for_date($today);
+
+		/**
+		 * @param array  $missing  Array of {id, name} objects.
+		 * @param string $date     The date being checked (Y-m-d).
+		 */
+		do_action('bm_missing_reports_checked', $missing, $today);
+	}
+
+	/** Sync IMGW meteorological warnings (called by WP-Cron). */
+	public function sync_imgw_alerts(): void {
+		$sync = new ImgwAlertsSync();
+		$sync->sync();
+	}
+
+	/** Expire pending reservations whose date has passed. */
+	public function expire_reservations(): void {
+		$count = ReservationRepository::expire_past();
+		if ( $count > 0 ) {
+			do_action('bm_reservations_expired', $count);
+		}
 	}
 }
