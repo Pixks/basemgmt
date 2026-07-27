@@ -1,0 +1,94 @@
+/* ── Baza Obozowa – Admin Styles ───────────────────────────────────────────── */
+
+.bm-admin-wrap {
+	max-width: 1200px;
+}
+
+/* ── Stats grid (Dashboard) ─────────────────────────────────────────────────── */
+.bm-stats-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin: 20px 0;
+}
+
+.bm-stat-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 20px 24px;
+	min-width: 160px;
+	text-align: center;
+	position: relative;
+}
+
+.bm-stat-card--alert {
+	border-color: #d63638;
+}
+
+.bm-stat-label {
+	display: block;
+	font-size: 12px;
+	color: #646970;
+	text-transform: uppercase;
+	letter-spacing: .5px;
+	margin-bottom: 6px;
+}
+
+.bm-stat-value {
+	display: block;
+	font-size: 36px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.bm-stat-card--alert .bm-stat-value {
+	color: #d63638;
+}
+
+.bm-stat-action {
+	display: block;
+	font-size: 12px;
+	margin-top: 6px;
+}
+
+/* ── Quick links ────────────────────────────────────────────────────────────── */
+.bm-dashboard-links {
+	margin: 0 0 24px;
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+/* ── Tables ─────────────────────────────────────────────────────────────────── */
+.bm-table th,
+.bm-table td {
+	vertical-align: middle;
+}
+
+.bm-actions a {
+	white-space: nowrap;
+}
+
+.bm-danger {
+	color: #d63638 !important;
+}
+
+/* ── Badges ─────────────────────────────────────────────────────────────────── */
+.bm-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: .4px;
+}
+
+.bm-badge--active   { background: #d1fae5; color: #065f46; }
+.bm-badge--ended    { background: #e0e7ff; color: #3730a3; }
+.bm-badge--archived { background: #f3f4f6; color: #6b7280; }
+.bm-badge--pending  { background: #fef3c7; color: #92400e; }
+.bm-badge--expired  { background: #fee2e2; color: #991b1b; }
+.bm-badge--draft    { background: #f3f4f6; color: #6b7280; }
+.bm-badge--inactive { background: #fee2e2; color: #991b1b; }
