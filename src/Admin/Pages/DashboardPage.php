@@ -8,6 +8,11 @@ use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Modules\Announcements\AnnouncementRepository;
 use BaseMgmt\Modules\Camps\CampRepository;
 use BaseMgmt\Modules\Camps\DailyCountRepository;
+use BaseMgmt\Modules\Communication\ConversationRepository;
+use BaseMgmt\Modules\Forms\FormRepository;
+use BaseMgmt\Modules\Forms\SubmissionRepository;
+use BaseMgmt\Modules\Help\HelpRepository;
+use BaseMgmt\Modules\Menu\MealRepository;
 use BaseMgmt\Modules\Reservations\ReservationRepository;
 use BaseMgmt\Modules\Schedule\ScheduleRepository;
 use BaseMgmt\Modules\Weather\WeatherAlertRepository;
@@ -47,6 +52,22 @@ final class DashboardPage {
 		// Reservations: pending count + upcoming.
 		$pending_reservations  = ReservationRepository::count_pending();
 		$upcoming_reservations = ReservationRepository::get_upcoming(5);
+
+		// Meal menu: today's menu.
+		$today_menu = MealRepository::get_day_for_frontend($today);
+
+		// Communication: open threads + unread count.
+		$open_threads   = ConversationRepository::count_open_threads();
+		$unread_messages = ConversationRepository::count_unread_admin();
+
+		// Help: important article count.
+		$important_help = HelpRepository::count_important();
+
+		// Forms & Submissions: new + open counts + recent.
+		$new_submissions    = SubmissionRepository::count_new();
+		$open_submissions   = SubmissionRepository::count_open();
+		$recent_submissions = SubmissionRepository::get_recent(5);
+		$active_forms       = FormRepository::count_active();
 
 		include BASEMGMT_DIR . 'templates/admin/dashboard.php';
 	}

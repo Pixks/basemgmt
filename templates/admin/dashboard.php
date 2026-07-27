@@ -164,6 +164,103 @@ defined('ABSPATH') || exit;
 		</a>
 	</div>
 
+	<!-- Meal menu today widget -->
+	<h2 style="margin-top:24px;border-bottom:1px solid #ddd;padding-bottom:6px;">
+		🍽 <?php printf(esc_html__('Jadłospis – %s', 'basemgmt'), esc_html(date_i18n('d.m.Y', strtotime($today)))); ?>
+	</h2>
+	<?php if ($today_menu): ?>
+	<p style="color:#155724;">✓ <?php printf(esc_html__('Jadłospis na dziś opublikowany – %d posiłki/ów.', 'basemgmt'), count($today_menu['items'])); ?></p>
+	<?php else: ?>
+	<p style="color:#856404;">⚠ <?php esc_html_e('Brak jadłospisu na dziś.', 'basemgmt'); ?></p>
+	<?php endif; ?>
+	<p>
+		<a class="button button-small" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-menu&bm_action=new&date=' . $today)); ?>">
+			<?php esc_html_e('Dodaj jadłospis na dziś', 'basemgmt'); ?> →
+		</a>
+	</p>
+
+	<!-- Communication widget -->
+	<h2 style="margin-top:24px;border-bottom:1px solid #ddd;padding-bottom:6px;">
+		💬 <?php esc_html_e('Komunikacja', 'basemgmt'); ?>
+	</h2>
+	<div class="bm-stats-grid">
+		<div class="bm-stat-card <?php echo $unread_messages ? 'bm-stat-card--alert' : ''; ?>">
+			<span class="bm-stat-label"><?php esc_html_e('Nieprzeczytane wiadomości', 'basemgmt'); ?></span>
+			<span class="bm-stat-value" style="<?php echo $unread_messages ? 'color:#c0392b;' : ''; ?>"><?php echo esc_html((string) $unread_messages); ?></span>
+			<?php if ($unread_messages): ?>
+			<a class="bm-stat-action" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-communication&filter_unread=1')); ?>"><?php esc_html_e('Czytaj', 'basemgmt'); ?> →</a>
+			<?php endif; ?>
+		</div>
+		<div class="bm-stat-card">
+			<span class="bm-stat-label"><?php esc_html_e('Otwarte wątki', 'basemgmt'); ?></span>
+			<span class="bm-stat-value"><?php echo esc_html((string) $open_threads); ?></span>
+		</div>
+	</div>
+
+	<!-- Help widget -->
+	<h2 style="margin-top:24px;border-bottom:1px solid #ddd;padding-bottom:6px;">
+		📚 <?php esc_html_e('Baza pomocy', 'basemgmt'); ?>
+	</h2>
+	<div class="bm-stats-grid">
+		<div class="bm-stat-card">
+			<span class="bm-stat-label"><?php esc_html_e('Ważne / alarmowe wpisy', 'basemgmt'); ?></span>
+			<span class="bm-stat-value"><?php echo esc_html((string) $important_help); ?></span>
+		</div>
+	</div>
+	<p>
+		<a class="button button-small" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-help&bm_action=new')); ?>">
+			<?php esc_html_e('+ Nowy wpis pomocy', 'basemgmt'); ?> →
+		</a>
+	</p>
+
+	<?php
+	// ── Forms & Submissions widget ──────────────────────────────────────────
+	$sub_statuses = \BaseMgmt\Modules\Forms\SubmissionRepository::STATUSES;
+	$sub_cats     = \BaseMgmt\Modules\Forms\FormRepository::CATEGORIES;
+	?>
+	<h2 style="margin-top:24px;border-bottom:1px solid #ddd;padding-bottom:6px;">📋 <?php esc_html_e('Formularze i Zgłoszenia', 'basemgmt'); ?></h2>
+	<div class="bm-stats-grid">
+		<div class="bm-stat-card <?php echo $new_submissions > 0 ? 'bm-stat-card--alert' : ''; ?>">
+			<span class="bm-stat-label"><?php esc_html_e('Nowe zgłoszenia', 'basemgmt'); ?></span>
+			<span class="bm-stat-value"><?php echo esc_html((string) $new_submissions); ?></span>
+			<?php if ( $new_submissions > 0 ) : ?>
+			<a class="bm-stat-action" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-forms&view=submissions&filter_status=new')); ?>"><?php esc_html_e('Zobacz', 'basemgmt'); ?> →</a>
+			<?php endif; ?>
+		</div>
+		<div class="bm-stat-card">
+			<span class="bm-stat-label"><?php esc_html_e('Otwarte zgłoszenia', 'basemgmt'); ?></span>
+			<span class="bm-stat-value"><?php echo esc_html((string) $open_submissions); ?></span>
+		</div>
+		<div class="bm-stat-card">
+			<span class="bm-stat-label"><?php esc_html_e('Aktywne formularze', 'basemgmt'); ?></span>
+			<span class="bm-stat-value"><?php echo esc_html((string) $active_forms); ?></span>
+		</div>
+	</div>
+
+	<?php if ( ! empty($recent_submissions) ) : ?>
+	<h3><?php esc_html_e('Ostatnie zgłoszenia', 'basemgmt'); ?></h3>
+	<table class="wp-list-table widefat fixed striped" style="max-width:900px">
+		<thead><tr>
+			<th>#</th>
+			<th><?php esc_html_e('Status', 'basemgmt'); ?></th>
+			<th><?php esc_html_e('Kategoria', 'basemgmt'); ?></th>
+			<th><?php esc_html_e('Data', 'basemgmt'); ?></th>
+		</tr></thead>
+		<tbody>
+		<?php foreach ( $recent_submissions as $rs ) : ?>
+			<tr>
+				<td><a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-forms&view=view_submission&id=' . (int)$rs->id)); ?>">#<?php echo esc_html($rs->id); ?></a></td>
+				<td><?php echo esc_html($sub_statuses[$rs->status] ?? $rs->status); ?></td>
+				<td><?php echo esc_html($sub_cats[$rs->category] ?? $rs->category); ?></td>
+				<td><?php echo esc_html(date_i18n('d.m.Y H:i', strtotime($rs->created_at))); ?></td>
+			</tr>
+		<?php endforeach; ?>
+		</tbody>
+	</table>
+	<?php endif; ?>
+
+	<p><a class="button button-small" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-forms')); ?>"><?php esc_html_e('Zarządzaj formularzami', 'basemgmt'); ?> →</a></p>
+
 	<p class="description" style="margin-top:20px;">
 		<?php printf(esc_html__('Baza Obozowa v%s', 'basemgmt'), esc_html(BASEMGMT_VERSION)); ?>
 	</p>

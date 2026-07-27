@@ -22,10 +22,23 @@ bm_camps
     │                                    └──< bm_plan_items
     │                                            └──< bm_plan_item_revisions
     │
-    └──< bm_resource_reservations >── bm_resources
-                                          └──< bm_resource_blocks
+    ├──< bm_resource_reservations >── bm_resources
+    │                                     └──< bm_resource_blocks
+    │
+    ├──< bm_conv_threads       (wątki komunikacji)
+    │       └──< bm_conv_messages
+    │
+    ├──< bm_form_camps >──────────── bm_forms
+    │                                    └──< bm_form_fields
+    │
+    └──< bm_submissions        (zgłoszenia)
+            ├──< bm_submission_attachments
+            └──< bm_submission_history
 
 bm_weather_alerts  (niezależna tabela)
+bm_meal_days       (jadłospis – globalna, nie per-obóz)
+    └──< bm_meal_items
+bm_help_articles   (baza pomocy – globalna)
 ```
 
 ---
@@ -338,3 +351,226 @@ JOIN wp_bm_camps c ON c.id = r.camp_id
 WHERE r.status = 'pending'
 ORDER BY r.res_date ASC, r.start_time ASC;
 ```
+
+---
+
+### bm_meal_days
+
+Nagłówek dnia jadłospisu. UNIQUE na `meal_date` – jeden rekord na dzień.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `meal_date` | DATE UNIQUE | Data jadłospisu |
+| `notes` | TEXT | Notatki do dnia |
+| `status` | VARCHAR(20) | `published` \| `draft` |
+| `created_by` | BIGINT UNSIGNED | WP user ID |
+| `created_at` | DATETIME | |
+| `updated_at` | DATETIME | ON UPDATE CURRENT_TIMESTAMP |
+
+**Indeksy**: `idx_status (status)`
+
+---
+
+### bm_meal_items
+
+Pozycje jadłospisu powiązane z dniem.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `meal_day_id` | BIGINT UNSIGNED | FK → bm_meal_days |
+| `meal_type` | VARCHAR(30) | `sniadanie` \| `obiad` \| `kolacja` \| `inne` |
+| `time_from` | VARCHAR(10) | Godzina podania |
+| `title` | VARCHAR(255) | Nazwa posiłku |
+| `description` | TEXT | Opis |
+| `location` | VARCHAR(255) | Miejsce wydawania |
+| `diet_info` | VARCHAR(255) | Informacje dietetyczne |
+| `allergens` | VARCHAR(255) | Alergeny |
+| `sort_order` | INT | Kolejność |
+| `is_new_today` | TINYINT(1) | Flaga nowej pozycji |
+| `is_updated_today` | TINYINT(1) | Flaga zmiany |
+
+**Indeksy**: `idx_day (meal_day_id)`, `idx_order (meal_day_id, sort_order)`
+
+---
+
+### bm_conv_threads
+
+Wątki komunikacji obóz–administracja.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `camp_id` | BIGINT UNSIGNED | FK → bm_camps |
+| `subject` | VARCHAR(255) | Temat wątku |
+| `status` | VARCHAR(20) | `open` \| `closed` \| `archived` |
+| `priority` | VARCHAR(20) | `low` \| `normal` \| `high` \| `urgent` |
+| `is_urgent` | TINYINT(1) | Pilny |
+| `assigned_to` | BIGINT UNSIGNED | WP user ID obsługującego |
+| `last_message_at` | DATETIME | Czas ostatniej wiadomości |
+| `unread_admin` | SMALLINT UNSIGNED | Nieprzeczytane przez admina |
+| `unread_camp` | SMALLINT UNSIGNED | Nieprzeczytane przez obóz |
+| `created_by_staff_id` | BIGINT UNSIGNED | FK → bm_staff |
+
+**Indeksy**: `idx_camp`, `idx_status`, `idx_priority`, `idx_urgent`, `idx_last_msg`
+
+---
+
+### bm_conv_messages
+
+Wiadomości w wątkach.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `thread_id` | BIGINT UNSIGNED | FK → bm_conv_threads |
+| `author_type` | VARCHAR(10) | `staff` \| `admin` |
+| `author_id` | BIGINT UNSIGNED | ID autora |
+| `content` | LONGTEXT | Treść wiadomości |
+| `is_system` | TINYINT(1) | Wiadomość systemowa |
+| `attachment_url` | VARCHAR(500) | URL załącznika |
+| `created_at` | DATETIME | |
+
+**Indeksy**: `idx_thread (thread_id)`, `idx_date (created_at)`
+
+---
+
+### bm_help_articles
+
+Artykuły bazy wiedzy.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `title` | VARCHAR(255) | Tytuł |
+| `content` | LONGTEXT | Treść HTML |
+| `excerpt` | TEXT | Krótki opis |
+| `category` | VARCHAR(100) | Kategoria tekstowa |
+| `type` | VARCHAR(20) | `article` \| `faq` \| `contact` \| `procedure` \| `instruction` |
+| `status` | VARCHAR(20) | `published` \| `draft` |
+| `is_pinned` | TINYINT(1) | Przypięty |
+| `is_alarm` | TINYINT(1) | Alarmowy / ważny |
+| `sort_order` | INT | Kolejność |
+| `created_by` | BIGINT UNSIGNED | WP user ID |
+
+**Indeksy**: `idx_type`, `idx_status`, `idx_pinned`, `idx_alarm`, `idx_category`, `idx_order`
+
+---
+
+### bm_forms
+
+Definicje formularzy.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `name` | VARCHAR(255) | Nazwa formularza |
+| `description` | TEXT | Opis |
+| `category` | VARCHAR(50) | `techniczne` \| `organizacyjne` \| `medyczne` \| `magazynowe` \| `inne` |
+| `status` | VARCHAR(20) | `active` \| `inactive` |
+| `is_global` | TINYINT(1) | Widoczny dla wszystkich obozów |
+| `is_pinned` | TINYINT(1) | Wyróżniony |
+| `sort_order` | INT | Kolejność |
+| `info_before` | TEXT | Tekst nad formularzem |
+| `info_after` | TEXT | Tekst po wysłaniu |
+| `created_by` | BIGINT UNSIGNED | WP user ID |
+
+**Indeksy**: `idx_status`, `idx_global`, `idx_pinned`, `idx_order`
+
+---
+
+### bm_form_fields
+
+Pola formularzy.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `form_id` | BIGINT UNSIGNED | FK → bm_forms |
+| `label` | VARCHAR(255) | Etykieta pola |
+| `field_key` | VARCHAR(100) | Klucz techniczny |
+| `type` | VARCHAR(20) | `text` \| `textarea` \| `number` \| `email` \| `tel` \| `select` \| `radio` \| `checkbox` \| `date` \| `file` |
+| `is_required` | TINYINT(1) | Wymagane |
+| `placeholder` | VARCHAR(255) | Placeholder |
+| `help_text` | VARCHAR(500) | Opis pomocniczy |
+| `options_json` | LONGTEXT | JSON array opcji (select/radio/checkbox) |
+| `default_value` | VARCHAR(255) | Wartość domyślna |
+| `validation` | VARCHAR(100) | Reguła walidacji |
+| `sort_order` | INT | Kolejność |
+
+**Indeksy**: `idx_form (form_id)`, `idx_order (form_id, sort_order)`
+
+---
+
+### bm_form_camps
+
+Pivot widoczności formularza dla konkretnych obozów (gdy `is_global = 0`).
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `form_id` | BIGINT UNSIGNED | FK → bm_forms (PK composite) |
+| `camp_id` | BIGINT UNSIGNED | FK → bm_camps (PK composite) |
+
+**Indeksy**: `idx_camp (camp_id)`
+
+---
+
+### bm_submissions
+
+Zgłoszenia złożone przez obozy.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `form_id` | BIGINT UNSIGNED | FK → bm_forms |
+| `camp_id` | BIGINT UNSIGNED | FK → bm_camps |
+| `staff_id` | BIGINT UNSIGNED | FK → bm_staff (składający) |
+| `category` | VARCHAR(50) | Dziedziczona z formularza |
+| `status` | VARCHAR(20) | `new` \| `in_progress` \| `waiting` \| `closed` \| `cancelled` |
+| `priority` | VARCHAR(20) | `low` \| `normal` \| `high` \| `urgent` |
+| `admin_comment` | TEXT | Komentarz admina widoczny dla obozu |
+| `assigned_to` | BIGINT UNSIGNED | WP user ID obsługującego |
+| `form_snapshot` | LONGTEXT | JSON – snapshot definicji w chwili wysłania |
+| `submission_data` | LONGTEXT | JSON – wypełnione wartości pól |
+
+**Indeksy**: `idx_form`, `idx_camp`, `idx_staff`, `idx_status`, `idx_priority`, `idx_category`, `idx_assigned`, `idx_date (created_at)`
+
+> **Ważne**: `form_snapshot` i `submission_data` są immutable po zapisie. Zmiany definicji formularza nie wpływają na istniejące zgłoszenia.
+
+---
+
+### bm_submission_attachments
+
+Pliki załączone do zgłoszeń.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `submission_id` | BIGINT UNSIGNED | FK → bm_submissions |
+| `original_name` | VARCHAR(255) | Oryginalna nazwa pliku |
+| `stored_name` | VARCHAR(255) | Unikalna nazwa na dysku |
+| `mime_type` | VARCHAR(100) | MIME (weryfikowany przez `finfo`) |
+| `file_size` | BIGINT UNSIGNED | Rozmiar w bajtach (max 10 MB) |
+| `file_path` | VARCHAR(1000) | Absolutna ścieżka (poza webroot lub z .htaccess deny) |
+
+**Indeksy**: `idx_submission (submission_id)`
+
+---
+
+### bm_submission_history
+
+Audit log zmian statusu zgłoszeń.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `submission_id` | BIGINT UNSIGNED | FK → bm_submissions |
+| `changed_by` | BIGINT UNSIGNED | WP user ID zmieniającego |
+| `from_status` | VARCHAR(20) | Poprzedni status |
+| `to_status` | VARCHAR(20) | Nowy status |
+| `note` | TEXT | Notatka do zmiany |
+| `created_at` | DATETIME | Czas zmiany |
+
+**Indeksy**: `idx_submission (submission_id)`, `idx_date (created_at)`
+

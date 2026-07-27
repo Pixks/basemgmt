@@ -11,6 +11,10 @@
 | Pogoda | `Modules\Weather` | `bm_weather_alerts` | ✅ | ✅ |
 | Plan dnia | `Modules\Schedule` | `bm_plan_headers`, `bm_plan_items`, `bm_plan_item_revisions`, `bm_plan_camps` | ✅ | tylko odczyt |
 | Rezerwacje | `Modules\Reservations` | `bm_resources`, `bm_resource_reservations`, `bm_resource_blocks` | ✅ | ✅ |
+| Jadłospis | `Modules\Menu` | `bm_meal_days`, `bm_meal_items` | ✅ | tylko odczyt |
+| Komunikacja | `Modules\Communication` | `bm_conv_threads`, `bm_conv_messages` | ✅ | ✅ |
+| Pomoc | `Modules\Help` | `bm_help_articles` | ✅ | tylko odczyt |
+| **Formularze i Zgłoszenia** | `Modules\Forms` | `bm_forms`, `bm_form_fields`, `bm_form_camps`, `bm_submissions`, `bm_submission_attachments`, `bm_submission_history` | ✅ | ✅ |
 
 ---
 
@@ -451,3 +455,255 @@ wp_nonce_field('bm_save_camp');
 // W handlerze:
 check_admin_referer('bm_save_camp');
 ```
+
+---
+
+## Moduł: Jadłospis
+
+**Klasy**: `MealRepository` (`src/Modules/Menu/MealRepository.php`), `MenuPage`, `MenuController`
+
+### Model danych
+
+**bm_meal_days** – nagłówek dnia
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `meal_date` | DATE | Data (UNIQUE) |
+| `notes` | TEXT | Notatki do dnia |
+| `status` | VARCHAR(20) | `published` \| `draft` |
+
+**bm_meal_items** – pozycje jadłospisu
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `meal_day_id` | BIGINT UNSIGNED | FK → bm_meal_days |
+| `meal_type` | VARCHAR(30) | `sniadanie` \| `obiad` \| `kolacja` \| `inne` |
+| `time_from` | VARCHAR(10) | Godzina podania |
+| `title` | VARCHAR(255) | Nazwa posiłku |
+| `description` | TEXT | Opis |
+| `location` | VARCHAR(255) | Miejsce wydawania |
+| `diet_info` | VARCHAR(255) | Informacje dietetyczne |
+| `allergens` | VARCHAR(255) | Alergeny |
+| `sort_order` | INT | Kolejność wyświetlania |
+| `is_new_today` | TINYINT(1) | Flaga nowej pozycji |
+| `is_updated_today` | TINYINT(1) | Flaga zmienionej pozycji |
+
+### Kluczowe metody
+
+- `get_day($date)` – pobiera dzień z pozycjami
+- `get_day_for_frontend($date)` – tylko status `published`
+- `copy_from_date($from, $to)` – kopiuje jadłospis na inny dzień
+- `get_available_dates()` – lista dat z opublikowanym jadłospisem
+
+### Alpine.js
+
+Komponent `bmMenu()` – widok dzienny i tygodniowy z filtrowaniem po `meal_type`.
+
+---
+
+## Moduł: Komunikacja
+
+**Klasy**: `ConversationRepository` (`src/Modules/Communication/ConversationRepository.php`), `CommunicationPage`, `CommunicationController`
+
+### Model danych
+
+**bm_conv_threads** – wątki rozmów
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `camp_id` | BIGINT UNSIGNED | FK → bm_camps |
+| `subject` | VARCHAR(255) | Temat wątku |
+| `status` | VARCHAR(20) | `open` \| `closed` \| `archived` |
+| `priority` | VARCHAR(20) | `low` \| `normal` \| `high` \| `urgent` |
+| `is_urgent` | TINYINT(1) | Flaga pilności |
+| `assigned_to` | BIGINT UNSIGNED | WP user ID obsługującego |
+| `last_message_at` | DATETIME | Data ostatniej wiadomości |
+| `unread_admin` | SMALLINT UNSIGNED | Licznik nieprzeczytanych przez admina |
+| `unread_camp` | SMALLINT UNSIGNED | Licznik nieprzeczytanych przez obóz |
+| `created_by_staff_id` | BIGINT UNSIGNED | FK → bm_staff |
+
+**bm_conv_messages** – wiadomości w wątku
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `thread_id` | BIGINT UNSIGNED | FK → bm_conv_threads |
+| `author_type` | VARCHAR(10) | `staff` \| `admin` |
+| `author_id` | BIGINT UNSIGNED | ID autora |
+| `content` | LONGTEXT | Treść wiadomości |
+| `is_system` | TINYINT(1) | Wiadomość systemowa |
+| `attachment_url` | VARCHAR(500) | URL załącznika |
+
+### Logika unread
+
+Liczniki `unread_admin` / `unread_camp` aktualizowane atomicznie SQL UPDATE przy każdej nowej wiadomości. Zerowane przez `mark_read_admin(id)` / `mark_read_camp(id)`.
+
+Badge w menu admina: `ConversationRepository::count_unread_admin()`.
+
+### Izolacja danych
+
+`get_thread_for_camp(id, camp_id)` – zwraca `null` gdy camp_id nie pasuje. Żaden obóz nie widzi wątków innych obozów.
+
+### Alpine.js
+
+Komponent `bmConversations()` – lista wątków, tworzenie, podgląd z odpowiedzią, lokalny licznik unread.
+
+---
+
+## Moduł: Pomoc
+
+**Klasy**: `HelpRepository` (`src/Modules/Help/HelpRepository.php`), `HelpPage`, `HelpController`
+
+### Model danych
+
+**bm_help_articles**
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `title` | VARCHAR(255) | Tytuł artykułu |
+| `content` | LONGTEXT | Treść (HTML przez wp_editor) |
+| `excerpt` | TEXT | Krótki opis |
+| `category` | VARCHAR(100) | Kategoria tekstowa |
+| `type` | VARCHAR(20) | `article` \| `faq` \| `contact` \| `procedure` \| `instruction` |
+| `status` | VARCHAR(20) | `published` \| `draft` |
+| `is_pinned` | TINYINT(1) | Przypięty na górze listy |
+| `is_alarm` | TINYINT(1) | Ważny / alarmowy |
+| `sort_order` | INT | Kolejność |
+
+### Kluczowe metody
+
+- `get_all($filters)` – filtrowanie po `type`, `status`, `category`, `search` (LIKE)
+- `get_categories()` – unikalne wartości kategorii z tabeli (dynamiczne)
+- `count_important()` – liczba wpisów z `is_alarm = 1`
+
+### Alpine.js
+
+Komponent `bmHelp()` – filtry po typie/kategorii/szukaj, computed getters: `alarmArticles`, `pinnedArticles`, `faqArticles`, `contactArticles`.
+
+---
+
+## Moduł: Formularze i Zgłoszenia
+
+**Klasy**: `FormRepository`, `SubmissionRepository` (`src/Modules/Forms/`), `FormsPage`, `FormsController`
+
+### Architektura (dwie warstwy)
+
+1. **Definicje formularzy** – administrator tworzy formularze z polami przez builder
+2. **Zgłoszenia** – obozy wypełniają formularze i składają zgłoszenia (tickety)
+
+### Kluczowe założenie: snapshot
+
+Każde zgłoszenie przechowuje **dwie kolumny JSON**:
+- `form_snapshot` – definicja formularza + pól **w chwili wysłania**
+- `submission_data` – wypełnione wartości `field_key → value`
+
+Zmiana definicji formularza przez admina **nie wpływa** na istniejące zgłoszenia.
+
+### Model danych
+
+**bm_forms** – definicje formularzy
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `name` | VARCHAR(255) | Nazwa formularza |
+| `description` | TEXT | Opis |
+| `category` | VARCHAR(50) | `techniczne` \| `organizacyjne` \| `medyczne` \| `magazynowe` \| `inne` |
+| `status` | VARCHAR(20) | `active` \| `inactive` |
+| `is_global` | TINYINT(1) | Widoczny dla wszystkich obozów |
+| `is_pinned` | TINYINT(1) | Wyróżniony / przypięty |
+| `sort_order` | INT | Kolejność wyświetlania |
+| `info_before` | TEXT | Tekst wyświetlany nad formularzem |
+| `info_after` | TEXT | Tekst wyświetlany po wysłaniu |
+| `created_by` | BIGINT UNSIGNED | WP user ID twórcy |
+
+**bm_form_fields** – pola formularza
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `form_id` | BIGINT UNSIGNED | FK → bm_forms |
+| `label` | VARCHAR(255) | Etykieta pola |
+| `field_key` | VARCHAR(100) | Klucz techniczny (unikalny w formularzu) |
+| `type` | VARCHAR(20) | `text` \| `textarea` \| `number` \| `email` \| `tel` \| `select` \| `radio` \| `checkbox` \| `date` \| `file` |
+| `is_required` | TINYINT(1) | Pole wymagane |
+| `placeholder` | VARCHAR(255) | Placeholder |
+| `help_text` | VARCHAR(500) | Opis pomocniczy |
+| `options_json` | LONGTEXT | JSON array opcji dla select/radio/checkbox |
+| `default_value` | VARCHAR(255) | Wartość domyślna |
+| `validation` | VARCHAR(100) | Reguła walidacji |
+| `sort_order` | INT | Kolejność pola |
+
+**bm_form_camps** – widoczność dla wybranych obozów
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `form_id` | BIGINT UNSIGNED | FK → bm_forms |
+| `camp_id` | BIGINT UNSIGNED | FK → bm_camps |
+
+**bm_submissions** – zgłoszenia
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `form_id` | BIGINT UNSIGNED | FK → bm_forms |
+| `camp_id` | BIGINT UNSIGNED | FK → bm_camps |
+| `staff_id` | BIGINT UNSIGNED | FK → bm_staff (składający) |
+| `category` | VARCHAR(50) | Dziedziczona z formularza |
+| `status` | VARCHAR(20) | `new` \| `in_progress` \| `waiting` \| `closed` \| `cancelled` |
+| `priority` | VARCHAR(20) | `low` \| `normal` \| `high` \| `urgent` |
+| `admin_comment` | TEXT | Komentarz admina widoczny dla obozu |
+| `assigned_to` | BIGINT UNSIGNED | WP user ID obsługującego |
+| `form_snapshot` | LONGTEXT | JSON – snapshot definicji formularza |
+| `submission_data` | LONGTEXT | JSON – wypełnione wartości |
+
+**bm_submission_attachments** – pliki
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `submission_id` | BIGINT UNSIGNED | FK → bm_submissions |
+| `original_name` | VARCHAR(255) | Oryginalna nazwa pliku |
+| `stored_name` | VARCHAR(255) | Nazwa na dysku (unikalna) |
+| `mime_type` | VARCHAR(100) | MIME type (weryfikowany przez finfo) |
+| `file_size` | BIGINT UNSIGNED | Rozmiar w bajtach (max 10 MB) |
+| `file_path` | VARCHAR(1000) | Absolutna ścieżka na dysku |
+
+**bm_submission_history** – audit log
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED | Klucz główny |
+| `submission_id` | BIGINT UNSIGNED | FK → bm_submissions |
+| `changed_by` | BIGINT UNSIGNED | WP user ID zmieniającego |
+| `from_status` | VARCHAR(20) | Poprzedni status |
+| `to_status` | VARCHAR(20) | Nowy status |
+| `note` | TEXT | Notatka do zmiany |
+| `created_at` | DATETIME | Czas zmiany |
+
+### Bezpieczeństwo plików
+
+- Upload przez `SubmissionRepository::handle_upload()` z weryfikacją MIME przez `finfo`
+- Pliki w `wp-content/uploads/basemgmt/{submission_id}/` z `.htaccess deny from all`
+- Pobieranie przez chroniony endpoint REST (weryfikacja `camp_id`) lub admin-post (wymaga `manage_basemgmt`)
+- Obóz nie może pobrać załącznika innego obozu
+
+### Admin-post actions
+
+| Action | Handler |
+|--------|---------|
+| `bm_save_form` | `FormsPage::handle_save_form()` |
+| `bm_delete_form` | `FormsPage::handle_delete_form()` |
+| `bm_save_form_field` | `FormsPage::handle_save_field()` |
+| `bm_delete_form_field` | `FormsPage::handle_delete_field()` |
+| `bm_update_submission` | `FormsPage::handle_update_submission()` |
+| `bm_download_attachment` | `FormsPage::handle_download_attachment()` |
+
+### Alpine.js
+
+- `bmForms()` – lista formularzy z filtrowaniem po kategorii, otwieranie, wypełnianie i wysyłanie
+- `bmSubmissions()` – lista własnych zgłoszeń z filtrem statusu, podgląd detalu z historią i załącznikami

@@ -68,6 +68,11 @@ Wszystkie komponenty zdefiniowane jako `Alpine.data('nazwaKomponentu', () => {..
 | `bmWeather` | Pogoda i ostrzeżenia |
 | `bmSchedule` | Plan dnia |
 | `bmReservations` | Rezerwacje (lista zasobów, składanie, podgląd) |
+| `bmMenu` | Jadłospis (widok dzienny i tygodniowy) |
+| `bmConversations` | Komunikacja (wątki, wiadomości, odpowiedzi) |
+| `bmHelp` | Pomoc (artykuły, FAQ, filtry) |
+| `bmForms` | Formularze (lista, wypełnianie, wysyłanie) |
+| `bmSubmissions` | Zgłoszenia (lista, podgląd, załączniki) |
 | `bmLogout` | Przycisk wylogowania |
 
 ---
@@ -95,7 +100,12 @@ Strona ładuje się
     ├── Meldunek     (bmDailyCount)
     ├── Pogoda       (bmWeather)
     ├── Plan dnia    (bmSchedule)
-    └── Rezerwacje   (bmReservations)
+    ├── Rezerwacje   (bmReservations)
+    ├── Jadłospis    (bmMenu)
+    ├── Komunikacja  (bmConversations)
+    ├── Pomoc        (bmHelp)
+    ├── Formularze   (bmForms)
+    └── Zgłoszenia   (bmSubmissions)
 ```
 
 ---
@@ -179,7 +189,78 @@ Strona ładuje się
 
 ---
 
-## Bezpieczeństwo frontendu
+### Jadłospis
+
+**Komponent**: `bmMenu()`
+
+- Widok dzienny – pobiera `GET /panel/menu?date=YYYY-MM-DD`
+- Widok tygodniowy – pobiera `GET /panel/menu/week?from=YYYY-MM-DD`
+- Nawigacja po dniach (strzałki lub lista dat z `GET /panel/menu/dates`)
+- Grupowanie pozycji po `meal_type` (śniadanie / obiad / kolacja)
+- Widok tylko do odczytu
+
+---
+
+### Komunikacja
+
+**Komponent**: `bmConversations()`
+
+- Lista wątków obozu z lokalnym licznikiem unread
+- Tworzenie nowego wątku (temat + treść + priorytet)
+- Widok wątku: pełna historia wiadomości chronologicznie
+- Formularz odpowiedzi
+- Po wejściu w wątek zerowany `unread_camp`
+
+---
+
+### Pomoc
+
+**Komponent**: `bmHelp()`
+
+- Lista artykułów z filtrami: typ, kategoria, szukaj
+- Computed getters: `alarmArticles` (ważne/alarmowe), `pinnedArticles`, `faqArticles`, `contactArticles`
+- Pełny podgląd artykułu z treścią HTML
+- Widok tylko do odczytu
+
+---
+
+### Formularze
+
+**Komponent**: `bmForms()`
+
+- Lista dostępnych formularzy (globalne + przypisane do obozu)
+- Filtrowanie po kategorii sprawy
+- Wyróżnione formularze (`is_pinned`) na górze listy
+- Otwieranie formularza → renderowanie pól według definicji
+  - Obsługiwane typy: `text`, `textarea`, `number`, `email`, `tel`, `select`, `radio`, `checkbox`, `date`
+  - Pola `file` obsługiwane osobno (nativny `<input type="file">`)
+- Wysyłanie zgłoszenia przez `POST /panel/submissions`
+- Walidacja wymaganych pól po stronie klienta (UX); prawdziwa walidacja server-side
+- Po wysłaniu: tekst `info_after` z odpowiedzi
+
+---
+
+### Zgłoszenia
+
+**Komponent**: `bmSubmissions()`
+
+- Lista własnych zgłoszeń obozu z filtrem statusu
+- Podgląd szczegółów zgłoszenia:
+  - Dane z `form_snapshot` + `submission_data` (stabilne mimo późniejszych zmian formularza)
+  - Status i priorytet
+  - Komentarz administratora (`admin_comment`)
+  - Lista załączników z linkami do pobrania
+- Obóz widzi **tylko własne** zgłoszenia (backend weryfikuje `camp_id`)
+
+**Statusy zgłoszeń** (wizualne oznaczenie):
+
+| Status | Znaczenie |
+|--------|-----------|
+| `new` | Nowe – czeka na reakcję |
+| `in_progress` | W trakcie obsługi |
+| `waiting` | Oczekuje na odpowiedź obozu |
+| `closed` | Zamknięte |
+| `cancelled` | Anulowane |
 
 | Mechanizm | Opis |
 |-----------|------|

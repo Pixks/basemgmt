@@ -20,6 +20,10 @@ Baza Obozowa
 ├── Pogoda
 ├── Plan dnia
 ├── Rezerwacje
+├── Jadłospis
+├── Komunikacja  [badge z liczbą nieprzeczytanych]
+├── Pomoc
+├── Formularze   (Formularze i Zgłoszenia)
 └── Ustawienia    [tylko dla WP Admin z manage_options]
 ```
 
@@ -340,3 +344,109 @@ AdminMenu::set_notice(__('Błąd: brak uprawnień.', 'basemgmt'), 'error');
 ```
 
 Przechowywany jako WP Transient `bm_admin_notice_{user_id}` z TTL 60 sekund.
+
+---
+
+## Jadłospis
+
+**Plik**: `src/Admin/Pages/MenuPage.php`  
+**Menu**: WP Admin → Baza Obozowa → Jadłospis
+
+### Sekcje
+
+- **Lista dni** – przegląd dat z opublikowanym/roboczym jadłospisem
+- **Edycja dnia** – edycja nagłówka + zarządzanie pozycjami jadłospisu
+  - Typy posiłku: Śniadanie, Obiad, Kolacja, Inne
+  - Pola pozycji: godzina, tytuł, opis, lokalizacja, dieta, alergeny
+  - Flagi: `Nowe dzisiaj`, `Zmienione dzisiaj`
+- **Kopiowanie** – kopiowanie jadłospisu z innej daty
+
+### Operacje (admin-post)
+
+| Action | Opis |
+|--------|------|
+| `bm_save_menu` | Zapisuje nagłówek dnia |
+| `bm_delete_menu` | Usuwa dzień (i wszystkie pozycje) |
+| `bm_save_meal_item` | Dodaje / edytuje pozycję jadłospisu |
+| `bm_delete_meal_item` | Usuwa pozycję |
+| `bm_copy_menu` | Kopiuje jadłospis z jednej daty na inną |
+| `bm_reset_menu_flags` | Zeruje flagi `is_new_today` / `is_updated_today` |
+
+---
+
+## Komunikacja
+
+**Plik**: `src/Admin/Pages/CommunicationPage.php`  
+**Menu**: WP Admin → Baza Obozowa → Komunikacja *(badge z liczbą nieprzeczytanych)*
+
+### Sekcje
+
+- **Lista wątków** – wszystkie wątki ze wszystkich obozów; filtry: obóz, status, priorytet
+- **Widok wątku** – pełna historia wiadomości + formularz odpowiedzi admina
+  - Pola: treść, opcjonalnie zmiana statusu / priorytetu / przypisanie
+
+### Operacje
+
+| Action | Opis |
+|--------|------|
+| `bm_admin_reply` | Dodaje odpowiedź admina do wątku |
+| `bm_update_thread` | Aktualizuje status, priorytet, przypisanie wątku |
+
+### Unread badge
+
+`ConversationRepository::count_unread_admin()` → suma `unread_admin` ze wszystkich niedomkniętych wątków. Aktualizowana przy każdym przeładowaniu menu.
+
+---
+
+## Pomoc
+
+**Plik**: `src/Admin/Pages/HelpPage.php`  
+**Menu**: WP Admin → Baza Obozowa → Pomoc
+
+### Sekcje
+
+- **Lista artykułów** – z filtrem: typ, kategoria, status; flagi: alarm/pinned
+- **Edycja artykułu** – `wp_editor()` do treści, pola: tytuł, kategoria, typ, status, kolejność
+
+### Operacje
+
+| Action | Opis |
+|--------|------|
+| `bm_save_help` | Zapisuje artykuł pomocy |
+| `bm_delete_help` | Usuwa artykuł |
+
+---
+
+## Formularze i Zgłoszenia
+
+**Plik**: `src/Admin/Pages/FormsPage.php`  
+**Menu**: WP Admin → Baza Obozowa → Formularze
+
+Router oparty na parametrze `?view=`:
+- `forms` (domyślny) – lista formularzy
+- `edit_form` – edycja formularza + builder pól
+- `submissions` – lista zgłoszeń z filtrami
+- `view_submission` – podgląd i zarządzanie zgłoszeniem
+
+### Formularze – operacje
+
+| Action | Opis |
+|--------|------|
+| `bm_save_form` | Tworzy / aktualizuje formularz i widoczność dla obozów |
+| `bm_delete_form` | Usuwa formularz (kaskadowo usuwa pola i przypisania) |
+| `bm_save_form_field` | Dodaje / edytuje pole formularza |
+| `bm_delete_form_field` | Usuwa pole |
+
+### Zgłoszenia – operacje
+
+| Action | Opis |
+|--------|------|
+| `bm_update_submission` | Zmienia status, priorytet, przypisanie, komentarz admina |
+| `bm_download_attachment` | Pobiera plik załączony do zgłoszenia |
+
+### Widok zgłoszenia
+
+- Lewa kolumna: dane z `form_snapshot` + `submission_data` w tabeli pól
+- Prawa kolumna: panel zarządzania (status, priorytet, przypisanie, komentarz)
+- Sekcja załączników z linkami do pobrania
+- Historia zmian statusu z notami i autorami

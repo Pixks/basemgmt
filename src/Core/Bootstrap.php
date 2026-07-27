@@ -10,6 +10,10 @@ use BaseMgmt\Cron\Scheduler;
 use BaseMgmt\Frontend\ShortcodeHandler;
 use BaseMgmt\Modules\Reservations\ReservationNotifier;
 use BaseMgmt\REST\AuthController;
+use BaseMgmt\REST\CommunicationController;
+use BaseMgmt\REST\FormsController;
+use BaseMgmt\REST\HelpController;
+use BaseMgmt\REST\MenuController;
 use BaseMgmt\REST\PanelController;
 use BaseMgmt\REST\PublicController;
 use BaseMgmt\REST\ReportsController;
@@ -85,13 +89,17 @@ final class Bootstrap {
 	}
 
 	private function register_rest(): void {
-		$this->loader->add_action('rest_api_init', new AuthController(),         'register_routes');
-		$this->loader->add_action('rest_api_init', new PublicController(),       'register_routes');
-		$this->loader->add_action('rest_api_init', new PanelController(),        'register_routes');
-		$this->loader->add_action('rest_api_init', new ReportsController(),      'register_routes');
-		$this->loader->add_action('rest_api_init', new WeatherController(),      'register_routes');
-		$this->loader->add_action('rest_api_init', new ScheduleController(),     'register_routes');
-		$this->loader->add_action('rest_api_init', new ReservationsController(), 'register_routes');
+		$this->loader->add_action('rest_api_init', new AuthController(),             'register_routes');
+		$this->loader->add_action('rest_api_init', new PublicController(),           'register_routes');
+		$this->loader->add_action('rest_api_init', new PanelController(),            'register_routes');
+		$this->loader->add_action('rest_api_init', new ReportsController(),          'register_routes');
+		$this->loader->add_action('rest_api_init', new WeatherController(),          'register_routes');
+		$this->loader->add_action('rest_api_init', new ScheduleController(),         'register_routes');
+		$this->loader->add_action('rest_api_init', new ReservationsController(),     'register_routes');
+		$this->loader->add_action('rest_api_init', new MenuController(),             'register_routes');
+		$this->loader->add_action('rest_api_init', new CommunicationController(),    'register_routes');
+		$this->loader->add_action('rest_api_init', new HelpController(),             'register_routes');
+		$this->loader->add_action('rest_api_init', new FormsController(),            'register_routes');
 	}
 
 	private function register_frontend(): void {

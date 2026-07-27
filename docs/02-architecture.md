@@ -27,6 +27,10 @@ basemgmt/
 │   │       ├── SchedulePage.php
 │   │       ├── SettingsPage.php
 │   │       ├── StaffPage.php
+│   │       ├── MenuPage.php
+│   │       ├── CommunicationPage.php
+│   │       ├── HelpPage.php
+│   │       ├── FormsPage.php
 │   │       └── WeatherPage.php
 │   ├── Auth/
 │   │   ├── Capabilities.php  ← WordPress roles & capabilities
@@ -57,6 +61,15 @@ basemgmt/
 │   │   │   ├── ReservationNotifier.php
 │   │   │   ├── ReservationRepository.php
 │   │   │   └── ResourceRepository.php
+│   │   ├── Menu/
+│   │   │   └── MealRepository.php
+│   │   ├── Communication/
+│   │   │   └── ConversationRepository.php
+│   │   ├── Help/
+│   │   │   └── HelpRepository.php
+│   │   └── Forms/
+│   │       ├── FormRepository.php
+│   │       └── SubmissionRepository.php
 │   │   ├── Schedule/
 │   │   │   └── ScheduleRepository.php
 │   │   └── Weather/
@@ -73,6 +86,10 @@ basemgmt/
 │       ├── ReportsController.php
 │       ├── ReservationsController.php
 │       ├── ScheduleController.php
+│       ├── MenuController.php
+│       ├── CommunicationController.php
+│       ├── HelpController.php
+│       ├── FormsController.php
 │       └── WeatherController.php
 └── templates/
     ├── admin/
@@ -174,6 +191,10 @@ BaseController (abstract)
 ├── WeatherController
 ├── ScheduleController
 └── ReservationsController
+├── MenuController
+├── CommunicationController
+├── HelpController
+└── FormsController
 ```
 
 `BaseController` dostarcza:

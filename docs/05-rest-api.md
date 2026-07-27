@@ -458,3 +458,252 @@ curl -s -X POST https://twoja-strona.pl/wp-json/bm/v1/auth/login \
 ```
 
 Nonce do testów możesz pobrać z `bmConfig.loginNonce` wstrzykniętego przez `ShortcodeHandler::enqueue_assets()`.
+
+---
+
+## Endpointy – Jadłospis
+
+### GET /bm/v1/panel/menu
+
+Pobiera jadłospis na podany dzień.
+
+**Parametry query**:
+| Parametr | Opis |
+|----------|------|
+| `date` | Data `YYYY-MM-DD` (domyślnie dziś) |
+
+**Odpowiedź** `200`:
+```json
+{
+  "day": {
+    "id": 1,
+    "meal_date": "2025-07-15",
+    "notes": "...",
+    "items": [
+      { "id": 1, "meal_type": "sniadanie", "time_from": "08:00", "title": "Jajecznica", ... }
+    ]
+  }
+}
+```
+
+### GET /bm/v1/panel/menu/dates
+
+Zwraca listę dat z opublikowanym jadłospisem.
+
+**Odpowiedź** `200`:
+```json
+{ "dates": ["2025-07-14", "2025-07-15", "2025-07-16"] }
+```
+
+### GET /bm/v1/panel/menu/week
+
+Pobiera jadłospis na 7 dni od podanej daty.
+
+**Parametry query**: `from` – data startowa `YYYY-MM-DD`.
+
+**Odpowiedź** `200`:
+```json
+{ "week": [ { "meal_date": "...", "items": [...] }, ... ] }
+```
+
+---
+
+## Endpointy – Komunikacja
+
+### GET /bm/v1/panel/messages
+
+Pobiera listę wątków obozu.
+
+**Odpowiedź** `200`:
+```json
+{
+  "threads": [
+    { "id": 1, "subject": "Problem z wodą", "status": "open", "priority": "high",
+      "unread_camp": 2, "last_message_at": "2025-07-15 10:30:00" }
+  ]
+}
+```
+
+### POST /bm/v1/panel/messages
+
+Tworzy nowy wątek.
+
+**Body**:
+```json
+{ "subject": "Temat", "content": "Treść pierwszej wiadomości", "priority": "normal" }
+```
+
+**Odpowiedź** `201`: `{ "thread_id": 5 }`
+
+### GET /bm/v1/panel/messages/{id}
+
+Pobiera wątek z wiadomościami. Zeruje `unread_camp` dla tego wątku.
+
+**Odpowiedź** `200`:
+```json
+{
+  "thread": { "id": 1, "subject": "...", "status": "open", ... },
+  "messages": [
+    { "id": 1, "author_type": "staff", "content": "Pierwsza wiadomość", "created_at": "..." }
+  ]
+}
+```
+
+### POST /bm/v1/panel/messages/{id}/reply
+
+Dodaje odpowiedź do wątku.
+
+**Body**: `{ "content": "Treść odpowiedzi" }`
+
+**Odpowiedź** `201`: `{ "message_id": 10 }`
+
+---
+
+## Endpointy – Pomoc
+
+### GET /bm/v1/panel/help
+
+Pobiera listę artykułów bazy pomocy.
+
+**Parametry query**:
+| Parametr | Opis |
+|----------|------|
+| `type` | Typ: `article` \| `faq` \| `contact` \| `procedure` \| `instruction` |
+| `category` | Filtr kategorii |
+| `search` | Wyszukiwanie LIKE po tytule |
+| `pinned` | `1` – tylko przypięte |
+
+**Odpowiedź** `200`:
+```json
+{
+  "articles": [
+    { "id": 1, "title": "...", "excerpt": "...", "type": "article",
+      "is_pinned": true, "is_alarm": false, "category": "procedury" }
+  ]
+}
+```
+
+### GET /bm/v1/panel/help/{id}
+
+Pobiera pełny artykuł (łącznie z `content`).
+
+**Odpowiedź** `200`:
+```json
+{ "article": { "id": 1, "title": "...", "content": "<p>...</p>", ... } }
+```
+
+**Błąd** `404` gdy artykuł nie istnieje lub nie jest `published`.
+
+---
+
+## Endpointy – Formularze i Zgłoszenia
+
+### GET /bm/v1/panel/forms
+
+Pobiera listę formularzy aktywnych i dostępnych dla danego obozu (globalne + przypisane).
+
+**Odpowiedź** `200`:
+```json
+{
+  "forms": [
+    { "id": 1, "name": "Zgłoszenie usterki", "category": "techniczne",
+      "is_pinned": false, "description": "...", "info_before": "..." }
+  ]
+}
+```
+
+### GET /bm/v1/panel/forms/{id}
+
+Pobiera definicję formularza wraz z polami. Dostępny tylko jeśli obóz ma dostęp.
+
+**Odpowiedź** `200`:
+```json
+{
+  "form": { "id": 1, "name": "...", "category": "...", "info_before": "...", "info_after": "..." },
+  "fields": [
+    { "id": 1, "field_key": "opis", "label": "Opis problemu", "type": "textarea",
+      "is_required": true, "placeholder": "", "help_text": "", "options": [] }
+  ]
+}
+```
+
+**Błąd** `403` gdy formularz nieaktywny lub obóz nie ma dostępu.
+
+### GET /bm/v1/panel/submissions
+
+Pobiera listę zgłoszeń własnego obozu.
+
+**Parametry query**:
+| Parametr | Opis |
+|----------|------|
+| `status` | Filtr statusu: `new` \| `in_progress` \| `waiting` \| `closed` \| `cancelled` |
+
+**Odpowiedź** `200`:
+```json
+{
+  "submissions": [
+    { "id": 1, "form_id": 1, "camp_id": 2, "category": "techniczne",
+      "status": "new", "priority": "normal", "created_at": "..." }
+  ]
+}
+```
+
+### POST /bm/v1/panel/submissions
+
+Wysyła nowe zgłoszenie. Wykonuje walidację server-side zgodnie z definicją pól.
+
+**Body** (`application/json`):
+```json
+{
+  "form_id": 1,
+  "priority": "normal",
+  "data": {
+    "opis": "Cieknący kran w łazience",
+    "lokalizacja": "Hala A"
+  }
+}
+```
+
+**Odpowiedź** `201`:
+```json
+{ "submission_id": 42, "info_after": "Dziękujemy! Zgłoszenie zostało przyjęte." }
+```
+
+**Błąd** `422` (błędy walidacji):
+```json
+{
+  "error": "Formularz zawiera błędy.",
+  "fields": { "opis": "Opis problemu jest wymagane." }
+}
+```
+
+**Błąd** `403` gdy formularz niedostępny dla obozu.
+
+### GET /bm/v1/panel/submissions/{id}
+
+Pobiera pełne dane własnego zgłoszenia ze snapshotem, komentarzem admina i listą załączników.
+
+**Odpowiedź** `200`:
+```json
+{
+  "submission": { "id": 42, "status": "in_progress", "priority": "normal", ... },
+  "admin_comment": "Przekazano do technika.",
+  "form_snapshot": { "form": { "name": "..." }, "fields": [...] },
+  "submission_data": { "opis": "Cieknący kran", "lokalizacja": "Hala A" },
+  "attachments": [
+    { "id": 1, "original_name": "zdjecie.jpg", "mime_type": "image/jpeg",
+      "file_size": 204800, "download_url": "https://.../panel/submissions/42/attachment/1" }
+  ]
+}
+```
+
+**Błąd** `403` gdy zgłoszenie nie należy do obozu.
+
+### GET /bm/v1/panel/submissions/{id}/attachment/{att_id}
+
+Pobiera plik załącznika. Weryfikuje, że zgłoszenie należy do obozu.
+
+**Odpowiedź**: streaming pliku z odpowiednimi nagłówkami `Content-Type` i `Content-Disposition`.
+
+**Błąd** `403` gdy brak dostępu. **Błąd** `404` gdy plik nie istnieje.
+

@@ -6,7 +6,11 @@ namespace BaseMgmt\Admin;
 
 use BaseMgmt\Admin\Pages\AnnouncementsPage;
 use BaseMgmt\Admin\Pages\CampsPage;
+use BaseMgmt\Admin\Pages\CommunicationPage;
 use BaseMgmt\Admin\Pages\DashboardPage;
+use BaseMgmt\Admin\Pages\FormsPage;
+use BaseMgmt\Admin\Pages\HelpPage;
+use BaseMgmt\Admin\Pages\MenuPage;
 use BaseMgmt\Admin\Pages\ReportsPage;
 use BaseMgmt\Admin\Pages\ReservationsPage;
 use BaseMgmt\Admin\Pages\SchedulePage;
@@ -15,6 +19,7 @@ use BaseMgmt\Admin\Pages\StaffPage;
 use BaseMgmt\Admin\Pages\WeatherPage;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Modules\Announcements\AnnouncementRepository;
+use BaseMgmt\Modules\Communication\ConversationRepository;
 
 defined('ABSPATH') || exit;
 
@@ -32,6 +37,10 @@ final class AdminMenu {
 	private WeatherPage       $weather;
 	private SchedulePage      $schedule;
 	private ReservationsPage  $reservations;
+	private MenuPage          $menu;
+	private CommunicationPage $communication;
+	private HelpPage          $help;
+	private FormsPage         $forms;
 	private SettingsPage      $settings;
 
 	public function __construct() {
@@ -43,6 +52,10 @@ final class AdminMenu {
 		$this->weather       = new WeatherPage();
 		$this->schedule      = new SchedulePage();
 		$this->reservations  = new ReservationsPage();
+		$this->menu          = new MenuPage();
+		$this->communication = new CommunicationPage();
+		$this->help          = new HelpPage();
+		$this->forms         = new FormsPage();
 		$this->settings      = new SettingsPage();
 	}
 
@@ -51,6 +64,9 @@ final class AdminMenu {
 	public function register_menus(): void {
 		$pending = AnnouncementRepository::count_pending();
 		$badge   = $pending ? " <span class='awaiting-mod'>$pending</span>" : '';
+
+		$unread_comm  = ConversationRepository::count_unread_admin();
+		$comm_badge   = $unread_comm ? " <span class='awaiting-mod'>$unread_comm</span>" : '';
 
 		add_menu_page(
 			__('Baza Obozowa', 'basemgmt'),
@@ -132,6 +148,42 @@ final class AdminMenu {
 			'manage_basemgmt',
 			'basemgmt-reservations',
 			[$this->reservations, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Jadłospis', 'basemgmt'),
+			__('Jadłospis', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-menu',
+			[$this->menu, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Komunikacja', 'basemgmt'),
+			__('Komunikacja', 'basemgmt') . $comm_badge,
+			'manage_basemgmt',
+			'basemgmt-communication',
+			[$this->communication, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Pomoc', 'basemgmt'),
+			__('Pomoc', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-help',
+			[$this->help, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Formularze', 'basemgmt'),
+			__('Formularze', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-forms',
+			[$this->forms, 'render']
 		);
 
 		add_submenu_page(
@@ -256,6 +308,26 @@ final class AdminMenu {
 			// Settings
 			'bm_save_settings'            => [$this->settings,     'handle_save'],
 			'bm_send_test_email'          => [$this->settings,     'handle_send_test'],
+			// Menu (Jadłospis)
+			'bm_save_menu'                => [$this->menu,         'handle_save'],
+			'bm_delete_menu'              => [$this->menu,         'handle_delete'],
+			'bm_save_meal_item'           => [$this->menu,         'handle_save_item'],
+			'bm_delete_meal_item'         => [$this->menu,         'handle_delete_item'],
+			'bm_copy_menu'                => [$this->menu,         'handle_copy'],
+			'bm_reset_menu_flags'         => [$this->menu,         'handle_reset_flags'],
+			// Communication (Komunikacja)
+			'bm_admin_reply'              => [$this->communication,'handle_reply'],
+			'bm_update_thread'            => [$this->communication,'handle_update_thread'],
+			// Help (Pomoc)
+			'bm_save_help'                => [$this->help,         'handle_save'],
+			'bm_delete_help'              => [$this->help,         'handle_delete'],
+			// Forms & Submissions (Formularze i Zgłoszenia)
+			'bm_save_form'                => [$this->forms,        'handle_save_form'],
+			'bm_delete_form'              => [$this->forms,        'handle_delete_form'],
+			'bm_save_form_field'          => [$this->forms,        'handle_save_field'],
+			'bm_delete_form_field'        => [$this->forms,        'handle_delete_field'],
+			'bm_update_submission'        => [$this->forms,        'handle_update_submission'],
+			'bm_download_attachment'      => [$this->forms,        'handle_download_attachment'],
 		];
 	}
 
