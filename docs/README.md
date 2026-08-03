@@ -18,7 +18,9 @@
 | [10 – Bezpieczeństwo](10-security.md) | Polityki, mechanizmy ochrony |
 | [11 – Zadania cykliczne (Cron)](11-cron.md) | WP-Cron, harmonogram, callbacki |
 | [12 – Przewodnik dewelopera](12-developer-guide.md) | Dodawanie modułów, hooki, konwencje |
-| [13 – Breakdance Custom Elements](13-breakdance-elements.md) | **Gotowe bloki HTML/Alpine dla każdego elementu UI** |
+| [13 – Breakdance Custom Elements](13-breakdance-elements.md) | Gotowe bloki HTML/Alpine dla każdego elementu UI (styl neutralny) |
+| [14 – Breakdance Elements – styl ZHP](14-breakdance-elements-zhp.md) | **Gotowe bloki ze stylowaniem ZHP** (paleta zhp.pl, CSS design system) |
+| [15 – Gotowy panel – jeden blok](15-panel-full-breakdance.md) | **Kompletna strona panelu** – jeden blok do wklejenia w Breakdance |
 
 ---
 
