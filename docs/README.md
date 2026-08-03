@@ -1,6 +1,6 @@
 # Baza Obozowa – Dokumentacja Pluginu
 
-> Wersja: **1.5.0** | Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB
+> Wersja: **1.6.0** | Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB
 
 ## Spis treści
 
@@ -12,12 +12,13 @@
 | [04 – Moduły](04-modules.md) | Obozy, Kadra, Ogłoszenia, Meldunki, Pogoda, Plan dnia, Rezerwacje, Jadłospis, Komunikacja, Pomoc, Formularze i Zgłoszenia |
 | [05 – REST API](05-rest-api.md) | Pełna dokumentacja endpointów |
 | [06 – Schemat bazy danych](06-database-schema.md) | Wszystkie tabele, kolumny, indeksy |
-| [07 – System email](07-email-system.md) | EmailService, szablony, konfiguracja |
+| [07 – System email](07-email-system.md) | EmailService, szablony HTML, konfiguracja nagłówka/stopki |
 | [08 – Panel administratora](08-admin-panel.md) | Przewodnik po panelu WP Admin |
-| [09 – Panel frontendowy](09-frontend-panel.md) | Shortcody, Alpine.js, Breakdance |
+| [09 – Panel frontendowy](09-frontend-panel.md) | Alpine.js, Breakdance, bmConfig, komponenty |
 | [10 – Bezpieczeństwo](10-security.md) | Polityki, mechanizmy ochrony |
 | [11 – Zadania cykliczne (Cron)](11-cron.md) | WP-Cron, harmonogram, callbacki |
-| [12 – Przewodnik dewelopera](12-developer-guide.md) | Dodawanie modułów, hoooki, konwencje |
+| [12 – Przewodnik dewelopera](12-developer-guide.md) | Dodawanie modułów, hooki, konwencje |
+| [13 – Breakdance Custom Elements](13-breakdance-elements.md) | **Gotowe bloki HTML/Alpine dla każdego elementu UI** |
 
 ---
 
@@ -38,13 +39,15 @@ wp plugin activate basemgmt
 
 - **Dwa poziomy dostępu**: administratorzy WP (konta WP) i kadra obozów (własny system).
 - **Kadra nie posiada kont WordPress** – dostęp przez dedykowany panel frontendowy.
-- **6-cyfrowy PIN** – kody bezpieczeństwa kadry muszą być dokładnie 6 cyframi, haszowane bcrypt.
+- **6-cyfrowy PIN** – kody bezpieczeństwa kadry to dokładnie 6 cyfr, haszowane bcrypt.
 - **Modularność**: każdy moduł w osobnym namespace pod `src/Modules/`.
-- **Breakdance-ready**: `bmConfig` i Alpine.js ładowane globalnie na frontendzie – nie wymaga shortcode.
-- **Edytowalne szablony email**: każdy email konfigurowalny przez edytor HTML z tokenami `{{zmiennych}}`.
-- **Bezpieczeństwo**: haszowane kody, rate limiting, sesje z TTL, SELECT FOR UPDATE, wszystkie panel/* endpointy chronione sesją.
+- **Breakdance-ready**: `bmConfig` i Alpine.js ładowane globalnie – nie wymaga shortcode. Każdy element UI to osobny blok HTML gotowy do wklejenia w Breakdance Studio (→ [doc 13](13-breakdance-elements.md)).
+- **Edytowalne szablony email**: każdy email konfigurowalny przez edytor HTML (CodeMirror) z tokenami `{{zmiennych}}`. Nagłówek i stopka emaila również edytowalne jako pełny HTML.
+- **Bezpieczeństwo**: haszowane kody, rate limiting, sesje z TTL, wszystkie `/panel/*` endpointy chronione sesją.
 - **Snapshot zgłoszeń**: dane formularzy utrwalane w momencie wysłania, odporne na późniejsze zmiany.
+- **Komunikacja dwukierunkowa**: admin może inicjować wątki do obozów; kadra odpowiada przez panel.
+- **Naprawy tabel inline**: jadłospis, pomoc i formularze wykrywają brak tabel i oferują przycisk naprawy bez reaktywacji pluginu.
 
 ---
 
-*Dokumentacja wygenerowana dla pluginu Baza Obozowa v1.5.0.*
+*Dokumentacja wygenerowana dla pluginu Baza Obozowa v1.6.0.*

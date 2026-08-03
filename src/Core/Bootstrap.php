@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BaseMgmt\Core;
 
+use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Cron\Scheduler;
 use BaseMgmt\Frontend\ShortcodeHandler;

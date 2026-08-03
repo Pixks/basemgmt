@@ -84,6 +84,56 @@ $status_map  = [
     </div>
     <?php endif; ?>
 
+    <!-- Manual report entry -->
+    <details style="margin-bottom:20px;">
+        <summary style="cursor:pointer;font-weight:600;color:#2271b1;">📋 <?php esc_html_e('Dodaj / popraw meldunek ręcznie', 'basemgmt'); ?></summary>
+        <div style="margin-top:12px;background:#fff;border:1px solid #ddd;border-radius:4px;padding:16px;">
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+            <?php wp_nonce_field('bm_save_report'); ?>
+            <input type="hidden" name="action" value="bm_save_report">
+            <div>
+                <label for="bm-rep-camp"><strong><?php esc_html_e('Obóz', 'basemgmt'); ?> *</strong></label><br>
+                <select id="bm-rep-camp" name="camp_id" required>
+                    <option value=""><?php esc_html_e('— wybierz —', 'basemgmt'); ?></option>
+                    <?php foreach ($camps as $c): ?>
+                    <option value="<?php echo esc_attr((string) $c->id); ?>"><?php echo esc_html($c->name); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label for="bm-rep-date"><strong><?php esc_html_e('Data', 'basemgmt'); ?> *</strong></label><br>
+                <input type="date" id="bm-rep-date" name="count_date" value="<?php echo esc_attr($date); ?>" required>
+            </div>
+            <div>
+                <label for="bm-rep-part"><strong><?php esc_html_e('Uczestnicy', 'basemgmt'); ?></strong></label><br>
+                <input type="number" id="bm-rep-part" name="participants" value="0" min="0" style="width:80px;">
+            </div>
+            <div>
+                <label for="bm-rep-staff"><strong><?php esc_html_e('Kadra', 'basemgmt'); ?></strong></label><br>
+                <input type="number" id="bm-rep-staff" name="staff" value="0" min="0" style="width:80px;">
+            </div>
+            <div>
+                <label for="bm-rep-work"><strong><?php esc_html_e('Pracownicy', 'basemgmt'); ?></strong></label><br>
+                <input type="number" id="bm-rep-work" name="workers" value="0" min="0" style="width:80px;">
+            </div>
+            <div>
+                <label for="bm-rep-status"><strong><?php esc_html_e('Status', 'basemgmt'); ?></strong></label><br>
+                <select id="bm-rep-status" name="status">
+                    <option value="submitted"><?php esc_html_e('Wysłany', 'basemgmt'); ?></option>
+                    <option value="draft"><?php esc_html_e('Roboczy', 'basemgmt'); ?></option>
+                </select>
+            </div>
+            <div>
+                <label for="bm-rep-notes"><strong><?php esc_html_e('Uwagi', 'basemgmt'); ?></strong></label><br>
+                <input type="text" id="bm-rep-notes" name="notes" class="regular-text" placeholder="<?php esc_attr_e('opcjonalnie', 'basemgmt'); ?>">
+            </div>
+            <div>
+                <button type="submit" class="button button-primary"><?php esc_html_e('Zapisz meldunek', 'basemgmt'); ?></button>
+            </div>
+        </form>
+        </div>
+    </details>
+
     <table class="wp-list-table widefat fixed striped">
         <thead>
             <tr>

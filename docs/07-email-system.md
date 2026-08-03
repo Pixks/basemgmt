@@ -21,10 +21,11 @@ WP Admin → **Baza Obozowa → Ustawienia** → sekcja "Ustawienia powiadomień
 | Nazwa nadawcy | Nazwa strony WP | Widoczna jako "Od:" |
 | Email nadawcy | admin email WP | Adres "Od:" |
 | Email admina (powiadomienia) | admin email WP | Adres, na który trafiają notyfikacje systemowe |
-| Kolor nagłówka | `#2271b1` | Hex kolor paska nagłówka emaila |
-| URL logo | *(puste)* | Jeśli podane, wyświetlane zamiast tytułu |
-| Tytuł nagłówka | Nazwa strony WP | Tekst w nagłówku (gdy brak logo) |
-| Stopka | Auto-generowana | Widoczna na dole każdego emaila |
+| Kolor nagłówka | `#2271b1` | Hex kolor paska nagłówka (gdy brak własnego HTML nagłówka) |
+| URL logo | *(puste)* | Wyświetlane zamiast tytułu (gdy brak własnego HTML nagłówka) |
+| Tytuł nagłówka | Nazwa strony WP | Tekst w nagłówku gdy brak logo i brak HTML nagłówka |
+| **Nagłówek emaila (HTML)** | *(puste)* | Pełny HTML nagłówka – nadpisuje logo/kolor/tytuł. Edytor CodeMirror. |
+| **Stopka emaila (HTML)** | Auto-generowana | HTML stopki. Obsługuje `<a>`, `<strong>`, `<br>` itp. Edytor CodeMirror. |
 
 Ustawienia przechowywane jako `basemgmt_email_settings` (WP Option).
 
@@ -269,10 +270,11 @@ WP Admin → **Baza Obozowa → Ustawienia** → sekcja "Ustawienia powiadomień
 | Nazwa nadawcy | Nazwa strony WP | Widoczna jako "Od:" |
 | Email nadawcy | admin email WP | Adres "Od:" |
 | Email admina (powiadomienia) | admin email WP | Adres, na który trafiają notyfikacje systemowe |
-| Kolor nagłówka | `#2271b1` | Hex kolor paska nagłówka emaila |
-| URL logo | *(puste)* | Jeśli podane, wyświetlane zamiast tytułu |
-| Tytuł nagłówka | Nazwa strony WP | Tekst w nagłówku (gdy brak logo) |
-| Stopka | Auto-generowana | Widoczna na dole każdego emaila |
+| Kolor nagłówka | `#2271b1` | Hex kolor paska nagłówka (gdy brak własnego HTML nagłówka) |
+| URL logo | *(puste)* | Wyświetlane zamiast tytułu (gdy brak własnego HTML nagłówka) |
+| Tytuł nagłówka | Nazwa strony WP | Tekst w nagłówku gdy brak logo i brak HTML nagłówka |
+| **Nagłówek emaila (HTML)** | *(puste)* | Pełny HTML nagłówka – nadpisuje logo/kolor/tytuł. Edytor CodeMirror. |
+| **Stopka emaila (HTML)** | Auto-generowana | HTML stopki. Obsługuje `<a>`, `<strong>`, `<br>` itp. Edytor CodeMirror. |
 
 Ustawienia przechowywane jako `basemgmt_email_settings` (WP Option).
 

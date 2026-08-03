@@ -7,12 +7,29 @@ defined('ABSPATH') || exit;
  * @var string $filter_type
  * @var string $filter_status
  */
+global $wpdb;
+$table_exists = (bool) $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}bm_help_articles'");
 ?>
 <div class="wrap bm-wrap">
 	<h1 style="display:flex;align-items:center;justify-content:space-between;">
 		<?php esc_html_e('Baza pomocy', 'basemgmt'); ?>
 		<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-help&bm_action=new')); ?>" class="button button-primary">+ <?php esc_html_e('Nowy wpis', 'basemgmt'); ?></a>
 	</h1>
+
+	<?php if ( ! $table_exists ) : ?>
+	<div class="notice notice-error">
+		<p>
+			<strong><?php esc_html_e('Tabela bazy pomocy nie istnieje.', 'basemgmt'); ?></strong>
+			<?php esc_html_e('Kliknij przycisk, aby ją utworzyć.', 'basemgmt'); ?>
+		</p>
+		<p>
+			<a href="<?php echo esc_url(wp_nonce_url(
+				add_query_arg(['page' => 'basemgmt-help', 'bm_create_tables' => '1'], admin_url('admin.php')),
+				'bm_create_tables'
+			)); ?>" class="button button-primary"><?php esc_html_e('Utwórz tabele', 'basemgmt'); ?></a>
+		</p>
+	</div>
+	<?php endif; ?>
 
 	<!-- Filters -->
 	<form method="get" style="margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">

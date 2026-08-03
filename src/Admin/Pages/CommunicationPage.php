@@ -24,8 +24,15 @@ final class CommunicationPage {
 
 		match ($action) {
 			'view'  => $this->render_view($thread_id),
+			'new'   => $this->render_new(),
 			default => $this->render_list(),
 		};
+	}
+
+	private function render_new(): void {
+		$all_camps = CampRepository::get_all(['status' => 'active']);
+		$priorities= ConversationRepository::PRIORITIES;
+		include BASEMGMT_DIR . 'templates/admin/communication/new.php';
 	}
 
 	private function render_list(): void {
@@ -67,6 +74,49 @@ final class CommunicationPage {
 	}
 
 	// ── Form handlers ─────────────────────────────────────────────────────────
+
+	public function handle_create_thread(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_create_thread');
+
+		$camp_id  = (int) ($_POST['camp_id']  ?? 0);
+		$subject  = sanitize_text_field($_POST['subject']  ?? '');
+		$content  = wp_kses_post($_POST['content'] ?? '');
+		$priority = sanitize_key($_POST['priority'] ?? ConversationRepository::PRIORITY_NORMAL);
+		$is_urgent = (int) ($_POST['is_urgent'] ?? 0);
+
+		if ( ! $camp_id || ! $subject || ! $content ) {
+			AdminMenu::set_notice(__('Obóz, temat i treść wiadomości są wymagane.', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-communication&bm_action=new'));
+			exit;
+		}
+
+		$thread_id = ConversationRepository::create_thread([
+			'camp_id'      => $camp_id,
+			'subject'      => $subject,
+			'priority'     => $priority,
+			'is_urgent'    => $is_urgent,
+			'unread_admin' => 0,
+			'unread_camp'  => 1,
+		]);
+
+		if ( ! $thread_id ) {
+			AdminMenu::set_notice(__('Błąd tworzenia wątku.', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-communication&bm_action=new'));
+			exit;
+		}
+
+		ConversationRepository::add_message([
+			'thread_id'   => $thread_id,
+			'author_type' => 'admin',
+			'author_id'   => get_current_user_id(),
+			'content'     => $content,
+		]);
+
+		AdminMenu::set_notice(__('Wiadomość wysłana do obozu.', 'basemgmt'));
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-communication&bm_action=view&id=' . $thread_id));
+		exit;
+	}
 
 	public function handle_reply(): void {
 		Capabilities::require_admin();

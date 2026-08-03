@@ -6,6 +6,7 @@ namespace BaseMgmt\Admin\Pages;
 
 use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Auth\Capabilities;
+use BaseMgmt\Database\Schema;
 use BaseMgmt\Modules\Menu\MealRepository;
 
 defined('ABSPATH') || exit;
@@ -17,6 +18,15 @@ final class MenuPage {
 
 	public function render(): void {
 		Capabilities::require_admin();
+
+		// Allow inline table creation without plugin reactivation.
+		if ( isset($_GET['bm_create_tables']) ) {
+			check_admin_referer('bm_create_tables');
+			Schema::create_tables();
+			AdminMenu::set_notice(__('Tabele zostały utworzone / zaktualizowane.', 'basemgmt'));
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-menu'));
+			exit;
+		}
 
 		$action = sanitize_key($_GET['bm_action'] ?? '');
 		$id     = (int) ($_GET['id'] ?? 0);
@@ -74,6 +84,12 @@ final class MenuPage {
 			} else {
 				$id = MealRepository::create_day($data);
 			}
+		}
+
+		if ( ! $id ) {
+			AdminMenu::set_notice(__('Błąd zapisu jadłospisu. Sprawdź czy tabele istnieją (Jadłospis → Utwórz tabele).', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-menu'));
+			exit;
 		}
 
 		AdminMenu::set_notice(__('Jadłospis zapisany.', 'basemgmt'));

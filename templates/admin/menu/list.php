@@ -4,6 +4,8 @@ defined('ABSPATH') || exit;
  * @var array  $days        – list of meal day rows
  * @var string $filter_date – currently filtered date
  */
+global $wpdb;
+$table_exists = (bool) $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}bm_meal_days'");
 ?>
 <div class="wrap bm-wrap">
 	<h1 style="display:flex;align-items:center;justify-content:space-between;">
@@ -12,6 +14,21 @@ defined('ABSPATH') || exit;
 			+ <?php esc_html_e('Nowy dzień', 'basemgmt'); ?>
 		</a>
 	</h1>
+
+	<?php if ( ! $table_exists ) : ?>
+	<div class="notice notice-error">
+		<p>
+			<strong><?php esc_html_e('Tabele jadłospisu nie istnieją.', 'basemgmt'); ?></strong>
+			<?php esc_html_e('Kliknij przycisk, aby je utworzyć.', 'basemgmt'); ?>
+		</p>
+		<p>
+			<a href="<?php echo esc_url(wp_nonce_url(
+				add_query_arg(['page' => 'basemgmt-menu', 'bm_create_tables' => '1'], admin_url('admin.php')),
+				'bm_create_tables'
+			)); ?>" class="button button-primary"><?php esc_html_e('Utwórz tabele', 'basemgmt'); ?></a>
+		</p>
+	</div>
+	<?php endif; ?>
 
 	<!-- Filter bar -->
 	<form method="get" style="margin-bottom:16px;display:flex;gap:8px;align-items:flex-end;">

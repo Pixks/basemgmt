@@ -4,6 +4,11 @@ use BaseMgmt\Core\EmailService;
 use BaseMgmt\Core\EmailTemplateRepository;
 $s        = EmailService::get_settings();
 $registry = EmailTemplateRepository::get_registry();
+
+// Enqueue CodeMirror for the HTML fields.
+$cm_settings = wp_enqueue_code_editor(['type' => 'text/html', 'codemirror' => ['lineNumbers' => false, 'lineWrapping' => true]]);
+wp_enqueue_script('wp-theme-plugin-editor');
+wp_enqueue_style('wp-codemirror');
 ?>
 <div class="wrap bm-wrap">
     <h1><?php esc_html_e('Ustawienia – Baza Obozowa', 'basemgmt'); ?></h1>
@@ -49,13 +54,22 @@ $registry = EmailTemplateRepository::get_registry();
                 <tr>
                     <th><label for="bm-header-title"><?php esc_html_e('Tytuł w nagłówku emaila', 'basemgmt'); ?></label></th>
                     <td><input type="text" id="bm-header-title" name="header_title" class="regular-text" value="<?php echo esc_attr($s['header_title']); ?>">
-                    <p class="description"><?php esc_html_e('Widoczny gdy nie ma logo.', 'basemgmt'); ?></p></td>
+                    <p class="description"><?php esc_html_e('Widoczny gdy nie ma logo i nie ma własnego HTML nagłówka.', 'basemgmt'); ?></p></td>
                 </tr>
                 <tr>
-                    <th><label for="bm-footer"><?php esc_html_e('Stopka emaila', 'basemgmt'); ?></label></th>
+                    <th><label for="bm-header-html"><?php esc_html_e('Nagłówek emaila (HTML)', 'basemgmt'); ?></label></th>
                     <td>
-                        <textarea id="bm-footer" name="footer_text" rows="3" class="large-text"><?php echo esc_textarea($s['footer_text']); ?></textarea>
-                        <p class="description"><?php esc_html_e('Np. adres ośrodka, dane kontaktowe. Widoczna w stopce każdego emaila.', 'basemgmt'); ?></p>
+                        <textarea id="bm-header-html" name="header_html" rows="6" class="large-text code"
+                                  style="font-family:monospace;font-size:12px;"><?php echo esc_textarea($s['header_html']); ?></textarea>
+                        <p class="description"><?php esc_html_e('Własny HTML nagłówka – nadpisuje logo/tytuł. Np. <img>, <p>, <table>. Zostaw puste, aby użyć logo/tytułu.', 'basemgmt'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-footer"><?php esc_html_e('Stopka emaila (HTML)', 'basemgmt'); ?></label></th>
+                    <td>
+                        <textarea id="bm-footer" name="footer_text" rows="6" class="large-text code"
+                                  style="font-family:monospace;font-size:12px;"><?php echo esc_textarea($s['footer_text']); ?></textarea>
+                        <p class="description"><?php esc_html_e('Np. adres ośrodka, dane kontaktowe. Obsługuje HTML (np. <a>, <strong>, <br>).', 'basemgmt'); ?></p>
                     </td>
                 </tr>
             </table>
@@ -124,3 +138,14 @@ $registry = EmailTemplateRepository::get_registry();
         </ul>
     </div>
 </div>
+
+<script>
+(function() {
+    var cmSettings = <?php echo wp_json_encode($cm_settings ?: new stdClass()); ?>;
+    if (typeof wp === 'undefined' || !wp.codeEditor || !Object.keys(cmSettings).length) return;
+    ['bm-header-html', 'bm-footer'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) wp.codeEditor.initialize(el, cmSettings);
+    });
+})();
+</script>

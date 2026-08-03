@@ -29,7 +29,9 @@
 <div class="wrapper">
   <div class="email-card">
     <div class="header">
-      <?php if ( ! empty($settings['logo_url']) ): ?>
+      <?php if ( ! empty($settings['header_html']) ): ?>
+      <?php echo wp_kses_post($settings['header_html']); ?>
+      <?php elseif ( ! empty($settings['logo_url']) ): ?>
       <img src="<?php echo esc_url($settings['logo_url']); ?>" alt="<?php echo esc_attr($settings['header_title']); ?>">
       <?php else: ?>
       <p class="header-title"><?php echo esc_html($settings['header_title']); ?></p>
@@ -39,7 +41,7 @@
       <?php echo $content; // pre-escaped in template ?>
     </div>
     <div class="footer">
-      <?php echo wp_kses_post(nl2br(esc_html($settings['footer_text']))); ?>
+      <?php echo wp_kses_post($settings['footer_text']); ?>
     </div>
   </div>
 </div>

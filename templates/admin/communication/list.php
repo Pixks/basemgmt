@@ -13,7 +13,12 @@ $camp_map = [];
 foreach ($all_camps as $c) { $camp_map[(int)$c->id] = $c->name; }
 ?>
 <div class="wrap bm-wrap">
-	<h1><?php esc_html_e('Komunikacja – wątki', 'basemgmt'); ?></h1>
+	<h1 style="display:flex;align-items:center;justify-content:space-between;">
+		<?php esc_html_e('Komunikacja – wątki', 'basemgmt'); ?>
+		<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-communication&bm_action=new')); ?>" class="button button-primary">
+			+ <?php esc_html_e('Nowy wątek', 'basemgmt'); ?>
+		</a>
+	</h1>
 
 	<!-- Filters -->
 	<form method="get" style="margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">

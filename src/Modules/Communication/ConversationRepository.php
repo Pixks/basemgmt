@@ -114,8 +114,8 @@ final class ConversationRepository {
 			'is_urgent'           => (int) ($data['is_urgent'] ?? 0),
 			'assigned_to'         => ! empty($data['assigned_to']) ? (int) $data['assigned_to'] : null,
 			'last_message_at'     => current_time('mysql'),
-			'unread_admin'        => 1,
-			'unread_camp'         => 0,
+			'unread_admin'        => (int) ($data['unread_admin'] ?? 1),
+			'unread_camp'         => (int) ($data['unread_camp']  ?? 0),
 			'created_by_staff_id' => (int) ($data['created_by_staff_id'] ?? 0),
 		]);
 

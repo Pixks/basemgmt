@@ -318,6 +318,7 @@ final class AdminMenu {
 			'bm_copy_menu'                => [$this->menu,         'handle_copy'],
 			'bm_reset_menu_flags'         => [$this->menu,         'handle_reset_flags'],
 			// Communication (Komunikacja)
+			'bm_create_thread'            => [$this->communication,'handle_create_thread'],
 			'bm_admin_reply'              => [$this->communication,'handle_reply'],
 			'bm_update_thread'            => [$this->communication,'handle_update_thread'],
 			// Help (Pomoc)

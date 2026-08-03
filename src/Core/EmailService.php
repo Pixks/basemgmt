@@ -29,12 +29,13 @@ final class EmailService {
 	public static function get_settings(): array {
 		$site_name = get_bloginfo('name');
 		return wp_parse_args(get_option(self::SETTINGS_KEY, []), [
-			'from_name'       => $site_name,
-			'from_email'      => get_option('admin_email'),
-			'header_color'    => '#2271b1',
-			'logo_url'        => '',
-			'header_title'    => $site_name,
-			'footer_text'     => sprintf(
+			'from_name'          => $site_name,
+			'from_email'         => get_option('admin_email'),
+			'header_color'       => '#2271b1',
+			'logo_url'           => '',
+			'header_title'       => $site_name,
+			'header_html'        => '',
+			'footer_text'        => sprintf(
 				/* translators: %s site name */
 				__('Wiadomość wysłana automatycznie przez system %s.', 'basemgmt'),
 				$site_name
@@ -50,7 +51,8 @@ final class EmailService {
 			'header_color'       => sanitize_hex_color($data['header_color']        ?? '#2271b1') ?? '#2271b1',
 			'logo_url'           => esc_url_raw($data['logo_url']                   ?? ''),
 			'header_title'       => sanitize_text_field($data['header_title']       ?? ''),
-			'footer_text'        => sanitize_textarea_field($data['footer_text']    ?? ''),
+			'header_html'        => wp_kses_post(wp_unslash($data['header_html']    ?? '')),
+			'footer_text'        => wp_kses_post(wp_unslash($data['footer_text']    ?? '')),
 			'admin_notify_email' => sanitize_email($data['admin_notify_email']      ?? ''),
 		]);
 	}

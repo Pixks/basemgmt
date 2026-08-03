@@ -69,25 +69,7 @@ $id      = $is_edit ? (int) $member->id : 0;
 					<label for="bm_active"><?php esc_html_e('Osoba może logować się do panelu', 'basemgmt'); ?></label>
 				</td>
 			</tr>
-			<tr>
-				<th><label for="bm_code"><?php esc_html_e('Kod bezpieczeństwa', 'basemgmt'); ?></label></th>
-				<td>
-					<input type="text" id="bm_code" name="security_code" class="regular-text"
-						   pattern="\d{6}" maxlength="6" inputmode="numeric" autocomplete="off"
-						   placeholder="<?php echo $is_edit ? esc_attr__('Zostaw puste, aby nie zmieniać', 'basemgmt') : esc_attr__('000000', 'basemgmt'); ?>"
-						   <?php echo ! $is_edit ? 'required' : ''; ?>>
-					<button type="button" class="button" onclick="
-						var c = String(Math.floor(100000 + Math.random() * 900000));
-						document.getElementById('bm_code').value = c;
-						document.getElementById('bm_code').type = 'text';
-					"><?php esc_html_e('Generuj kod', 'basemgmt'); ?></button>
-					<p class="description">
-						<?php echo $is_edit
-							? esc_html__('Wpisz nowy 6-cyfrowy kod, aby go zmienić. Zostaw puste, żeby zachować obecny.', 'basemgmt')
-							: esc_html__('Dokładnie 6 cyfr (np. 482016). Zostanie zaszyfrowany.', 'basemgmt'); ?>
-					</p>
-				</td>
-			</tr>
+			<?php if ( ! $is_edit ) : ?><tr><th><label for="bm_code"><?php esc_html_e('Kod bezpieczeństwa', 'basemgmt'); ?> <span class="required">*</span></label></th><td><input type="text" id="bm_code" name="security_code" class="regular-text" pattern="\d{6}" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="000000" required><button type="button" class="button" onclick="document.getElementById('bm_code').value = String(Math.floor(100000 + Math.random() * 900000));"><?php esc_html_e('Generuj kod', 'basemgmt'); ?></button><p class="description"><?php esc_html_e('Dokładnie 6 cyfr (np. 482016). Zostanie zaszyfrowany.', 'basemgmt'); ?></p></td></tr><?php endif; ?>
 		</table>
 
 		<p class="submit">

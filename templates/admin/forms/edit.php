@@ -240,13 +240,22 @@ $back_url  = add_query_arg(['page' => 'basemgmt-forms'], admin_url('admin.php'))
 
 <script>
 (function($){
+	// Show/hide options row based on field type
+	function bmToggleOptions(type) {
+		var needsOpts = ['select','radio','checkbox'].indexOf(type) !== -1;
+		$('#bm-f-row-options').toggle(needsOpts);
+	}
+
+	$('#bm-f-type').on('change', function(){ bmToggleOptions(this.value); });
+	bmToggleOptions($('#bm-f-type').val());
+
 	// Populate field form when Edit button clicked
 	$('.bm-edit-field').on('click', function(){
 		var d = $(this).data();
 		$('#bm-field-id').val(d.id);
 		$('#bm-f-label').val(d.label);
 		$('#bm-f-key').val(d.field_key);
-		$('#bm-f-type').val(d.type);
+		$('#bm-f-type').val(d.type).trigger('change');
 		$('#bm-f-required').prop('checked', d.is_required == 1);
 		$('#bm-f-placeholder').val(d.placeholder);
 		$('#bm-f-help').val(d.help_text);
@@ -257,6 +266,7 @@ $back_url  = add_query_arg(['page' => 'basemgmt-forms'], admin_url('admin.php'))
 		$('#bm-f-default').val(d.default_value);
 		$('#bm-f-order').val(d.sort_order);
 		$('#bm-field-form-title').text('<?php esc_html_e('Edytuj pole', 'basemgmt'); ?>');
+		$('.postbox').css('border', '2px solid #2271b1');
 		$('html,body').animate({scrollTop: $('#bm-field-form').offset().top - 30}, 400);
 	});
 
@@ -264,6 +274,8 @@ $back_url  = add_query_arg(['page' => 'basemgmt-forms'], admin_url('admin.php'))
 		$('#bm-field-id').val('0');
 		$('#bm-field-form')[0].reset();
 		$('#bm-field-form-title').text('<?php esc_html_e('Dodaj pole', 'basemgmt'); ?>');
+		$('.postbox').css('border', '');
+		bmToggleOptions($('#bm-f-type').val());
 	});
 })(jQuery);
 </script>

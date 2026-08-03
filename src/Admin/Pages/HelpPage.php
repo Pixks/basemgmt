@@ -6,6 +6,7 @@ namespace BaseMgmt\Admin\Pages;
 
 use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Auth\Capabilities;
+use BaseMgmt\Database\Schema;
 use BaseMgmt\Modules\Help\HelpRepository;
 
 defined('ABSPATH') || exit;
@@ -17,6 +18,15 @@ final class HelpPage {
 
 	public function render(): void {
 		Capabilities::require_admin();
+
+		// Allow inline table creation without plugin reactivation.
+		if ( isset($_GET['bm_create_tables']) ) {
+			check_admin_referer('bm_create_tables');
+			Schema::create_tables();
+			AdminMenu::set_notice(__('Tabele zostały utworzone / zaktualizowane.', 'basemgmt'));
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-help'));
+			exit;
+		}
 
 		$action = sanitize_key($_GET['bm_action'] ?? '');
 		$id     = (int) ($_GET['id'] ?? 0);
@@ -82,6 +92,12 @@ final class HelpPage {
 			'is_alarm'   => (int) ($_POST['is_alarm'] ?? 0),
 			'sort_order' => (int) ($_POST['sort_order'] ?? 0),
 		]);
+
+		if ( ! $saved_id ) {
+			AdminMenu::set_notice(__('Błąd zapisu wpisu pomocy. Sprawdź czy tabele istnieją (Pomoc → Utwórz tabele).', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-help'));
+			exit;
+		}
 
 		AdminMenu::set_notice(__('Wpis pomocy zapisany.', 'basemgmt'));
 		wp_safe_redirect(admin_url('admin.php?page=basemgmt-help&bm_action=edit&id=' . $saved_id));
