@@ -38,7 +38,10 @@ final class HelpPage {
 
 		$articles = HelpRepository::get_all($filters);
 		$types    = HelpRepository::TYPES;
-		$statuses = HelpRepository::STATUSES;
+		$statuses = [
+			HelpRepository::STATUS_PUBLISHED => __('Opublikowany', 'basemgmt'),
+			HelpRepository::STATUS_DRAFT     => __('Roboczy', 'basemgmt'),
+		];
 
 		include BASEMGMT_DIR . 'templates/admin/help/list.php';
 	}
@@ -46,7 +49,10 @@ final class HelpPage {
 	private function render_edit(int $id): void {
 		$article = $id ? HelpRepository::get($id) : null;
 		$types   = HelpRepository::TYPES;
-		$statuses = HelpRepository::STATUSES;
+		$statuses = [
+			HelpRepository::STATUS_PUBLISHED => __('Opublikowany', 'basemgmt'),
+			HelpRepository::STATUS_DRAFT     => __('Roboczy', 'basemgmt'),
+		];
 		include BASEMGMT_DIR . 'templates/admin/help/edit.php';
 	}
 

@@ -85,9 +85,11 @@ Strona startowa z widgetem podsumowania.
 
 ### Zarządzanie kodem bezpieczeństwa
 
-- Przy tworzeniu: podaj kod w formularzu (min. 4 znaki)
-- Kod jest automatycznie haszowany przy zapisie
-- **Reset kodu**: Akcja `bm_reset_staff_code` generuje nowy losowy kod i wyświetla go jednorazowo w komunikacie. Nowy kod jest od razu haszowany — administrator powinien zanotować i przekazać kod osobie.
+- Przy tworzeniu: podaj **6-cyfrowy kod numeryczny** (np. `482016`) w formularzu (pole z walidacją `pattern=\d{6}`)
+- Przycisk **"Generuj kod"** generuje losowy, kryptograficznie bezpieczny 6-cyfrowy kod i wstawia go do pola
+- Kod jest automatycznie haszowany przy zapisie (`wp_hash_password`)
+- **Reset kodu**: osobna sekcja w formularzu edycji – wpisz lub wygeneruj nowy kod i kliknij "Zapisz nowy kod"
+- Format kodu jest walidowany server-side (`/^\d{6}$/`) – inne formaty są odrzucane
 - Po resecie nie ma możliwości odczytu kodu – tylko nowy reset
 
 ### Historia logowań
@@ -305,8 +307,9 @@ Widoczne tylko dla użytkowników z uprawnieniem `manage_options` (domyślnie ty
 ### Sekcje
 
 1. **Ustawienia email** – konfiguracja globalnego systemu powiadomień
-2. **Test emaila** – wysyłka testowego emaila na podany adres
-3. **O pluginie** – wersja, lista tabel, wymagania
+2. **Szablony emaili** – edytor HTML szablonów z podstawianiem zmiennych `{{token}}`
+3. **Test emaila** – wysyłka testowego emaila na podany adres
+4. **O pluginie** – wersja, lista tabel, wymagania
 
 ### Operacje
 
@@ -314,6 +317,20 @@ Widoczne tylko dla użytkowników z uprawnieniem `manage_options` (domyślnie ty
 |----------|-------|
 | Zapisz ustawienia | `bm_save_settings` |
 | Wyślij test email | `bm_send_test_email` |
+| Zapisz szablon emaila | `bm_save_email_template` |
+| Przywróć domyślny szablon | `bm_reset_email_template` |
+
+### Edytor szablonów emaili
+
+Każdy szablon emaila można edytować przez interfejs graficzny:
+
+- Przycisk **Edytuj** przy szablonie na liście → otwiera edytor (`?edit_template={slug}`)
+- Edytor CodeMirror (podświetlanie składni HTML, numery linii, zawijanie)
+- Prawy sidebar: lista zmiennych `{{token}}` z opisami; kliknięcie wstawia token w miejscu kursora
+- Wskaźnik **● Własny / ○ Domyślny** – widoczny na liście szablonów
+- **Przywróć domyślny** – usuwa override, wraca do wbudowanego szablonu
+
+Szczegółowa dokumentacja: [07 – System email](07-email-system.md).
 
 ---
 

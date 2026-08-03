@@ -28,6 +28,15 @@ final class FormsPage {
 
 		$view = sanitize_key($_GET['view'] ?? 'forms');
 
+		// Allow inline table creation without plugin reactivation.
+		if ( isset($_GET['bm_create_tables']) ) {
+			check_admin_referer('bm_create_tables');
+			\BaseMgmt\Database\Schema::create_tables();
+			AdminMenu::set_notice(__('Tabele zostały utworzone / zaktualizowane.', 'basemgmt'), 'success');
+			wp_safe_redirect(add_query_arg(['page' => 'basemgmt-forms'], admin_url('admin.php')));
+			exit;
+		}
+
 		match ($view) {
 			'edit_form'       => $this->render_edit_form(),
 			'submissions'     => $this->render_submissions_list(),
@@ -40,7 +49,7 @@ final class FormsPage {
 
 	private function render_forms_list(): void {
 		$forms = FormRepository::get_all();
-		include BASEMGMT_PATH . 'templates/admin/forms/list.php';
+		include BASEMGMT_DIR . 'templates/admin/forms/list.php';
 	}
 
 	// ── Edit form (create / update + field builder) ───────────────────────────
@@ -55,7 +64,7 @@ final class FormsPage {
 		$categories     = FormRepository::CATEGORIES;
 		$field_types    = FormRepository::FIELD_TYPES;
 
-		include BASEMGMT_PATH . 'templates/admin/forms/edit.php';
+		include BASEMGMT_DIR . 'templates/admin/forms/edit.php';
 	}
 
 	// ── Submissions list ──────────────────────────────────────────────────────
@@ -81,7 +90,7 @@ final class FormsPage {
 		$categories  = FormRepository::CATEGORIES;
 		$wp_users    = get_users(['fields' => ['ID', 'display_name']]);
 
-		include BASEMGMT_PATH . 'templates/admin/forms/submissions_list.php';
+		include BASEMGMT_DIR . 'templates/admin/forms/submissions_list.php';
 	}
 
 	// ── Submission view ───────────────────────────────────────────────────────
@@ -102,7 +111,7 @@ final class FormsPage {
 		$form_snapshot  = json_decode($submission->form_snapshot ?? '{}', true);
 		$submission_data= json_decode($submission->submission_data ?? '{}', true);
 
-		include BASEMGMT_PATH . 'templates/admin/forms/submission_view.php';
+		include BASEMGMT_DIR . 'templates/admin/forms/submission_view.php';
 	}
 
 	// ── admin_post handlers ───────────────────────────────────────────────────
@@ -126,6 +135,17 @@ final class FormsPage {
 		];
 
 		$saved_id = FormRepository::save($data);
+
+		if ( ! $saved_id ) {
+			global $wpdb;
+			AdminMenu::set_notice(
+				__('Błąd zapisu formularza. Upewnij się, że tabele pluginu zostały utworzone (dezaktywuj i aktywuj wtyczkę).', 'basemgmt') .
+				( $wpdb->last_error ? ' DB: ' . esc_html($wpdb->last_error) : '' ),
+				'error'
+			);
+			wp_safe_redirect(add_query_arg(['page' => 'basemgmt-forms'], admin_url('admin.php')));
+			exit;
+		}
 
 		// Update camp visibility.
 		if ( empty($data['is_global']) ) {

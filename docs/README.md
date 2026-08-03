@@ -1,6 +1,6 @@
 # Baza Obozowa – Dokumentacja Pluginu
 
-> Wersja: **1.4.0** | Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB
+> Wersja: **1.5.0** | Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB
 
 ## Spis treści
 
@@ -38,10 +38,13 @@ wp plugin activate basemgmt
 
 - **Dwa poziomy dostępu**: administratorzy WP (konta WP) i kadra obozów (własny system).
 - **Kadra nie posiada kont WordPress** – dostęp przez dedykowany panel frontendowy.
+- **6-cyfrowy PIN** – kody bezpieczeństwa kadry muszą być dokładnie 6 cyframi, haszowane bcrypt.
 - **Modularność**: każdy moduł w osobnym namespace pod `src/Modules/`.
-- **Bezpieczeństwo**: haszowane kody, rate limiting, sesje z TTL, SELECT FOR UPDATE.
+- **Breakdance-ready**: `bmConfig` i Alpine.js ładowane globalnie na frontendzie – nie wymaga shortcode.
+- **Edytowalne szablony email**: każdy email konfigurowalny przez edytor HTML z tokenami `{{zmiennych}}`.
+- **Bezpieczeństwo**: haszowane kody, rate limiting, sesje z TTL, SELECT FOR UPDATE, wszystkie panel/* endpointy chronione sesją.
 - **Snapshot zgłoszeń**: dane formularzy utrwalane w momencie wysłania, odporne na późniejsze zmiany.
 
 ---
 
-*Dokumentacja wygenerowana dla pluginu Baza Obozowa v1.4.0.*
+*Dokumentacja wygenerowana dla pluginu Baza Obozowa v1.5.0.*

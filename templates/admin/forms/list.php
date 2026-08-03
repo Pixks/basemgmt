@@ -1,4 +1,7 @@
-<?php defined('ABSPATH') || exit; ?>
+<?php defined('ABSPATH') || exit;
+global $wpdb;
+$table_exists = (bool) $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}bm_forms'");
+?>
 <div class="wrap">
 	<h1 class="wp-heading-inline"><?php esc_html_e('Formularze', 'basemgmt'); ?></h1>
 	<a href="<?php echo esc_url(add_query_arg(['page' => 'basemgmt-forms', 'view' => 'edit_form'], admin_url('admin.php'))); ?>"
@@ -6,6 +9,21 @@
 	<a href="<?php echo esc_url(add_query_arg(['page' => 'basemgmt-forms', 'view' => 'submissions'], admin_url('admin.php'))); ?>"
 	   class="page-title-action"><?php esc_html_e('Zgłoszenia', 'basemgmt'); ?></a>
 	<hr class="wp-header-end">
+
+	<?php if ( ! $table_exists ) : ?>
+	<div class="notice notice-error">
+		<p>
+			<strong><?php esc_html_e('Tabele bazy danych nie istnieją.', 'basemgmt'); ?></strong>
+			<?php esc_html_e('Kliknij przycisk poniżej, aby je utworzyć.', 'basemgmt'); ?>
+		</p>
+		<p>
+			<a href="<?php echo esc_url(wp_nonce_url(
+				add_query_arg(['page' => 'basemgmt-forms', 'bm_create_tables' => '1'], admin_url('admin.php')),
+				'bm_create_tables'
+			)); ?>" class="button button-primary"><?php esc_html_e('Utwórz tabele', 'basemgmt'); ?></a>
+		</p>
+	</div>
+	<?php endif; ?>
 
 	<table class="wp-list-table widefat fixed striped">
 		<thead>

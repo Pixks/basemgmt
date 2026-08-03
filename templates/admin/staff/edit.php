@@ -72,13 +72,19 @@ $id      = $is_edit ? (int) $member->id : 0;
 			<tr>
 				<th><label for="bm_code"><?php esc_html_e('Kod bezpieczeństwa', 'basemgmt'); ?></label></th>
 				<td>
-					<input type="password" id="bm_code" name="security_code" class="regular-text" autocomplete="new-password"
-						   placeholder="<?php echo $is_edit ? esc_attr__('Zostaw puste, aby nie zmieniać', 'basemgmt') : esc_attr__('Wymagany', 'basemgmt'); ?>"
+					<input type="text" id="bm_code" name="security_code" class="regular-text"
+						   pattern="\d{6}" maxlength="6" inputmode="numeric" autocomplete="off"
+						   placeholder="<?php echo $is_edit ? esc_attr__('Zostaw puste, aby nie zmieniać', 'basemgmt') : esc_attr__('000000', 'basemgmt'); ?>"
 						   <?php echo ! $is_edit ? 'required' : ''; ?>>
+					<button type="button" class="button" onclick="
+						var c = String(Math.floor(100000 + Math.random() * 900000));
+						document.getElementById('bm_code').value = c;
+						document.getElementById('bm_code').type = 'text';
+					"><?php esc_html_e('Generuj kod', 'basemgmt'); ?></button>
 					<p class="description">
 						<?php echo $is_edit
-							? esc_html__('Wpisz nowy kod, aby go zmienić. Zostaw puste, żeby zachować obecny.', 'basemgmt')
-							: esc_html__('Minimum 4 znaki. Zostanie zaszyfrowany.', 'basemgmt'); ?>
+							? esc_html__('Wpisz nowy 6-cyfrowy kod, aby go zmienić. Zostaw puste, żeby zachować obecny.', 'basemgmt')
+							: esc_html__('Dokładnie 6 cyfr (np. 482016). Zostanie zaszyfrowany.', 'basemgmt'); ?>
 					</p>
 				</td>
 			</tr>
@@ -93,4 +99,30 @@ $id      = $is_edit ? (int) $member->id : 0;
 			</a>
 		</p>
 	</form>
+
+	<?php if ($is_edit) : ?>
+	<hr>
+	<div class="postbox" style="max-width:600px;padding:16px 20px;">
+		<h2><?php esc_html_e('Resetuj kod bezpieczeństwa', 'basemgmt'); ?></h2>
+		<p><?php esc_html_e('Ustaw nowy 6-cyfrowy kod PIN dla tej osoby.', 'basemgmt'); ?></p>
+		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+			<?php wp_nonce_field('bm_reset_staff_code'); ?>
+			<input type="hidden" name="action"   value="bm_reset_staff_code">
+			<input type="hidden" name="staff_id" value="<?php echo esc_attr($id); ?>">
+			<p>
+				<input type="text" name="new_code" class="regular-text" id="bm_new_code"
+					   pattern="\d{6}" maxlength="6" inputmode="numeric" autocomplete="off"
+					   placeholder="<?php esc_attr_e('np. 482016', 'basemgmt'); ?>" required>
+				<button type="button" class="button" onclick="
+					var c = String(Math.floor(100000 + Math.random() * 900000));
+					document.getElementById('bm_new_code').value = c;
+				"><?php esc_html_e('Generuj', 'basemgmt'); ?></button>
+			</p>
+			<button type="submit" class="button button-secondary">
+				<?php esc_html_e('Zapisz nowy kod', 'basemgmt'); ?>
+			</button>
+		</form>
+	</div>
+	<?php endif; ?>
+
 </div>

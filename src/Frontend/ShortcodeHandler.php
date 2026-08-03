@@ -54,6 +54,11 @@ final class ShortcodeHandler {
 
 	/** Enqueues Alpine.js + bmApi helper. Called on wp_enqueue_scripts. */
 	public function enqueue_assets(): void {
+		// Idempotent guard – safe to call from multiple hooks.
+		if ( wp_script_is('basemgmt-api', 'enqueued') ) {
+			return;
+		}
+
 		// Alpine.js v3 from CDN (defer). In production you may self-host it.
 		wp_enqueue_script(
 			'alpinejs',

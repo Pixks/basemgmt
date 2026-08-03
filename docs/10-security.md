@@ -5,6 +5,7 @@
 | Mechanizm | Gdzie | Opis |
 |-----------|-------|------|
 | Haszowanie kodów | `StaffRepository`, `wp_hash_password()` | bcrypt, nigdy plain text |
+| **6-cyfrowy PIN** | `StaffPage`, `AuthController` | Kod musi być dokładnie 6 cyframi (`/^\d{6}$/`), walidacja server-side |
 | Rate limiting | `RateLimiter` | 5 prób, 15 min blokada |
 | Neutralne komunikaty | `FrontendAuth` | Brak informacji o przyczynie błędu |
 | Timing attack protection | `FrontendAuth` | Symulacja hasha przy błędzie |
@@ -20,6 +21,7 @@
 | Escaping | Wszystkie szablony | `esc_html()`, `esc_attr()`, `esc_url()` |
 | SELECT FOR UPDATE | `ReservationRepository` | Anti-double-booking, race condition |
 | Prepared statements | Cały plugin | `$wpdb->prepare()` wszędzie |
+| **Brak publicznego weather API** | `WeatherController` | Dane pogodowe dostępne tylko po zalogowaniu (`/panel/weather`) |
 
 ---
 
@@ -27,8 +29,20 @@
 
 ### Haszowanie kodów bezpieczeństwa
 
+Kod bezpieczeństwa musi być **dokładnie 6-cyfrową liczbą** (np. `482016`):
+
 ```php
-// Przy tworzeniu/aktualizacji kodu
+// Walidacja w StaffPage::handle_save() i handle_reset_code()
+if ( ! preg_match('/^\d{6}$/', $security_code) ) {
+    // Błąd – odrzucenie formularza
+}
+
+// Walidacja wstępna w AuthController::login() – przed zapytaniem do DB
+if ( ! preg_match('/^\d{6}$/', $code) ) {
+    return ['success' => false, 'message' => $generic_error];
+}
+
+// Przy zapisie (StaffRepository)
 $hash = wp_hash_password($plain_code);
 // Przechowywany hash, nigdy plain text
 

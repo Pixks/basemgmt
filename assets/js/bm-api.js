@@ -74,7 +74,7 @@ window.bmApi = (function () {
 		cancelReservation:  (id)         => request(`panel/reservations/${id}/cancel`, 'POST'),
 
 		// Weather (Pogoda)
-		getWeather:         ()       => request('public/weather', 'GET'),
+		getWeather:         ()       => request('panel/weather', 'GET'),
 
 		// Menu (Jadłospis)
 		getMenu:            (date)   => request(`panel/menu?date=${date || ''}`, 'GET'),

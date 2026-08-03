@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace BaseMgmt\Core;
 
-use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Cron\Scheduler;
 use BaseMgmt\Frontend\ShortcodeHandler;
@@ -56,6 +55,7 @@ final class Bootstrap {
 		$this->register_cron();
 		$this->register_notifications();
 		$this->register_ajax();
+		$this->register_breakdance();
 
 		$this->loader->run();
 	}
@@ -105,6 +105,10 @@ final class Bootstrap {
 	private function register_frontend(): void {
 		$sc = new ShortcodeHandler();
 		$this->loader->add_action('init',               $sc, 'register');
+
+		// Always enqueue assets on every frontend page so Breakdance Code Blocks
+		// can use Alpine.js components without needing a shortcode on the page.
+		// ShortcodeHandler::enqueue_assets() is idempotent – safe to call multiple times.
 		$this->loader->add_action('wp_enqueue_scripts', $sc, 'enqueue_assets');
 	}
 
@@ -131,6 +135,11 @@ final class Bootstrap {
 		add_action('wp_ajax_bm_reorder_plan_items', [$this, 'ajax_reorder_plan_items']);
 		// FullCalendar event source for reservations.
 		add_action('wp_ajax_bm_calendar_events', [$this, 'ajax_calendar_events']);
+	}
+
+	private function register_breakdance(): void {
+		$integration = new BreakdanceIntegration();
+		$integration->register();
 	}
 
 	// ── AJAX handlers ─────────────────────────────────────────────────────────

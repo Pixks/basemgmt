@@ -58,6 +58,11 @@ final class AuthController extends BaseController {
 		$staff_id = (int) $request->get_param('staff_id');
 		$code     = (string) $request->get_param('security_code');
 
+		// Validate code format before touching the DB.
+		if ( ! preg_match('/^\d{6}$/', $code) ) {
+			return $this->ok(['success' => false, 'message' => __('Nieprawidłowe dane logowania.', 'basemgmt')], 401);
+		}
+
 		$result = FrontendAuth::attempt($camp_id, $staff_id, $code);
 
 		if ( ! $result['success'] ) {

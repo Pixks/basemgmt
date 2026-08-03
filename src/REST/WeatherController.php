@@ -20,11 +20,13 @@ defined('ABSPATH') || exit;
 final class WeatherController extends BaseController {
 
 	public function register_routes(): void {
-		// Public – no authentication required (weather is not sensitive).
-		register_rest_route(self::NAMESPACE, '/public/weather', [
+		$auth = fn(WP_REST_Request $r) => $this->require_session($r);
+
+		// Weather data is only available to authenticated camp staff.
+		register_rest_route(self::NAMESPACE, '/panel/weather', [
 			'methods'             => 'GET',
 			'callback'            => [$this, 'get_weather'],
-			'permission_callback' => '__return_true',
+			'permission_callback' => $auth,
 		]);
 
 		// Admin-only force refresh.

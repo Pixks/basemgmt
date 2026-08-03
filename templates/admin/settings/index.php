@@ -1,7 +1,9 @@
 <?php
 defined('ABSPATH') || exit;
 use BaseMgmt\Core\EmailService;
-$s = EmailService::get_settings();
+use BaseMgmt\Core\EmailTemplateRepository;
+$s        = EmailService::get_settings();
+$registry = EmailTemplateRepository::get_registry();
 ?>
 <div class="wrap bm-wrap">
     <h1><?php esc_html_e('Ustawienia – Baza Obozowa', 'basemgmt'); ?></h1>
@@ -61,10 +63,48 @@ $s = EmailService::get_settings();
         </form>
     </div>
 
+    <!-- Email templates -->
+    <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 10px;">✏️ <?php esc_html_e('Szablony emaili', 'basemgmt'); ?></h2>
+        <p class="description" style="margin:0 0 14px;">
+            <?php esc_html_e('Każdy szablon można edytować jako HTML. Użyj zmiennych takich jak {{oboz}}, {{zasob}}, {{data}} do wstawiania danych dynamicznych. Jeśli szablon nie jest zmodyfikowany, używany jest wbudowany domyślny.', 'basemgmt'); ?>
+        </p>
+        <table class="wp-list-table widefat fixed striped" style="border:0;">
+            <thead>
+                <tr>
+                    <th><?php esc_html_e('Szablon', 'basemgmt'); ?></th>
+                    <th style="width:120px;"><?php esc_html_e('Status', 'basemgmt'); ?></th>
+                    <th style="width:80px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($registry as $tpl_slug => $def): ?>
+                <?php $is_custom = EmailTemplateRepository::get_saved($tpl_slug) !== null; ?>
+                <tr>
+                    <td>
+                        <strong><?php echo esc_html($def['label']); ?></strong>
+                    </td>
+                    <td>
+                        <?php if ($is_custom): ?>
+                            <span style="color:#2271b1;font-weight:600;">● <?php esc_html_e('Własny', 'basemgmt'); ?></span>
+                        <?php else: ?>
+                            <span style="color:#6b7280;">○ <?php esc_html_e('Domyślny', 'basemgmt'); ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-settings&edit_template=$tpl_slug")); ?>"
+                           class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
     <!-- Test email -->
     <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
         <h2 class="hndle" style="padding:0 0 10px;"><?php esc_html_e('Test emaila', 'basemgmt'); ?></h2>
-        <p class="description"><?php esc_html_e('Wyślij testowy email aby sprawdzić wygląd szablonu i konfigurację serwera pocztowego.', 'basemgmt'); ?></p>
+        <p class="description"><?php esc_html_e('Wyślij testowy email aby sprawdzić wygląd szablonu (reservation_created) i konfigurację serwera pocztowego.', 'basemgmt'); ?></p>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:flex;gap:8px;align-items:center;">
             <?php wp_nonce_field('bm_send_test_email'); ?>
             <input type="hidden" name="action" value="bm_send_test_email">

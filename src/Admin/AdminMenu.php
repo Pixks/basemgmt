@@ -308,6 +308,8 @@ final class AdminMenu {
 			// Settings
 			'bm_save_settings'            => [$this->settings,     'handle_save'],
 			'bm_send_test_email'          => [$this->settings,     'handle_send_test'],
+			'bm_save_email_template'      => [$this->settings,     'handle_save_template'],
+			'bm_reset_email_template'     => [$this->settings,     'handle_reset_template'],
 			// Menu (Jadłospis)
 			'bm_save_menu'                => [$this->menu,         'handle_save'],
 			'bm_delete_menu'              => [$this->menu,         'handle_delete'],

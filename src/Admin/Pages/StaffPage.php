@@ -74,6 +74,11 @@ final class StaffPage {
 		$security_code = sanitize_text_field(wp_unslash($_POST['security_code'] ?? ''));
 
 		if ( ! empty($security_code) ) {
+			if ( ! preg_match('/^\d{6}$/', $security_code) ) {
+				AdminMenu::set_notice(__('Kod bezpieczeństwa musi składać się z dokładnie 6 cyfr.', 'basemgmt'), 'error');
+				$this->redirect_back($id ? "basemgmt-staff&action=edit&id=$id" : 'basemgmt-staff&action=new');
+				return;
+			}
 			$data['security_code'] = $security_code;
 		}
 
@@ -130,8 +135,8 @@ final class StaffPage {
 		$id   = (int) ($_POST['staff_id'] ?? 0);
 		$code = sanitize_text_field(wp_unslash($_POST['new_code'] ?? ''));
 
-		if ( ! $id || strlen($code) < 4 ) {
-			AdminMenu::set_notice(__('Kod musi mieć co najmniej 4 znaki.', 'basemgmt'), 'error');
+		if ( ! $id || ! preg_match('/^\d{6}$/', $code) ) {
+			AdminMenu::set_notice(__('Kod musi składać się z dokładnie 6 cyfr.', 'basemgmt'), 'error');
 			$this->redirect_back("basemgmt-staff&action=edit&id=$id");
 			return;
 		}

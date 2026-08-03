@@ -102,21 +102,28 @@ final class EmailService {
 
 	/**
 	 * Renders template slug into full HTML (base layout + content).
-	 * Returns empty string if template file not found.
+	 *
+	 * Priority: DB-saved custom template → PHP file template.
+	 * Returns empty string if neither exists.
 	 */
 	public static function render(string $template_slug, array $data = []): string {
-		$template_file = BASEMGMT_DIR . 'templates/email/' . $template_slug . '.php';
-
-		if ( ! is_readable($template_file) ) {
-			return '';
-		}
-
 		$settings = self::get_settings();
 
-		// Render the inner content block.
-		$content = self::capture($template_file, $data + ['settings' => $settings]);
+		// 1. Try DB-stored custom template first.
+		$custom_body = EmailTemplateRepository::render_body($template_slug, $data);
 
-		// Wrap in base layout.
+		if ( $custom_body !== null ) {
+			$content = $custom_body;
+		} else {
+			// 2. Fall back to PHP file template.
+			$template_file = BASEMGMT_DIR . 'templates/email/' . $template_slug . '.php';
+			if ( ! is_readable($template_file) ) {
+				return '';
+			}
+			$content = self::capture($template_file, $data + ['settings' => $settings]);
+		}
+
+		// Wrap in shared base layout (header / footer branding).
 		$base_file = BASEMGMT_DIR . 'templates/email/base.php';
 		if ( ! is_readable($base_file) ) {
 			return $content;
@@ -124,7 +131,7 @@ final class EmailService {
 
 		return self::capture($base_file, [
 			'content'  => $content,
-			'subject'  => $data['subject']  ?? '',
+			'subject'  => $data['subject'] ?? '',
 			'settings' => $settings,
 		]);
 	}

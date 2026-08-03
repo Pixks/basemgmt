@@ -6,32 +6,38 @@ Panel frontendowy jest głównym interfejsem dla kadry obozów. Nie jest to klas
 
 ---
 
-## Shortcode
+## Ładowanie assetów – bez shortcode
+
+Assetów (`bm-api.js`, Alpine.js, `bmConfig`) **nie trzeba już ładować przez shortcode**. Plugin ładuje je globalnie na każdej stronie frontendowej WordPress (`wp_enqueue_scripts`).
+
+Dzięki temu **Breakdance Custom Elements i Code Blocks** mogą korzystać z komponentów Alpine.js na dowolnej stronie bez konieczności umieszczania shortcode.
+
+---
+
+## Shortcode (zachowany dla kompatybilności wstecznej)
 
 ```
-[camp_panel]
+[bm_init]
 ```
 
-Wstaw na dowolnej stronie WordPress. Po osadzeniu shortcode plugin:
-1. Renderuje kontener HTML
-2. Ładuje Alpine.js (jeśli nie załadowany przez Breakdance)
-3. Wstrzykuje konfigurację JS (`bmConfig`)
-4. Ładuje `bm-api.js` ze wszystkimi komponentami Alpine
+lub starsze wersje:
+
+```
+[camp_panel]   [camp_access]   [camp_overview]
+```
+
+Wszystkie shortcody wywołują `enqueue_assets()` (idempotent – bezpieczne wielokrotne wywołanie). Na nowych stronach shortcode nie jest wymagany.
 
 ---
 
 ## Integracja z Breakdance
 
-W Breakdance użyj elementu **PHP Function** lub **Code Block**:
+Użyj elementu **Code Block** lub **Custom HTML** – `bmConfig` i Alpine.js są już załadowane na stronie:
 
-```php
-<?php echo do_shortcode('[camp_panel]'); ?>
-```
-
-lub bezpośrednio w elemencie HTML/Code z włączoną opcją "Render PHP":
-
-```
-[camp_panel]
+```html
+<div x-data="bmLogin">
+  <!-- komponenty działają bez shortcode -->
+</div>
 ```
 
 > Plugin **nie ładuje drugiej instancji Alpine.js** gdy Breakdance już ją załadował. Komponenty rejestrowane są przez `window.Alpine.data()` z fallback obsługą race condition.
