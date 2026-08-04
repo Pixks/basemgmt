@@ -1025,175 +1025,261 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
     <!-- ─────────────────────────────────────────────────── -->
     <!-- ZAKŁADKA: FORMULARZE I ZGŁOSZENIA                   -->
     <!-- ─────────────────────────────────────────────────── -->
-    <div x-show="tab==='formularze'" class="bm-section">
-      <div x-data="bmForms()" x-init="init()">
+    <div x-show="tab==='formularze'" class="bm-section" x-data="{ subtab: 'forms' }">
+
+      <!-- Sub-nawigacja -->
+      <div style="display:flex;gap:4px;margin-bottom:14px;">
+        <button class="zhp-btn zhp-btn-sm" :class="subtab==='forms' ? 'zhp-btn-primary' : 'zhp-btn-ghost'"
+          @click="subtab='forms'">📝 Formularze</button>
+        <button class="zhp-btn zhp-btn-sm" :class="subtab==='submissions' ? 'zhp-btn-primary' : 'zhp-btn-ghost'"
+          @click="subtab='submissions'">📋 Moje zgłoszenia</button>
+      </div>
+
+      <!-- FORMULARZE -->
+      <div x-show="subtab==='forms'" x-data="bmForms()" x-init="init()">
         <div class="zhp-card">
+          <div class="zhp-loader" x-show="loading" style="padding:16px;"><div class="zhp-spinner"></div> Ładowanie...</div>
+          <div class="zhp-alert zhp-alert-urgent" x-show="error && !loading" x-text="error"></div>
 
-          <!-- LISTA FORMULARZY -->
-          <template x-if="view==='list'">
-            <div>
-              <div class="zhp-card-header" style="justify-content:space-between;">
-                <h3>📝 Formularze</h3>
-                <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="view='submissions'">Moje zgłoszenia</button>
-              </div>
-              <div style="padding:0;">
-                <div class="zhp-loader" x-show="loading" style="padding:16px;"><div class="zhp-spinner"></div> Ładowanie…</div>
-                <p x-show="!loading && !forms.length" style="text-align:center;color:var(--zhp-text-muted);padding:22px;">Brak dostępnych formularzy.</p>
-                <template x-for="form in forms" :key="form.id">
-                  <div @click="openForm(form.id)"
-                    style="padding:13px 20px;border-bottom:1px solid var(--zhp-border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:background .13s;"
-                    @mouseenter="$el.style.background='var(--zhp-green-light)'"
-                    @mouseleave="$el.style.background=''">
-                    <div>
-                      <strong x-text="form.name" style="font-size:.93rem;"></strong>
-                      <p x-show="form.description" x-text="form.description"
-                        style="font-size:.8rem;color:var(--zhp-text-muted);margin-top:2px;"></p>
-                    </div>
-                    <span style="color:var(--zhp-green);font-size:1.1rem;">→</span>
+          <!-- Lista formularzy -->
+          <div x-show="!currentForm && !submitted">
+            <div class="zhp-card-header"><h3>📝 Dostępne formularze</h3></div>
+            <div style="padding:0;">
+              <p x-show="!loading && !forms.length"
+                style="text-align:center;color:var(--zhp-text-muted);padding:22px;">
+                Brak dostępnych formularzy.
+              </p>
+              <template x-for="form in filtered" :key="form.id">
+                <div @click="openForm(form.id)"
+                  style="padding:13px 20px;border-bottom:1px solid var(--zhp-border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:background .13s;"
+                  @mouseenter="$el.style.background='var(--zhp-green-light)'"
+                  @mouseleave="$el.style.background=''">
+                  <div>
+                    <strong x-text="form.name" style="font-size:.93rem;"></strong>
+                    <p x-show="form.description" x-text="form.description"
+                      style="font-size:.8rem;color:var(--zhp-text-muted);margin-top:2px;"></p>
                   </div>
-                </template>
-              </div>
-            </div>
-          </template>
-
-          <!-- WYPEŁNIANIE FORMULARZA -->
-          <template x-if="view==='form' && currentForm">
-            <div>
-              <div class="zhp-card-header">
-                <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="view='list';currentForm=null;">← Wróć</button>
-                <h3 x-text="currentForm.name" style="margin-left:8px;font-size:.92rem;"></h3>
-              </div>
-              <form class="zhp-card-body" @submit.prevent="submitForm()">
-                <p x-show="currentForm.description" x-text="currentForm.description"
-                  style="color:var(--zhp-text-mid);font-size:.88rem;margin-bottom:14px;"></p>
-                <template x-for="field in currentForm.fields" :key="field.id">
-                  <div class="zhp-field">
-                    <label class="zhp-label">
-                      <span x-text="field.label"></span>
-                      <span x-show="field.required" style="color:var(--zhp-red);margin-left:2px;">*</span>
-                    </label>
-                    <template x-if="['text','email','number','tel','url','date'].includes(field.type)">
-                      <input :type="field.type" class="zhp-input" x-model="answers[field.id]"
-                        :required="field.required" :placeholder="field.placeholder || ''">
-                    </template>
-                    <template x-if="field.type==='textarea'">
-                      <textarea class="zhp-textarea" x-model="answers[field.id]"
-                        :required="field.required" :placeholder="field.placeholder || ''"></textarea>
-                    </template>
-                    <template x-if="field.type==='select'">
-                      <select class="zhp-select" x-model="answers[field.id]" :required="field.required">
-                        <option value="">— wybierz —</option>
-                        <template x-for="opt in field.options_list" :key="opt">
-                          <option :value="opt" x-text="opt"></option>
-                        </template>
-                      </select>
-                    </template>
-                    <template x-if="field.type==='checkbox'">
-                      <div style="display:flex;flex-direction:column;gap:6px;margin-top:3px;">
-                        <template x-for="opt in field.options_list" :key="opt">
-                          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;">
-                            <input type="checkbox" :value="opt"
-                              @change="toggleCheckbox(field.id, opt)"
-                              :checked="(answers[field.id]||[]).includes(opt)"
-                              style="width:16px;height:16px;accent-color:var(--zhp-green);">
-                            <span x-text="opt"></span>
-                          </label>
-                        </template>
-                      </div>
-                    </template>
-                    <template x-if="field.type==='radio'">
-                      <div style="display:flex;flex-direction:column;gap:6px;margin-top:3px;">
-                        <template x-for="opt in field.options_list" :key="opt">
-                          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;">
-                            <input type="radio" :name="'field_'+field.id" :value="opt"
-                              x-model="answers[field.id]"
-                              style="width:16px;height:16px;accent-color:var(--zhp-green);">
-                            <span x-text="opt"></span>
-                          </label>
-                        </template>
-                      </div>
-                    </template>
-                    <template x-if="field.type==='file'">
-                      <input type="file" class="zhp-input" @change="handleFile(field.id, $event)"
-                        :required="field.required" style="padding:7px;">
-                    </template>
-                  </div>
-                </template>
-                <div class="zhp-alert zhp-alert-ok"    x-show="success" x-text="success" x-transition></div>
-                <div class="zhp-alert zhp-alert-urgent" x-show="error"  x-text="error"   x-transition></div>
-                <button type="submit" class="zhp-btn zhp-btn-primary" :disabled="loading"
-                  style="width:100%;justify-content:center;">
-                  <span x-show="loading" class="zhp-spinner"></span>
-                  <span x-text="loading ? 'Wysyłanie…' : '✓ Wyślij formularz'"></span>
-                </button>
-              </form>
-            </div>
-          </template>
-
-          <!-- LISTA ZGŁOSZEŃ -->
-          <template x-if="view==='submissions'">
-            <div>
-              <div class="zhp-card-header" style="justify-content:space-between;">
-                <h3>📋 Moje zgłoszenia</h3>
-                <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="view='list'">← Formularze</button>
-              </div>
-              <div style="padding:0;">
-                <template x-for="sub in submissions" :key="sub.id">
-                  <div @click="openSubmission(sub.id)"
-                    style="padding:13px 20px;border-bottom:1px solid var(--zhp-border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:background .13s;"
-                    @mouseenter="$el.style.background='var(--zhp-green-light)'"
-                    @mouseleave="$el.style.background=''">
-                    <div>
-                      <strong x-text="sub.form_name" style="font-size:.9rem;"></strong>
-                      <div style="font-size:.76rem;color:var(--zhp-text-muted);margin-top:2px;" x-text="sub.submitted_at"></div>
-                    </div>
-                    <span class="zhp-badge"
-                      :class="sub.status==='accepted'?'zhp-badge-green':sub.status==='rejected'?'zhp-badge-red':'zhp-badge-gold'"
-                      x-text="sub.status_label || sub.status">
-                    </span>
-                  </div>
-                </template>
-                <p x-show="!submissions.length" style="text-align:center;color:var(--zhp-text-muted);padding:22px;">Brak zgłoszeń.</p>
-              </div>
-            </div>
-          </template>
-
-          <!-- SZCZEGÓŁY ZGŁOSZENIA -->
-          <template x-if="view==='submission' && currentSubmission">
-            <div>
-              <div class="zhp-card-header">
-                <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="view='submissions'">← Wróć</button>
-                <h3 x-text="currentSubmission.form_name" style="margin-left:8px;font-size:.92rem;"></h3>
-              </div>
-              <div class="zhp-card-body">
-                <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;">
-                  <span class="zhp-badge"
-                    :class="currentSubmission.status==='accepted'?'zhp-badge-green':currentSubmission.status==='rejected'?'zhp-badge-red':'zhp-badge-gold'"
-                    x-text="currentSubmission.status_label || currentSubmission.status">
-                  </span>
-                  <span class="zhp-badge zhp-badge-gray" x-text="'Wysłano: ' + currentSubmission.submitted_at"></span>
+                  <span style="color:var(--zhp-green);font-size:1.1rem;">→</span>
                 </div>
-                <template x-for="field in currentSubmission.fields" :key="field.field_id">
-                  <div style="margin-bottom:11px;padding:9px 13px;background:var(--zhp-bg);border-radius:var(--zhp-radius-sm);">
-                    <div style="font-size:.72rem;font-weight:700;color:var(--zhp-text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;" x-text="field.label"></div>
-                    <div style="font-size:.9rem;" x-text="field.value || '—'"></div>
-                    <a x-show="field.attachment_url" :href="field.attachment_url" target="_blank"
-                       class="zhp-btn zhp-btn-ghost zhp-btn-sm" style="margin-top:5px;">📎 Pobierz załącznik</a>
-                  </div>
-                </template>
-                <template x-if="currentSubmission.admin_comment">
-                  <div class="zhp-alert zhp-alert-info" style="margin-top:8px;flex-direction:column;align-items:flex-start;">
-                    <strong style="margin-bottom:3px;">Komentarz administratora:</strong>
-                    <span x-text="currentSubmission.admin_comment"></span>
-                  </div>
-                </template>
-              </div>
+              </template>
             </div>
-          </template>
+          </div>
+
+          <!-- Wypełnianie formularza -->
+          <div x-show="currentForm && !submitted">
+            <div class="zhp-card-header">
+              <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="closeForm()">← Wróć</button>
+              <h3 x-text="currentForm && currentForm.name" style="margin-left:8px;font-size:.92rem;"></h3>
+            </div>
+            <form class="zhp-card-body" @submit.prevent="submit()">
+              <p x-show="currentForm && currentForm.info_before"
+                x-text="currentForm && currentForm.info_before"
+                style="color:var(--zhp-text-mid);font-size:.88rem;margin-bottom:14px;padding:10px;background:var(--zhp-green-light);border-radius:var(--zhp-radius-sm);"></p>
+
+              <template x-for="field in fields" :key="field.id">
+                <div class="zhp-field">
+                  <label class="zhp-label">
+                    <span x-text="field.label"></span>
+                    <span x-show="field.is_required" style="color:var(--zhp-red);margin-left:2px;">*</span>
+                  </label>
+
+                  <template x-if="['text','email','number','tel','url','date'].includes(field.type)">
+                    <input :type="field.type" class="zhp-input"
+                      x-model="formValues[field.field_key]"
+                      :required="field.is_required"
+                      :placeholder="field.placeholder || ''">
+                  </template>
+
+                  <template x-if="field.type === 'textarea'">
+                    <textarea class="zhp-textarea"
+                      x-model="formValues[field.field_key]"
+                      :required="field.is_required"
+                      :placeholder="field.placeholder || ''"></textarea>
+                  </template>
+
+                  <template x-if="field.type === 'select'">
+                    <select class="zhp-select" x-model="formValues[field.field_key]" :required="field.is_required">
+                      <option value="">— wybierz —</option>
+                      <template x-for="opt in field.options" :key="opt">
+                        <option :value="opt" x-text="opt"></option>
+                      </template>
+                    </select>
+                  </template>
+
+                  <template x-if="field.type === 'radio'">
+                    <div style="display:flex;flex-direction:column;gap:6px;margin-top:3px;">
+                      <template x-for="opt in field.options" :key="opt">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;">
+                          <input type="radio" :name="'field_' + field.field_key" :value="opt"
+                            x-model="formValues[field.field_key]"
+                            style="width:16px;height:16px;accent-color:var(--zhp-green);">
+                          <span x-text="opt"></span>
+                        </label>
+                      </template>
+                    </div>
+                  </template>
+
+                  <!-- Alpine x-model na array dla checkbox dziala natywnie -->
+                  <template x-if="field.type === 'checkbox'">
+                    <div style="display:flex;flex-direction:column;gap:6px;margin-top:3px;">
+                      <template x-for="opt in field.options" :key="opt">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;">
+                          <input type="checkbox" :value="opt"
+                            x-model="formValues[field.field_key]"
+                            style="width:16px;height:16px;accent-color:var(--zhp-green);">
+                          <span x-text="opt"></span>
+                        </label>
+                      </template>
+                    </div>
+                  </template>
+
+                  <p x-show="fieldError(field.field_key)"
+                    x-text="fieldError(field.field_key)"
+                    style="color:var(--zhp-red);font-size:.8rem;margin-top:3px;"></p>
+                  <p x-show="field.help_text" x-text="field.help_text"
+                    style="color:var(--zhp-text-muted);font-size:.78rem;margin-top:3px;"></p>
+                </div>
+              </template>
+
+              <div class="zhp-alert zhp-alert-urgent" x-show="error" x-text="error" x-transition></div>
+
+              <button type="submit" class="zhp-btn zhp-btn-primary" :disabled="submitting"
+                style="width:100%;justify-content:center;margin-top:4px;">
+                <span x-show="submitting" class="zhp-spinner"></span>
+                <span x-text="submitting ? 'Wysyłanie...' : '✓ Wyślij formularz'"></span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Sukces -->
+          <div x-show="submitted" class="zhp-card-body" style="text-align:center;padding:32px 20px;">
+            <div style="font-size:3rem;margin-bottom:12px;">✅</div>
+            <h3 style="color:var(--zhp-green);margin-bottom:8px;">Formularz wysłany!</h3>
+            <p x-show="currentForm && currentForm.info_after"
+              x-text="currentForm && currentForm.info_after"
+              style="color:var(--zhp-text-mid);margin-bottom:16px;"></p>
+            <button class="zhp-btn zhp-btn-ghost" @click="closeForm()">← Wróć do listy formularzy</button>
+          </div>
 
         </div>
       </div>
-    </div>
+
+      <!-- MOJE ZGLOSZENIA -->
+      <div x-show="subtab==='submissions'" x-data="bmSubmissions()" x-init="init()">
+        <div class="zhp-card">
+          <div class="zhp-loader" x-show="loading" style="padding:16px;"><div class="zhp-spinner"></div> Ładowanie...</div>
+          <div class="zhp-alert zhp-alert-urgent" x-show="error && !loading" x-text="error"></div>
+
+          <!-- Lista zgłoszeń -->
+          <div x-show="!current">
+            <div class="zhp-card-header" style="justify-content:space-between;">
+              <h3>📋 Moje zgłoszenia</h3>
+              <select x-model="filterStatus" @change="applyFilter()"
+                style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:var(--zhp-radius-sm);padding:4px 8px;font-size:.8rem;cursor:pointer;">
+                <option value="" style="color:var(--zhp-text);">Wszystkie</option>
+                <option value="new" style="color:var(--zhp-text);">Nowe</option>
+                <option value="in_progress" style="color:var(--zhp-text);">W trakcie</option>
+                <option value="waiting" style="color:var(--zhp-text);">Oczekuje</option>
+                <option value="closed" style="color:var(--zhp-text);">Zamknięte</option>
+              </select>
+            </div>
+            <div style="padding:0;">
+              <p x-show="!loading && !submissions.length"
+                style="text-align:center;color:var(--zhp-text-muted);padding:22px;">Brak zgłoszeń.</p>
+              <template x-for="sub in submissions" :key="sub.id">
+                <div @click="openSubmission(sub.id)"
+                  style="padding:13px 20px;border-bottom:1px solid var(--zhp-border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:background .13s;"
+                  @mouseenter="$el.style.background='var(--zhp-green-light)'"
+                  @mouseleave="$el.style.background=''">
+                  <div>
+                    <strong style="font-size:.9rem;">Zgłoszenie #<span x-text="sub.id"></span></strong>
+                    <div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap;">
+                      <span class="zhp-badge zhp-badge-gray" style="font-size:.65rem;" x-text="sub.category || 'bez kategorii'"></span>
+                      <span class="zhp-badge zhp-badge-blue" style="font-size:.65rem;" x-text="priorityLabel(sub.priority)"></span>
+                    </div>
+                    <div style="font-size:.76rem;color:var(--zhp-text-muted);margin-top:2px;" x-text="sub.created_at"></div>
+                  </div>
+                  <span class="zhp-badge"
+                    :class="sub.status==='closed'?'zhp-badge-green':sub.status==='in_progress'?'zhp-badge-blue':sub.status==='waiting'?'zhp-badge-gold':'zhp-badge-gray'"
+                    x-text="statusLabel(sub.status)">
+                  </span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Szczegóły zgłoszenia -->
+          <div x-show="current">
+            <div class="zhp-card-header">
+              <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="closeSubmission()">← Wróć</button>
+              <h3 style="margin-left:8px;font-size:.92rem;">
+                Zgłoszenie #<span x-text="current && current.submission && current.submission.id"></span>
+              </h3>
+            </div>
+            <div class="zhp-loader" x-show="loadingDetail" style="padding:16px;">
+              <div class="zhp-spinner"></div> Ładowanie...
+            </div>
+            <div class="zhp-card-body" x-show="current && !loadingDetail">
+              <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;">
+                <span class="zhp-badge"
+                  :class="current && current.submission && current.submission.status==='closed'?'zhp-badge-green':current && current.submission && current.submission.status==='in_progress'?'zhp-badge-blue':current && current.submission && current.submission.status==='waiting'?'zhp-badge-gold':'zhp-badge-gray'"
+                  x-text="current && current.submission && statusLabel(current.submission.status)">
+                </span>
+                <span class="zhp-badge zhp-badge-blue"
+                  x-text="current && current.submission && priorityLabel(current.submission.priority)">
+                </span>
+                <span class="zhp-badge zhp-badge-gray"
+                  x-text="'Wysłano: ' + (current && current.submission && current.submission.created_at)">
+                </span>
+              </div>
+
+              <!-- Pola ze snapshotu formularza -->
+              <template x-if="current && current.form_snapshot && current.form_snapshot.fields">
+                <div>
+                  <template x-for="field in current.form_snapshot.fields" :key="field.field_key">
+                    <div style="margin-bottom:10px;padding:9px 13px;background:var(--zhp-bg);border-radius:var(--zhp-radius-sm);">
+                      <div style="font-size:.72rem;font-weight:700;color:var(--zhp-text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;"
+                        x-text="field.label"></div>
+                      <div style="font-size:.9rem;"
+                        x-text="current.submission_data && current.submission_data[field.field_key] !== undefined
+                          ? (Array.isArray(current.submission_data[field.field_key])
+                              ? current.submission_data[field.field_key].join(', ')
+                              : String(current.submission_data[field.field_key]))
+                          : '—'">
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </template>
+
+              <!-- Załączniki -->
+              <template x-if="current && current.attachments && current.attachments.length">
+                <div style="margin-top:12px;">
+                  <div class="zhp-label" style="margin-bottom:6px;">Załączniki</div>
+                  <template x-for="att in current.attachments" :key="att.id">
+                    <a :href="att.download_url" target="_blank"
+                      class="zhp-btn zhp-btn-ghost zhp-btn-sm"
+                      style="margin:4px 4px 0 0;display:inline-flex;">
+                      📎 <span x-text="att.original_name"></span>
+                    </a>
+                  </template>
+                </div>
+              </template>
+
+              <!-- Komentarz admina -->
+              <template x-if="current && current.admin_comment">
+                <div class="zhp-alert zhp-alert-info" style="margin-top:12px;flex-direction:column;align-items:flex-start;">
+                  <strong style="margin-bottom:3px;">Komentarz administratora:</strong>
+                  <span x-text="current.admin_comment"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /formularze -->
 
     <!-- Stopka -->
     <div style="text-align:center;padding:16px 20px 24px;color:var(--zhp-text-muted);font-size:.72rem;">
