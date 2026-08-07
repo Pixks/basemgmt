@@ -31,7 +31,11 @@ basemgmt/
 │   │       ├── CommunicationPage.php
 │   │       ├── HelpPage.php
 │   │       ├── FormsPage.php
-│   │       └── WeatherPage.php
+│   │       ├── WeatherPage.php
+│   │       ├── PlanTemplatesPage.php
+│   │       ├── MealOptionsPage.php
+│   │       ├── PdfPage.php
+│   │       └── LogsPage.php
 │   ├── Auth/
 │   │   ├── Capabilities.php  ← WordPress roles & capabilities
 │   │   ├── FrontendAuth.php  ← Logika logowania kadry
@@ -42,7 +46,9 @@ basemgmt/
 │   │   ├── Bootstrap.php     ← Główny punkt wejścia; wire all components
 │   │   ├── Deactivator.php   ← register_deactivation_hook callback
 │   │   ├── EmailService.php  ← Globalny serwis email z szablonami
-│   │   └── Loader.php        ← Kolejkuje add_action / add_filter
+│   │   ├── EmailTemplateRepository.php ← Rejestr i zapis edytowalnych szablonów
+│   │   ├── Loader.php        ← Kolejkuje add_action / add_filter
+│   │   └── OperationLogger.php ← Centralny dziennik operacji
 │   ├── Cron/
 │   │   └── Scheduler.php     ← Rejestracja i callbacki WP-Cron
 │   ├── Database/
@@ -62,7 +68,8 @@ basemgmt/
 │   │   │   ├── ReservationRepository.php
 │   │   │   └── ResourceRepository.php
 │   │   ├── Menu/
-│   │   │   └── MealRepository.php
+│   │   │   ├── MealRepository.php
+│   │   │   └── MealOptionRepository.php
 │   │   ├── Communication/
 │   │   │   └── ConversationRepository.php
 │   │   ├── Help/
@@ -71,7 +78,8 @@ basemgmt/
 │   │       ├── FormRepository.php
 │   │       └── SubmissionRepository.php
 │   │   ├── Schedule/
-│   │   │   └── ScheduleRepository.php
+│   │   │   ├── ScheduleRepository.php
+│   │   │   └── PlanTemplateRepository.php
 │   │   └── Weather/
 │   │       ├── ImgwAlertsSync.php
 │   │       ├── OpenMeteoProvider.php
@@ -148,9 +156,9 @@ WordPress loads plugins
                   ├─ load_textdomain()
                   ├─ register_capabilities()   → Capabilities::register()
                   ├─ register_admin()          → AdminMenu + admin-post handlers
-                  ├─ register_rest()           → 8 × REST controller
+                  ├─ register_rest()           → 11 × REST controller
                   ├─ register_frontend()       → ShortcodeHandler
-                  ├─ register_cron()           → Scheduler + 9 cron hooks
+                  ├─ register_cron()           → Scheduler + 9 harmonogramów cron
                   ├─ register_notifications()  → ReservationNotifier::register()
                   └─ register_ajax()           → 2 × wp_ajax_bm_*
 ```
@@ -252,6 +260,36 @@ $this->loader->run(); // wykonuje wszystkie dodane hooki
 8. Dodaj szablony do `templates/admin/nazwa_modulu/`
 
 Szczegóły: [12 – Przewodnik dewelopera](12-developer-guide.md)
+
+---
+
+## Nowe komponenty architektoniczne w v1.1.0
+
+### OperationLogger
+
+`OperationLogger` centralizuje zapisy do tabeli `bm_operation_logs`. Zamiast rozproszonego logowania po modułach, klasy wywołują:
+
+```php
+OperationLogger::log('action_name', 'object_type', $object_id, $details, $staff_id);
+```
+
+Warstwa admina korzysta z tego przez `LogsPage`, a moduły bezpieczeństwa i komunikacji zapisują tam m.in. logowania, odblokowania kadry i tworzenie wątków.
+
+### Szablony planów dnia
+
+Warstwa planu dnia została rozszerzona o:
+
+- `PlanTemplateRepository` – CRUD i zastosowanie szablonów,
+- `PlanTemplatesPage` – zarządzanie szablonami w WP Admin,
+- integrację z ekranem edycji planu (`Zastosuj szablon`).
+
+### Opcje jadłospisu
+
+Warstwa jadłospisu została rozszerzona o:
+
+- `MealOptionRepository` – słowniki diet i miejsc wydawania,
+- `MealOptionsPage` – osobny ekran administracyjny,
+- integrację z formularzem pozycji jadłospisu z fallbackiem „Inne – wpisz ręcznie”.
 
 ---
 

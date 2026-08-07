@@ -114,12 +114,10 @@ Lista aktywnych obozów do dropdownu na ekranie logowania.
 
 **Odpowiedź** `200`:
 ```json
-{
-    "camps": [
-        { "id": 1, "name": "Obóz Harcerzy 2025" },
-        { "id": 2, "name": "Obóz Szóstek" }
-    ]
-}
+[
+    { "id": 1, "name": "Obóz Harcerzy 2025" },
+    { "id": 2, "name": "Obóz Szóstek" }
+]
 ```
 
 ---
@@ -132,12 +130,10 @@ Lista aktywnej kadry dla danego obozu (tylko imię/nazwisko/rola – bez danych 
 
 **Odpowiedź** `200`:
 ```json
-{
-    "staff": [
-        { "id": 5, "display_name": "Jan Kowalski", "role": "Komendant" },
-        { "id": 6, "display_name": "Anna Nowak", "role": "Zastępca" }
-    ]
-}
+[
+    { "id": 5, "display_name": "Jan Kowalski", "role": "Komendant" },
+    { "id": 6, "display_name": "Anna Nowak", "role": "Zastępca" }
+]
 ```
 
 ---
@@ -155,7 +151,15 @@ Dane własnego obozu.
     "name": "Obóz Harcerzy 2025",
     "start_date": "2025-07-01",
     "end_date": "2025-08-15",
-    "status": "active"
+    "status": "active",
+    "submitted_today": true,
+    "latest_count": {
+        "participants": 45,
+        "staff": 8,
+        "workers": 3,
+        "total": 56,
+        "count_date": "2025-07-27"
+    }
 }
 ```
 
@@ -168,17 +172,21 @@ Aktywne ogłoszenia dla własnego obozu (globalne + przypisane).
 **Odpowiedź** `200`:
 ```json
 {
-    "announcements": [
+    "active": [
         {
             "id": 10,
             "title": "Zmiana harmonogramu",
             "content": "...",
+            "status": "active",
             "is_urgent": true,
             "priority": 5,
             "valid_from": "2025-07-27 08:00:00",
-            "valid_until": "2025-07-28 20:00:00"
+            "valid_until": "2025-07-28 20:00:00",
+            "attachment_url": null
         }
-    ]
+    ],
+    "archived": [],
+    "own": []
 }
 ```
 
@@ -193,6 +201,9 @@ Zgłoszenie ogłoszenia przez kadrę (wymaga zatwierdzenia admina).
 {
     "title": "Prośba o zmianę",
     "content": "...",
+    "valid_from": "2025-07-27 08:00:00",
+    "valid_until": "2025-07-28 20:00:00",
+    "attachment_url": "https://example.com/zalacznik.pdf",
     "nonce": "bm_panel_nonce"
 }
 ```
@@ -236,6 +247,47 @@ Złożenie meldunku dziennego.
     "nonce": "bm_panel_nonce"
 }
 ```
+
+> Ten endpoint pozostaje wspierany, ale pełny frontend SPA używa rozszerzonych endpointów meldunkowych opisanych niżej (`/panel/reports/*`).
+
+---
+
+## Endpointy panelowe – Meldunki v2
+
+### GET /bm/v1/panel/reports/today
+
+Zwraca dzisiejszy meldunek własnego obozu lub dane do prefillu z ostatniego dostępnego meldunku.
+
+```json
+{
+    "today": {
+        "id": 15,
+        "count_date": "2025-07-27",
+        "participants": 45,
+        "staff": 8,
+        "workers": 3,
+        "notes": "Bez zmian",
+        "status": "draft",
+        "submitted_at": null,
+        "submitted_by": 5,
+        "updated_at": "2025-07-27 08:02:00"
+    },
+    "prefill": null,
+    "date": "2025-07-27"
+}
+```
+
+### POST /bm/v1/panel/reports/save
+
+Zapisuje meldunek jako wersję roboczą (`draft`).
+
+### POST /bm/v1/panel/reports/submit
+
+Wysyła meldunek jako finalny (`submitted`). Ponowna wysyłka zwraca `409`.
+
+### GET /bm/v1/panel/reports/history
+
+Zwraca historię meldunków własnego obozu.
 
 ---
 
@@ -475,12 +527,13 @@ Pobiera jadłospis na podany dzień.
 **Odpowiedź** `200`:
 ```json
 {
+  "date": "2025-07-15",
   "day": {
     "id": 1,
     "meal_date": "2025-07-15",
     "notes": "...",
     "items": [
-      { "id": 1, "meal_type": "sniadanie", "time_from": "08:00", "title": "Jajecznica", ... }
+      { "id": 1, "meal_type": "sniadanie", "meal_type_label": "Śniadanie", "time_from": "08:00", "title": "Jajecznica", ... }
     ]
   }
 }
@@ -503,7 +556,11 @@ Pobiera jadłospis na 7 dni od podanej daty.
 
 **Odpowiedź** `200`:
 ```json
-{ "week": [ { "meal_date": "...", "items": [...] }, ... ] }
+{
+  "from": "2025-07-14",
+  "to": "2025-07-20",
+  "days": [ { "meal_date": "...", "items": [...] } ]
+}
 ```
 
 ---
@@ -706,4 +763,3 @@ Pobiera plik załącznika. Weryfikuje, że zgłoszenie należy do obozu.
 **Odpowiedź**: streaming pliku z odpowiednimi nagłówkami `Content-Type` i `Content-Disposition`.
 
 **Błąd** `403` gdy brak dostępu. **Błąd** `404` gdy plik nie istnieje.
-

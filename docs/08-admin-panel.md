@@ -2,7 +2,7 @@
 
 ## Dostęp
 
-WP Admin → **Baza Obozowa** (ikona kalendarza, pozycja 30 w menu)
+WP Admin → **CampLink** (ikona kalendarza, pozycja 30 w menu)
 
 Wymagane uprawnienie: `manage_basemgmt` (nadawane automatycznie administratorom WP).
 
@@ -11,7 +11,7 @@ Wymagane uprawnienie: `manage_basemgmt` (nadawane automatycznie administratorom 
 ## Struktura menu
 
 ```
-Baza Obozowa
+CampLink
 ├── Dashboard
 ├── Obozy
 ├── Kadra
@@ -24,6 +24,10 @@ Baza Obozowa
 ├── Komunikacja  [badge z liczbą nieprzeczytanych]
 ├── Pomoc
 ├── Formularze   (Formularze i Zgłoszenia)
+├── Szablony planów
+├── Opcje jadłospisu
+├── Drukuj / PDF
+├── Logi operacji
 └── Ustawienia    [tylko dla WP Admin z manage_options]
 ```
 
@@ -32,6 +36,18 @@ Baza Obozowa
 ## Dashboard
 
 Strona startowa z widgetem podsumowania.
+
+### Szybkie akcje na górze dashboardu
+
+W v1.1.0 przyciski akcji zostały przeniesione na górę ekranu. Dostępne są m.in.:
+
+- **Nowy obóz**
+- **Nowa osoba kadry**
+- **Nowe ogłoszenie**
+- **Raport zbiorczy dziś**
+- **Plan dnia dziś**
+- **Dodaj jadłospis dziś**
+- **Drukuj / PDF**
 
 **Widgety**:
 
@@ -82,6 +98,7 @@ Strona startowa z widgetem podsumowania.
 | Usuń osobę | `bm_delete_staff` |
 | Aktywuj/dezaktywuj | `bm_toggle_staff_active` |
 | Resetuj kod | `bm_reset_staff_code` |
+| Odblokuj konto | `bm_unlock_staff` |
 
 ### Zarządzanie kodem bezpieczeństwa
 
@@ -95,6 +112,13 @@ Strona startowa z widgetem podsumowania.
 ### Historia logowań
 
 Kolumna `last_login` w tabeli `bm_staff` jest aktualizowana przy każdym pomyślnym logowaniu.
+
+### Blokada konta kadry
+
+- Po przekroczeniu limitu prób konto otrzymuje blokadę czasową.
+- Kolejna nieudana próba po wygaśnięciu blokady ustawia blokadę trwałą (`permanent_lock = 1`).
+- Administrator odblokowuje konto akcją `bm_unlock_staff`.
+- Po odblokowaniu interfejs prowadzi do obowiązkowego resetu 6-cyfrowego kodu bezpieczeństwa.
 
 ---
 
@@ -214,6 +238,14 @@ Tabela pozycji z możliwością **drag & drop** (Sortable.js):
 
 Przycisk "Resetuj flagi zmian" → akcja `bm_reset_plan_flags` → zeruje `is_new_today` i `is_updated_today` dla wszystkich pozycji.
 
+#### Zastosowanie szablonu
+
+Na ekranie edycji planu dostępny jest formularz **„Zastosuj szablon”**:
+
+- wybór szablonu z `bm_plan_templates`,
+- opcja **zamień istniejące pozycje**,
+- zapis przez `bm_apply_plan_template`.
+
 #### Kopiowanie planu
 
 Akcja `bm_copy_plan` kopiuje nagłówek i pozycje z wybranej daty do nowej daty. Nowe pozycje mają zresetowane flagi zmian.
@@ -309,7 +341,8 @@ Widoczne tylko dla użytkowników z uprawnieniem `manage_options` (domyślnie ty
 1. **Ustawienia email** – konfiguracja globalnego systemu powiadomień
 2. **Szablony emaili** – edytor HTML szablonów z podstawianiem zmiennych `{{token}}`
 3. **Test emaila** – wysyłka testowego emaila na podany adres
-4. **O pluginie** – wersja, lista tabel, wymagania
+4. **Konfiguracja powiadomień** – osobne adresy dla brakujących meldunków i raportów okresowych, interwał raportu, czas blokady kont kadry
+5. **O pluginie** – wersja, lista tabel, wymagania
 
 ### Operacje
 
@@ -367,15 +400,17 @@ Przechowywany jako WP Transient `bm_admin_notice_{user_id}` z TTL 60 sekund.
 ## Jadłospis
 
 **Plik**: `src/Admin/Pages/MenuPage.php`  
-**Menu**: WP Admin → Baza Obozowa → Jadłospis
+**Menu**: WP Admin → CampLink → Jadłospis
 
 ### Sekcje
 
 - **Lista dni** – przegląd dat z opublikowanym/roboczym jadłospisem
 - **Edycja dnia** – edycja nagłówka + zarządzanie pozycjami jadłospisu
-  - Typy posiłku: Śniadanie, Obiad, Kolacja, Inne
+  - Typy posiłku: Śniadanie, Drugie śniadanie, Obiad, Podwieczorek, Kolacja, Inne
   - Pola pozycji: godzina, tytuł, opis, lokalizacja, dieta, alergeny
   - Flagi: `Nowe dzisiaj`, `Zmienione dzisiaj`
+  - Checkbox: **Dodaj automatycznie do planu dnia**
+  - Selecty diet i miejsc z fallbackiem **„Inne (wpisz poniżej)”**
 - **Kopiowanie** – kopiowanie jadłospisu z innej daty
 
 ### Operacje (admin-post)
@@ -391,10 +426,56 @@ Przechowywany jako WP Transient `bm_admin_notice_{user_id}` z TTL 60 sekund.
 
 ---
 
+## Szablony planów dnia
+
+**Plik**: `src/Admin/Pages/PlanTemplatesPage.php`  
+**Menu**: WP Admin → CampLink → Szablony planów
+
+### Funkcje
+
+- lista wszystkich szablonów,
+- edycja nagłówka szablonu (nazwa, opis, tryb powtarzalności),
+- obsługa trybów: `once`, `daily`, `weekly`,
+- zarządzanie pozycjami szablonu,
+- zastosowanie szablonu z poziomu edycji konkretnego planu dnia.
+
+### Operacje
+
+| Action | Opis |
+|--------|------|
+| `bm_save_plan_template` | Tworzy / aktualizuje szablon |
+| `bm_delete_plan_template` | Usuwa szablon |
+| `bm_save_template_item` | Dodaje / edytuje pozycję szablonu |
+| `bm_delete_template_item` | Usuwa pozycję szablonu |
+| `bm_apply_plan_template` | Wstawia pozycje szablonu do planu dnia |
+
+---
+
+## Opcje jadłospisu
+
+**Plik**: `src/Admin/Pages/MealOptionsPage.php`  
+**Menu**: WP Admin → CampLink → Opcje jadłospisu
+
+### Zakładki
+
+- **Diety** – rekordy z `bm_meal_diets`
+- **Miejsca wydawania** – rekordy z `bm_meal_locations`
+
+### Operacje
+
+| Action | Opis |
+|--------|------|
+| `bm_save_meal_diet` | Zapisuje dietę |
+| `bm_delete_meal_diet` | Usuwa dietę |
+| `bm_save_meal_location` | Zapisuje miejsce wydawania |
+| `bm_delete_meal_location` | Usuwa miejsce wydawania |
+
+---
+
 ## Komunikacja
 
 **Plik**: `src/Admin/Pages/CommunicationPage.php`  
-**Menu**: WP Admin → Baza Obozowa → Komunikacja *(badge z liczbą nieprzeczytanych)*
+**Menu**: WP Admin → CampLink → Komunikacja *(badge z liczbą nieprzeczytanych)*
 
 ### Sekcje
 
@@ -418,7 +499,7 @@ Przechowywany jako WP Transient `bm_admin_notice_{user_id}` z TTL 60 sekund.
 ## Pomoc
 
 **Plik**: `src/Admin/Pages/HelpPage.php`  
-**Menu**: WP Admin → Baza Obozowa → Pomoc
+**Menu**: WP Admin → CampLink → Pomoc
 
 ### Sekcje
 
@@ -437,7 +518,7 @@ Przechowywany jako WP Transient `bm_admin_notice_{user_id}` z TTL 60 sekund.
 ## Formularze i Zgłoszenia
 
 **Plik**: `src/Admin/Pages/FormsPage.php`  
-**Menu**: WP Admin → Baza Obozowa → Formularze
+**Menu**: WP Admin → CampLink → Formularze
 
 Router oparty na parametrze `?view=`:
 - `forms` (domyślny) – lista formularzy
@@ -460,10 +541,52 @@ Router oparty na parametrze `?view=`:
 |--------|------|
 | `bm_update_submission` | Zmienia status, priorytet, przypisanie, komentarz admina |
 | `bm_download_attachment` | Pobiera plik załączony do zgłoszenia |
+| `bm_create_thread_from_submission` | Tworzy wątek komunikacji na podstawie zgłoszenia |
 
 ### Widok zgłoszenia
 
 - Lewa kolumna: dane z `form_snapshot` + `submission_data` w tabeli pól
 - Prawa kolumna: panel zarządzania (status, priorytet, przypisanie, komentarz)
+- Przycisk **„Utwórz wątek konwersacji”** – generuje wątek z pierwszą wiadomością systemową na podstawie snapshotu zgłoszenia
 - Sekcja załączników z linkami do pobrania
 - Historia zmian statusu z notami i autorami
+
+---
+
+## Drukuj / PDF
+
+**Plik**: `src/Admin/Pages/PdfPage.php`  
+**Menu**: WP Admin → CampLink → Drukuj / PDF
+
+Eksport działa bez zewnętrznej biblioteki PDF. CampLink otwiera osobną stronę HTML gotową do wydruku i używa `window.print()`.
+
+### Dostępne widoki
+
+- **Stany osobowe obozów**
+- **Plan dnia**
+- **Jadłospis**
+
+### Cechy
+
+- otwarcie w nowej karcie,
+- przycisk **Drukuj / Zapisz PDF**,
+- przycisk **Zamknij**,
+- układ zoptymalizowany pod druk.
+
+---
+
+## Logi operacji
+
+**Plik**: `src/Admin/Pages/LogsPage.php`  
+**Menu**: WP Admin → CampLink → Logi operacji
+
+### Funkcje
+
+- filtrowanie po typie akcji i zakresie dat,
+- paginacja,
+- czyszczenie wpisów starszych niż wskazana liczba dni,
+- podgląd wpisów z `bm_operation_logs`.
+
+### Retencja
+
+Akcja `clear` wywołuje `OperationLogger::delete_older_than_days($days)`.

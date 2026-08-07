@@ -9,7 +9,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
 
 ```html
 <!-- ============================================================
-     BAZA OBOZOWA – Pełny panel frontendowy
+     CAMPLINK – Pełny panel frontendowy
      Styl: ZHP | Alpine.js + REST API plugin
      ============================================================ -->
 

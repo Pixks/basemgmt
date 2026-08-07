@@ -1,15 +1,17 @@
 <?php
 /**
- * Plugin Name:       Baza Obozowa
- * Plugin URI:
- * Description:       Modularny system zarządzania obozami dla ośrodka obozowego.
- * Version:           1.2.0
+ * Plugin Name:       CampLink
+ * Plugin URI:        https://pixks.pl
+ * Description:       Modularny system zarządzania obozami — rezerwacje, grafiki, wyżywienie, powiadomienia e-mail, dzienniki operacji i eksport PDF w jednej wtyczce WordPress.
+ * Version:           1.1.0
  * Requires at least: 6.0
  * Requires PHP:      8.1
- * Author:
+ * Author:            Pixks - Jakub Boiński
+ * Author URI:        https://pixks.pl
  * Text Domain:       basemgmt
  * Domain Path:       /languages
- * License:           GPL-2.0-or-later
+ * License:           MIT + Commons Clause
+ * License URI:       https://commonsclause.com
  */
 
 declare(strict_types=1);
@@ -17,7 +19,7 @@ declare(strict_types=1);
 defined('ABSPATH') || exit;
 
 // ── Plugin constants ──────────────────────────────────────────────────────────
-define('BASEMGMT_VERSION',        '1.2.0');
+define('BASEMGMT_VERSION',        '1.1.0');
 define('BASEMGMT_FILE',           __FILE__);
 define('BASEMGMT_DIR',            plugin_dir_path(__FILE__));
 define('BASEMGMT_URL',            plugin_dir_url(__FILE__));

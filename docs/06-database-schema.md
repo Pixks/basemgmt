@@ -38,7 +38,12 @@ bm_camps
 bm_weather_alerts  (niezależna tabela)
 bm_meal_days       (jadłospis – globalna, nie per-obóz)
     └──< bm_meal_items
+bm_meal_diets      (słownik diet)
+bm_meal_locations  (słownik miejsc wydawania)
 bm_help_articles   (baza pomocy – globalna)
+bm_plan_templates  (globalne szablony planów dnia)
+    └──< bm_plan_template_items
+bm_operation_logs  (centralny dziennik operacji)
 ```
 
 ---
@@ -76,6 +81,7 @@ bm_help_articles   (baza pomocy – globalna)
 | `is_active` | TINYINT(1) | NOT NULL | 1 | Czy może się logować |
 | `failed_attempts` | TINYINT UNSIGNED | NOT NULL | 0 | Liczba nieudanych prób |
 | `locked_until` | DATETIME | YES | NULL | Blokada do kiedy |
+| `permanent_lock` | TINYINT(1) | NOT NULL | 0 | Blokada trwała – wymaga odblokowania przez admina |
 | `last_login` | DATETIME | YES | NULL | Ostatnie logowanie |
 | `created_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP | |
 | `updated_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP | Auto-update |
@@ -380,7 +386,7 @@ Pozycje jadłospisu powiązane z dniem.
 |---------|-----|------|
 | `id` | BIGINT UNSIGNED PK | |
 | `meal_day_id` | BIGINT UNSIGNED | FK → bm_meal_days |
-| `meal_type` | VARCHAR(30) | `sniadanie` \| `obiad` \| `kolacja` \| `inne` |
+| `meal_type` | VARCHAR(30) | `sniadanie` \| `drugie_sniadanie` \| `obiad` \| `podwieczorek` \| `kolacja` \| `inne` |
 | `time_from` | VARCHAR(10) | Godzina podania |
 | `title` | VARCHAR(255) | Nazwa posiłku |
 | `description` | TEXT | Opis |
@@ -574,3 +580,85 @@ Audit log zmian statusu zgłoszeń.
 
 **Indeksy**: `idx_submission (submission_id)`, `idx_date (created_at)`
 
+---
+
+### bm_operation_logs
+
+Centralny dziennik operacji administracyjnych i bezpieczeństwa.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `user_id` | BIGINT UNSIGNED | WP user ID wykonującego akcję |
+| `staff_id` | BIGINT UNSIGNED | ID członka kadry, jeśli zdarzenie dotyczy frontendu |
+| `action` | VARCHAR(100) | Typ akcji, np. `login_failed`, `unlock_staff`, `thread_created` |
+| `object_type` | VARCHAR(50) | Typ obiektu, np. `staff`, `submission`, `plan_template` |
+| `object_id` | BIGINT UNSIGNED | ID obiektu |
+| `details` | LONGTEXT | Szczegóły tekstowe lub JSON |
+| `ip_address` | VARCHAR(45) | Adres IP |
+| `created_at` | DATETIME | Czas wpisu |
+
+**Indeksy**: `idx_user`, `idx_staff`, `idx_action`, `idx_date`
+
+---
+
+### bm_plan_templates
+
+Nagłówki globalnych szablonów planu dnia.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `name` | VARCHAR(255) | Nazwa szablonu |
+| `description` | TEXT | Opis |
+| `recurrence` | VARCHAR(20) | `once` \| `daily` \| `weekly` |
+| `days_of_week` | VARCHAR(20) | CSV dni tygodnia dla trybu `weekly`, np. `1,3,5` |
+| `created_by` | BIGINT UNSIGNED | WP user ID |
+| `created_at` | DATETIME | |
+| `updated_at` | DATETIME | ON UPDATE CURRENT_TIMESTAMP |
+
+---
+
+### bm_plan_template_items
+
+Pozycje przypisane do szablonu planu dnia.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `template_id` | BIGINT UNSIGNED | FK → bm_plan_templates |
+| `time_from` | VARCHAR(10) | Godzina od |
+| `time_to` | VARCHAR(10) | Godzina do |
+| `title` | VARCHAR(255) | Tytuł pozycji |
+| `description` | TEXT | Opis |
+| `category` | VARCHAR(30) | Kategoria zgodna z planem dnia |
+| `is_mandatory` | TINYINT(1) | Czy obowiązkowa |
+| `sort_order` | INT | Kolejność |
+
+**Indeksy**: `idx_template (template_id)`
+
+---
+
+### bm_meal_diets
+
+Słownik predefiniowanych diet używany przez formularz jadłospisu.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `name` | VARCHAR(255) | Nazwa diety |
+| `sort_order` | INT | Kolejność wyświetlania |
+| `created_at` | DATETIME | |
+
+---
+
+### bm_meal_locations
+
+Słownik predefiniowanych miejsc wydawania posiłków.
+
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| `id` | BIGINT UNSIGNED PK | |
+| `name` | VARCHAR(255) | Nazwa miejsca |
+| `sort_order` | INT | Kolejność wyświetlania |
+| `created_at` | DATETIME | |

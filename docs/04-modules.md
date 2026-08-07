@@ -7,7 +7,7 @@
 | Obozy | `Modules\Camps` | `bm_camps` | ✅ | tylko odczyt |
 | Kadra | `Modules\Camps` | `bm_staff`, `bm_sessions` | ✅ | logowanie |
 | Ogłoszenia | `Modules\Announcements` | `bm_announcements`, `bm_announcement_camps` | ✅ | ✅ |
-| Meldunki | `Modules\Reports` | `bm_daily_counts` | ✅ | ✅ |
+| Meldunki | `Modules\Camps` + `REST\ReportsController` | `bm_daily_counts` | ✅ | ✅ |
 | Pogoda | `Modules\Weather` | `bm_weather_alerts` | ✅ | ✅ |
 | Plan dnia | `Modules\Schedule` | `bm_plan_headers`, `bm_plan_items`, `bm_plan_item_revisions`, `bm_plan_camps` | ✅ | tylko odczyt |
 | Rezerwacje | `Modules\Reservations` | `bm_resources`, `bm_resource_reservations`, `bm_resource_blocks` | ✅ | ✅ |
@@ -15,6 +15,9 @@
 | Komunikacja | `Modules\Communication` | `bm_conv_threads`, `bm_conv_messages` | ✅ | ✅ |
 | Pomoc | `Modules\Help` | `bm_help_articles` | ✅ | tylko odczyt |
 | **Formularze i Zgłoszenia** | `Modules\Forms` | `bm_forms`, `bm_form_fields`, `bm_form_camps`, `bm_submissions`, `bm_submission_attachments`, `bm_submission_history` | ✅ | ✅ |
+| **Szablony planów dnia** | `Modules\Schedule` | `bm_plan_templates`, `bm_plan_template_items` | ✅ | – |
+| **Opcje jadłospisu** | `Modules\Menu` | `bm_meal_diets`, `bm_meal_locations` | ✅ | – |
+| **Logi operacji** | `Core` | `bm_operation_logs` | ✅ | – |
 
 ---
 
@@ -79,11 +82,11 @@ CampRepository::delete(int $id): bool
 
 ```php
 StaffRepository::get(int $id): ?object
-StaffRepository::get_by_camp(int $camp_id, bool $active_only = false): array
-StaffRepository::create(array $data): int
+StaffRepository::get_all(array $args = []): array
+StaffRepository::insert(array $data): int|false
 StaffRepository::update(int $id, array $data): bool
 StaffRepository::delete(int $id): bool
-StaffRepository::set_code(int $id, string $plain_code): void
+StaffRepository::set_security_code(int $id, string $plain_code): bool
 StaffRepository::toggle_active(int $id): bool
 ```
 
@@ -167,7 +170,7 @@ DailyCountRepository::upsert(int $camp_id, string $date, array $data): bool
 
 ### Integracja z Cron
 
-Codziennie o 08:00 zadanie `bm_daily_reminders` sprawdza, które obozy nie złożyły meldunku i wysyła email do administratora.
+Codziennie o 08:00 zadanie `bm_daily_reminders` sprawdza, które obozy nie złożyły meldunku i wysyła email na adresy skonfigurowane w `bm_missing_report_emails` (fallback: `admin_email`).
 
 ---
 
@@ -282,16 +285,37 @@ PRIMARY KEY (plan_id, camp_id)
 ### Kluczowe operacje
 
 ```php
-ScheduleRepository::get_header_by_date(string $date): ?object
-ScheduleRepository::get_items_for_plan(int $plan_id): array
-ScheduleRepository::copy_from_date(string $from_date, string $to_date): array
-// Zwraca ['header_id' => N] lub ['error' => 'source_not_found']
+ScheduleRepository::get_all_headers(array $filters = []): array
+ScheduleRepository::get_items(int $plan_id): array
+ScheduleRepository::copy_from_date(string $from_date, string $to_date, int $user_id): int
 
 ScheduleRepository::reorder_items(array $ordered_ids): void
 // Aktualizuje sort_order dla tablicy ID w podanej kolejności
 
-ScheduleRepository::reset_today_flags(int $plan_id): void
+ScheduleRepository::reset_flags(int $plan_id): void
 // Zeruje is_new_today, is_updated_today dla wszystkich pozycji
+```
+
+### Szablony planów dnia
+
+Warstwa planów została rozszerzona o `PlanTemplateRepository` i tabele:
+
+- `bm_plan_templates` – definicje szablonów,
+- `bm_plan_template_items` – pozycje szablonu.
+
+Szablon może mieć tryb:
+
+- `once` – jednorazowy,
+- `daily` – codzienny,
+- `weekly` – tylko dla wskazanych dni tygodnia (`days_of_week`).
+
+Kluczowe metody:
+
+```php
+PlanTemplateRepository::get_all(): array
+PlanTemplateRepository::save_item(array $data): int
+PlanTemplateRepository::apply_to_plan(int $template_id, int $plan_id, bool $replace = false): int
+PlanTemplateRepository::get_matching_for_date(string $date): array
 ```
 
 ### Drag & drop (admin)
@@ -479,7 +503,7 @@ check_admin_referer('bm_save_camp');
 |---------|-----|------|
 | `id` | BIGINT UNSIGNED | Klucz główny |
 | `meal_day_id` | BIGINT UNSIGNED | FK → bm_meal_days |
-| `meal_type` | VARCHAR(30) | `sniadanie` \| `obiad` \| `kolacja` \| `inne` |
+| `meal_type` | VARCHAR(30) | `sniadanie` \| `drugie_sniadanie` \| `obiad` \| `podwieczorek` \| `kolacja` \| `inne` |
 | `time_from` | VARCHAR(10) | Godzina podania |
 | `title` | VARCHAR(255) | Nazwa posiłku |
 | `description` | TEXT | Opis |
@@ -495,7 +519,31 @@ check_admin_referer('bm_save_camp');
 - `get_day($date)` – pobiera dzień z pozycjami
 - `get_day_for_frontend($date)` – tylko status `published`
 - `copy_from_date($from, $to)` – kopiuje jadłospis na inny dzień
-- `get_available_dates()` – lista dat z opublikowanym jadłospisem
+- `get_dates_in_range($from, $to)` – lista dat z opublikowanym jadłospisem
+
+### Predefiniowane diety i miejsca wydawania
+
+W v1.1.0 moduł jadłospisu zyskał dodatkowy słownik opcji:
+
+- `bm_meal_diets` – lista diet,
+- `bm_meal_locations` – lista miejsc wydawania.
+
+Obsługuje je `MealOptionRepository`:
+
+```php
+MealOptionRepository::get_all_diets(): array
+MealOptionRepository::get_all_locations(): array
+MealOptionRepository::save_diet(array $data): int
+MealOptionRepository::save_location(array $data): int
+```
+
+W formularzu pozycji jadłospisu administrator może:
+
+- wybrać gotową dietę lub miejsce,
+- przełączyć się na wariant **„Inne (wpisz poniżej)”**,
+- zaznaczyć checkbox **„Dodaj automatycznie do planu dnia”**.
+
+Po zaznaczeniu checkboxa `MenuPage::auto_add_meal_to_plan()` tworzy lub znajduje globalny plan dnia dla tej daty i dopisuje pozycję typu posiłek.
 
 ### Alpine.js
 
@@ -702,8 +750,32 @@ Zmiana definicji formularza przez admina **nie wpływa** na istniejące zgłosze
 | `bm_delete_form_field` | `FormsPage::handle_delete_field()` |
 | `bm_update_submission` | `FormsPage::handle_update_submission()` |
 | `bm_download_attachment` | `FormsPage::handle_download_attachment()` |
+| `bm_create_thread_from_submission` | `FormsPage::handle_create_thread_from_submission()` |
 
 ### Alpine.js
 
 - `bmForms()` – lista formularzy z filtrowaniem po kategorii, otwieranie, wypełnianie i wysyłanie
 - `bmSubmissions()` – lista własnych zgłoszeń z filtrem statusu, podgląd detalu z historią i załącznikami
+
+### Powiązanie z komunikacją
+
+Na widoku szczegółów zgłoszenia administrator może uruchomić akcję **„Utwórz wątek konwersacji”**. Tworzy ona:
+
+- rekord w `bm_conv_threads`,
+- pierwszą wiadomość systemową w `bm_conv_messages`,
+- wpis w `bm_operation_logs`.
+
+---
+
+## Moduł pomocniczy: Logi operacji
+
+**Klasy**: `OperationLogger` (`src/Core/OperationLogger.php`), `LogsPage`
+
+Tabela `bm_operation_logs` gromadzi zdarzenia audytowe, m.in.:
+
+- logowania i błędne logowania kadry,
+- odblokowania kont,
+- tworzenie wątków ze zgłoszeń,
+- operacje na szablonach planów dnia.
+
+Szczegóły: [16 – Logi operacji](16-operation-logs.md)

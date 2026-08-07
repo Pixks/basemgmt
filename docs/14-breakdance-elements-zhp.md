@@ -38,7 +38,7 @@ Wklej jako **Code Block** lub w **Breakdance → Settings → Custom Code → `<
 ```html
 <style>
 /* ============================================================
-   ZHP DESIGN SYSTEM – Baza Obozowa
+   ZHP DESIGN SYSTEM – CampLink
    Inspiracja: zhp.pl | Związek Harcerstwa Polskiego
    ============================================================ */
 
