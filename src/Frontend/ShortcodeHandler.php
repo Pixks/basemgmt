@@ -62,11 +62,13 @@ final class ShortcodeHandler {
 		// Alpine.js v3 from CDN (defer). In production you may self-host it.
 		wp_enqueue_script(
 			'alpinejs',
-			'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js',
+			'https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js',
 			[],
-			null,
+			'3.14.9',
 			true
 		);
+		wp_script_add_data( 'alpinejs', 'integrity', 'sha384-9Ax3MmS9AClxJyd5/zafcXXjxmwFhZCdsT6HJoJjarvCaAkJlk5QDzjLJm+Wdx5F' );
+		wp_script_add_data( 'alpinejs', 'crossorigin', 'anonymous' );
 		// Mark defer so Alpine boots after DOM is ready.
 		add_filter('script_loader_tag', static function (string $tag, string $handle): string {
 			if ( 'alpinejs' === $handle ) {
