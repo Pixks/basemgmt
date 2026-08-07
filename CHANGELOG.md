@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0] – 2026-08-07
+
+### Zmiany
+
+- **Zmiana nazwy w menu WordPress** — pozycja w lewym menu administracyjnym zmieniona z „Baza Obozowa" na „CampLink".
+- **Zaktualizowana dokumentacja** — README oraz dokumenty w katalogu `docs/` odzwierciedlają nową wersję i aktualną nazwę produktu.
+
 ## [1.1.2] – 2026-08-07
 
 ### Usprawnienia i poprawki
