@@ -1,15 +1,17 @@
 <?php
 /**
  * Plugin Name:       CampLink
- * Plugin URI:
- * Description:       Modularny system zarządzania obozami dla ośrodka obozowego.
+ * Plugin URI:        https://pixks.pl
+ * Description:       Modularny system zarządzania obozami — rezerwacje, grafiki, wyżywienie, powiadomienia e-mail, dzienniki operacji i eksport PDF w jednej wtyczce WordPress.
  * Version:           1.1.0
  * Requires at least: 6.0
  * Requires PHP:      8.1
- * Author:
+ * Author:            Pixks - Jakub Boiński
+ * Author URI:        https://pixks.pl
  * Text Domain:       basemgmt
  * Domain Path:       /languages
- * License:           GPL-2.0-or-later
+ * License:           MIT
+ * License URI:       https://opensource.org/licenses/MIT
  */
 
 declare(strict_types=1);
