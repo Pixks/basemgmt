@@ -184,8 +184,13 @@ final class PanelController extends BaseController {
 			return $this->error('bm_validation', __('Daty obowiązywania są wymagane.', 'basemgmt'));
 		}
 
-		// Validate date formats.
-		if ( ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $valid_from) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $valid_until) ) {
+		// Validate date formats and calendar correctness.
+		$dt_from  = \DateTime::createFromFormat('Y-m-d', $valid_from);
+		$dt_until = \DateTime::createFromFormat('Y-m-d', $valid_until);
+		if (
+			! $dt_from  || $dt_from->format('Y-m-d')  !== $valid_from ||
+			! $dt_until || $dt_until->format('Y-m-d') !== $valid_until
+		) {
 			return $this->error('bm_validation', __('Nieprawidłowy format daty. Wymagany format: RRRR-MM-DD.', 'basemgmt'));
 		}
 

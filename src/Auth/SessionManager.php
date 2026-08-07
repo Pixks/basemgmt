@@ -27,11 +27,11 @@ final class SessionManager {
 	public static function create(int $staff_id, int $camp_id): string {
 		global $wpdb;
 
-		// Invalidate any existing sessions for this staff member before creating a new one.
+		// Invalidate any existing sessions for this staff member in this camp before creating a new one.
 		$wpdb->delete(
 			Schema::table('sessions'),
-			['staff_id' => $staff_id],
-			['%d']
+			['staff_id' => $staff_id, 'camp_id' => $camp_id],
+			['%d', '%d']
 		);
 
 		$token      = bin2hex(random_bytes(32)); // 64-char hex token (returned to caller / stored in cookie)
