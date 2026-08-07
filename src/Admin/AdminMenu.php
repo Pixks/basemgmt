@@ -291,6 +291,8 @@ final class AdminMenu {
 				'1.15.2',
 				true
 			);
+			wp_script_add_data( 'sortablejs', 'integrity', 'sha384-BSxuMLxX+FCbTdYec3TbXlnMGEEM2QXTFdtDaveen71o+jswm2J36+xFqp8k4VHM' );
+			wp_script_add_data( 'sortablejs', 'crossorigin', 'anonymous' );
 		}
 
 		// FullCalendar – only on reservations page.
@@ -301,6 +303,8 @@ final class AdminMenu {
 				[],
 				'6.1.11'
 			);
+			wp_style_add_data( 'fullcalendar', 'integrity', 'sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb' );
+			wp_style_add_data( 'fullcalendar', 'crossorigin', 'anonymous' );
 			wp_enqueue_script(
 				'fullcalendar',
 				'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js',
@@ -308,6 +312,8 @@ final class AdminMenu {
 				'6.1.11',
 				true
 			);
+			wp_script_add_data( 'fullcalendar', 'integrity', 'sha384-5JIwZN3kuxX2zKsavvNmbZ3zhZZMUtu/eQiK3BbXukpSXp0Cd2ZP4OAYKx7mrPgI' );
+			wp_script_add_data( 'fullcalendar', 'crossorigin', 'anonymous' );
 		}
 	}
 

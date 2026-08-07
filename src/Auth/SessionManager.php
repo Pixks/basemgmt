@@ -27,14 +27,15 @@ final class SessionManager {
 	public static function create(int $staff_id, int $camp_id): string {
 		global $wpdb;
 
-		$token      = bin2hex(random_bytes(32)); // 64-char hex token
+		$token      = bin2hex(random_bytes(32)); // 64-char hex token (returned to caller / stored in cookie)
+		$token_hash = hash('sha256', $token);    // only the hash is persisted in DB
 		$expires_at = gmdate('Y-m-d H:i:s', time() + self::TTL);
 		$ip         = sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'] ?? ''));
 
 		$wpdb->insert(
 			Schema::table('sessions'),
 			[
-				'token'      => $token,
+				'token'      => $token_hash,
 				'staff_id'   => $staff_id,
 				'camp_id'    => $camp_id,
 				'ip_address' => $ip,
@@ -62,12 +63,14 @@ final class SessionManager {
 			return null;
 		}
 
+		$token_hash = hash('sha256', $token);
+
 		global $wpdb;
 
 		$session = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM `" . Schema::table('sessions') . "` WHERE token = %s AND expires_at > %s LIMIT 1",
-				$token,
+				$token_hash,
 				gmdate('Y-m-d H:i:s')
 			)
 		);
@@ -83,8 +86,9 @@ final class SessionManager {
 	public static function destroy(): void {
 		$token = self::read_cookie();
 		if ( '' !== $token ) {
+			$token_hash = hash('sha256', $token);
 			global $wpdb;
-			$wpdb->delete(Schema::table('sessions'), ['token' => $token], ['%s']);
+			$wpdb->delete(Schema::table('sessions'), ['token' => $token_hash], ['%s']);
 		}
 
 		self::clear_cookie();
