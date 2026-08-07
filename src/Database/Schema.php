@@ -47,6 +47,14 @@ final class Schema {
 			'submissions'            => $wpdb->prefix . 'bm_submissions',
 			'submission_attachments' => $wpdb->prefix . 'bm_submission_attachments',
 			'submission_history'     => $wpdb->prefix . 'bm_submission_history',
+			// Operation Logs
+			'operation_logs'         => $wpdb->prefix . 'bm_operation_logs',
+			// Daily Plan Templates
+			'plan_templates'         => $wpdb->prefix . 'bm_plan_templates',
+			'plan_template_items'    => $wpdb->prefix . 'bm_plan_template_items',
+			// Meal Options
+			'meal_diets'             => $wpdb->prefix . 'bm_meal_diets',
+			'meal_locations'         => $wpdb->prefix . 'bm_meal_locations',
 		];
 	}
 
@@ -543,6 +551,97 @@ final class Schema {
 
 		foreach ( $forms_sql as $statement ) {
 			dbDelta($statement);
+		}
+
+		// ── Logi operacji (Operation Logs) ────────────────────────────────────────
+
+		$logs_sql = [];
+
+		$logs_sql[] = "CREATE TABLE {$p}bm_operation_logs (
+			id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			user_id    BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			staff_id   BIGINT UNSIGNED DEFAULT NULL,
+			action     VARCHAR(100)    NOT NULL,
+			object_type VARCHAR(50)   NOT NULL DEFAULT '',
+			object_id  BIGINT UNSIGNED DEFAULT NULL,
+			details    LONGTEXT        DEFAULT NULL,
+			ip_address VARCHAR(45)     NOT NULL DEFAULT '',
+			created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_user   (user_id),
+			KEY idx_staff  (staff_id),
+			KEY idx_action (action),
+			KEY idx_date   (created_at)
+		) $charset;";
+
+		foreach ( $logs_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Szablony planów dnia (Daily Plan Templates) ───────────────────────────
+
+		$tpl_sql = [];
+
+		$tpl_sql[] = "CREATE TABLE {$p}bm_plan_templates (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name         VARCHAR(255)    NOT NULL,
+			description  TEXT            DEFAULT NULL,
+			recurrence   VARCHAR(20)     NOT NULL DEFAULT 'once',
+			days_of_week VARCHAR(20)     NOT NULL DEFAULT '',
+			created_by   BIGINT UNSIGNED DEFAULT NULL,
+			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id)
+		) $charset;";
+
+		$tpl_sql[] = "CREATE TABLE {$p}bm_plan_template_items (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			template_id  BIGINT UNSIGNED NOT NULL,
+			time_from    VARCHAR(10)     NOT NULL DEFAULT '',
+			time_to      VARCHAR(10)     NOT NULL DEFAULT '',
+			title        VARCHAR(255)    NOT NULL,
+			description  TEXT            DEFAULT NULL,
+			category     VARCHAR(30)     NOT NULL DEFAULT 'inne',
+			is_mandatory TINYINT(1)      NOT NULL DEFAULT 0,
+			sort_order   INT             NOT NULL DEFAULT 0,
+			PRIMARY KEY (id),
+			KEY idx_template (template_id)
+		) $charset;";
+
+		foreach ( $tpl_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Opcje jadłospisu: diety i miejsca (Meal Options) ─────────────────────
+
+		$mopts_sql = [];
+
+		$mopts_sql[] = "CREATE TABLE {$p}bm_meal_diets (
+			id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name       VARCHAR(255)    NOT NULL,
+			sort_order INT             NOT NULL DEFAULT 0,
+			created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id)
+		) $charset;";
+
+		$mopts_sql[] = "CREATE TABLE {$p}bm_meal_locations (
+			id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name       VARCHAR(255)    NOT NULL,
+			sort_order INT             NOT NULL DEFAULT 0,
+			created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id)
+		) $charset;";
+
+		foreach ( $mopts_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Trwałe blokady kadry (Permanent locks) ────────────────────────────────
+		// Add column to bm_staff if not already present.
+		// dbDelta cannot add columns to existing tables, so we use ALTER.
+		$existing = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_staff");
+		if ( ! in_array('permanent_lock', $existing, true) ) {
+			$wpdb->query("ALTER TABLE {$p}bm_staff ADD COLUMN permanent_lock TINYINT(1) NOT NULL DEFAULT 0 AFTER locked_until");
 		}
 	}
 }

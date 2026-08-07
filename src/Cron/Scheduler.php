@@ -37,6 +37,7 @@ final class Scheduler {
 		'bm_check_missing_reports',
 		'bm_sync_imgw_alerts',
 		'bm_expire_reservations',
+		'bm_periodic_staff_report',
 	];
 
 	/** Called during plugin activation. */
@@ -67,6 +68,9 @@ final class Scheduler {
 		if ( ! wp_next_scheduled('bm_expire_reservations') ) {
 			wp_schedule_event(strtotime('today 00:05:00'), 'daily', 'bm_expire_reservations');
 		}
+
+		// Periodic staff count report.
+		self::reschedule_staff_report();
 	}
 
 	/** Called during plugin deactivation. */
@@ -199,5 +203,94 @@ final class Scheduler {
 		if ( $count > 0 ) {
 			do_action('bm_reservations_expired', $count);
 		}
+	}
+
+	/** Send periodic staff count report to configured recipients. */
+	public function send_periodic_staff_report(): void {
+		$emails = array_filter(array_map(
+			'sanitize_email',
+			explode(',', (string) get_option('bm_report_emails', ''))
+		));
+
+		if ( empty($emails) ) {
+			return;
+		}
+
+		$today   = gmdate('Y-m-d');
+		$time    = current_time('H:i');
+		$camps   = CampRepository::get_all(['status' => 'active']);
+
+		$lines   = [];
+		$totals  = ['participants' => 0, 'staff' => 0, 'workers' => 0];
+
+		foreach ( $camps as $camp ) {
+			$count = \BaseMgmt\Modules\Camps\DailyCountRepository::get_for_date((int) $camp->id, $today);
+			if ( $count ) {
+				$p = (int) $count->participants;
+				$s = (int) $count->staff;
+				$w = (int) $count->workers;
+				$totals['participants'] += $p;
+				$totals['staff']        += $s;
+				$totals['workers']      += $w;
+				$lines[] = sprintf(
+					"  %s: %d uczestników, %d kadra, %d pracownicy",
+					$camp->name, $p, $s, $w
+				);
+			} else {
+				$lines[] = "  {$camp->name}: brak meldunku";
+			}
+		}
+
+		$subject = sprintf(
+			'[%s] Raport stanów osobowych – %s %s',
+			get_bloginfo('name'),
+			date_i18n('d.m.Y', strtotime($today)),
+			$time
+		);
+
+		$body  = "Raport stanów osobowych bazy obozowej\n";
+		$body .= sprintf("Data: %s, godzina: %s\n\n", date_i18n('d.m.Y', strtotime($today)), $time);
+		$body .= implode("\n", $lines) . "\n\n";
+		$body .= sprintf(
+			"Suma: %d uczestników, %d kadra, %d pracownicy",
+			$totals['participants'],
+			$totals['staff'],
+			$totals['workers']
+		);
+
+		foreach ( $emails as $email ) {
+			wp_mail($email, $subject, $body);
+		}
+
+		do_action('bm_periodic_staff_report_sent', $totals, $camps);
+	}
+
+	/**
+	 * (Re)schedule the periodic staff report cron based on current settings.
+	 * Interval is stored as 'bm_report_interval': hourly | twicedaily | daily | every6hours | every12hours.
+	 */
+	public static function reschedule_staff_report(): void {
+		$hook     = 'bm_periodic_staff_report';
+		$emails   = get_option('bm_report_emails', '');
+		$interval = get_option('bm_report_interval', 'daily');
+
+		$ts = wp_next_scheduled($hook);
+
+		if ( ! $emails ) {
+			if ( $ts ) {
+				wp_unschedule_event($ts, $hook);
+			}
+			return;
+		}
+
+		if ( $ts ) {
+			$current_interval = wp_get_schedule($hook);
+			if ( $current_interval === $interval ) {
+				return;
+			}
+			wp_unschedule_event($ts, $hook);
+		}
+
+		wp_schedule_event(time(), $interval, $hook);
 	}
 }

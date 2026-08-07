@@ -35,6 +35,15 @@ final class SettingsPage {
 
 		EmailService::save_settings($_POST);
 
+		// Notification settings.
+		update_option('bm_missing_report_emails', sanitize_text_field(wp_unslash($_POST['missing_report_emails'] ?? '')));
+		update_option('bm_report_emails',         sanitize_text_field(wp_unslash($_POST['report_emails'] ?? '')));
+		update_option('bm_report_interval',       sanitize_key($_POST['report_interval'] ?? 'daily'));
+		update_option('bm_lockout_minutes',        max(1, (int) ($_POST['lockout_minutes'] ?? 15)));
+
+		// Reschedule periodic report if config changed.
+		\BaseMgmt\Cron\Scheduler::reschedule_staff_report();
+
 		AdminMenu::set_notice(__('Ustawienia zapisane.', 'basemgmt'));
 		wp_safe_redirect(admin_url('admin.php?page=basemgmt-settings'));
 		exit;

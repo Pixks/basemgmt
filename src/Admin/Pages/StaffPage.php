@@ -146,6 +146,29 @@ final class StaffPage {
 		$this->redirect_back("basemgmt-staff&action=edit&id=$id");
 	}
 
+	public function handle_unlock(): void {
+		Capabilities::require_admin();
+		$id = (int) ($_GET['id'] ?? 0);
+		check_admin_referer('bm_unlock_staff_' . $id);
+
+		if ( ! $id ) {
+			AdminMenu::set_notice(__('Nieprawidłowy identyfikator.', 'basemgmt'), 'error');
+			$this->redirect_back('basemgmt-staff');
+			return;
+		}
+
+		\BaseMgmt\Auth\RateLimiter::admin_unlock($id);
+		\BaseMgmt\Core\OperationLogger::log(
+			\BaseMgmt\Core\OperationLogger::ACTION_UNLOCK_STAFF,
+			'staff',
+			$id,
+			'Konto odblokowane przez administratora – wymagany reset kodu.'
+		);
+
+		AdminMenu::set_notice(__('Konto odblokowane. Zresetuj kod bezpieczeństwa poniżej.', 'basemgmt'));
+		$this->redirect_back("basemgmt-staff&action=edit&id=$id");
+	}
+
 	// ── Redirect ─────────────────────────────────────────────────────────────
 
 	private function redirect_back(string $page): void {

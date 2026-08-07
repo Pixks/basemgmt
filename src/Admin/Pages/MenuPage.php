@@ -50,6 +50,11 @@ final class MenuPage {
 		$items      = $id ? MealRepository::get_items($id) : [];
 		$date       = $day ? $day->meal_date : ($default_date ?: gmdate('Y-m-d'));
 		$meal_types = MealRepository::MEAL_TYPES;
+
+		// Pass predefined options to the template.
+		$diet_names     = \BaseMgmt\Modules\Menu\MealOptionRepository::get_diet_names();
+		$location_names = \BaseMgmt\Modules\Menu\MealOptionRepository::get_location_names();
+
 		include BASEMGMT_DIR . 'templates/admin/menu/edit.php';
 	}
 
@@ -132,6 +137,19 @@ final class MenuPage {
 			'is_updated_today' => (int) ($_POST['is_updated_today'] ?? 0),
 		]);
 
+		// Auto-add to day plan if checkbox is checked.
+		if ( ! empty($_POST['add_to_plan']) ) {
+			$day = MealRepository::get_day($meal_day_id);
+			if ( $day ) {
+				$this->auto_add_meal_to_plan(
+					$day->meal_date,
+					sanitize_text_field($_POST['title'] ?? ''),
+					sanitize_text_field($_POST['time_from'] ?? ''),
+					sanitize_key($_POST['meal_type'] ?? 'inne')
+				);
+			}
+		}
+
 		AdminMenu::set_notice(__('Posiłek zapisany.', 'basemgmt'));
 		wp_safe_redirect(admin_url('admin.php?page=basemgmt-menu&bm_action=edit&id=' . $meal_day_id));
 		exit;
@@ -181,5 +199,53 @@ final class MenuPage {
 		AdminMenu::set_notice(__('Flagi zmian zresetowane.', 'basemgmt'));
 		wp_safe_redirect(admin_url('admin.php?page=basemgmt-menu&bm_action=edit&id=' . $day_id));
 		exit;
+	}
+
+	// ── Private helpers ───────────────────────────────────────────────────────
+
+	/**
+	 * Add a meal item as a plan item to the global daily plan for the given date.
+	 * Creates the plan header if none exists.
+	 */
+	private function auto_add_meal_to_plan(string $date, string $title, string $time_from, string $meal_type): void {
+		// Get or create global plan for this date.
+		$plans = \BaseMgmt\Modules\Schedule\ScheduleRepository::get_all_headers([
+			'date'     => $date,
+			'status'   => \BaseMgmt\Modules\Schedule\ScheduleRepository::PLAN_ACTIVE,
+			'is_global'=> 1,
+		]);
+
+		if ( ! empty($plans) ) {
+			$plan_id = (int) reset($plans)->id;
+		} else {
+			$plan_id = \BaseMgmt\Modules\Schedule\ScheduleRepository::create_header([
+				'plan_date'  => $date,
+				'title'      => sprintf(__('Plan dnia %s', 'basemgmt'), date_i18n('d.m.Y', strtotime($date))),
+				'is_global'  => 1,
+				'status'     => \BaseMgmt\Modules\Schedule\ScheduleRepository::PLAN_ACTIVE,
+				'created_by' => get_current_user_id(),
+			]);
+		}
+
+		if ( ! $plan_id ) {
+			return;
+		}
+
+		$meal_type_labels = MealRepository::MEAL_TYPES;
+		$category         = \BaseMgmt\Modules\Schedule\ScheduleRepository::CAT_INNE;
+
+		\BaseMgmt\Modules\Schedule\ScheduleRepository::create_item([
+			'plan_id'          => $plan_id,
+			'time_from'        => $time_from,
+			'time_to'          => '',
+			'title'            => sprintf('%s – %s', $meal_type_labels[$meal_type] ?? $meal_type, $title),
+			'description'      => '',
+			'category'         => $category,
+			'item_status'      => \BaseMgmt\Modules\Schedule\ScheduleRepository::ITEM_ACTIVE,
+			'is_mandatory'     => 0,
+			'sort_order'       => 0,
+			'is_new_today'     => 0,
+			'is_updated_today' => 0,
+		]);
 	}
 }

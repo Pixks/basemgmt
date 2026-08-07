@@ -10,7 +10,11 @@ use BaseMgmt\Admin\Pages\CommunicationPage;
 use BaseMgmt\Admin\Pages\DashboardPage;
 use BaseMgmt\Admin\Pages\FormsPage;
 use BaseMgmt\Admin\Pages\HelpPage;
+use BaseMgmt\Admin\Pages\LogsPage;
+use BaseMgmt\Admin\Pages\MealOptionsPage;
 use BaseMgmt\Admin\Pages\MenuPage;
+use BaseMgmt\Admin\Pages\PdfPage;
+use BaseMgmt\Admin\Pages\PlanTemplatesPage;
 use BaseMgmt\Admin\Pages\ReportsPage;
 use BaseMgmt\Admin\Pages\ReservationsPage;
 use BaseMgmt\Admin\Pages\SchedulePage;
@@ -42,21 +46,29 @@ final class AdminMenu {
 	private HelpPage          $help;
 	private FormsPage         $forms;
 	private SettingsPage      $settings;
+	private LogsPage          $logs;
+	private PlanTemplatesPage $plan_templates;
+	private MealOptionsPage   $meal_options;
+	private PdfPage           $pdf;
 
 	public function __construct() {
-		$this->dashboard     = new DashboardPage();
-		$this->camps         = new CampsPage();
-		$this->staff         = new StaffPage();
-		$this->announcements = new AnnouncementsPage();
-		$this->reports       = new ReportsPage();
-		$this->weather       = new WeatherPage();
-		$this->schedule      = new SchedulePage();
-		$this->reservations  = new ReservationsPage();
-		$this->menu          = new MenuPage();
-		$this->communication = new CommunicationPage();
-		$this->help          = new HelpPage();
-		$this->forms         = new FormsPage();
-		$this->settings      = new SettingsPage();
+		$this->dashboard      = new DashboardPage();
+		$this->camps          = new CampsPage();
+		$this->staff          = new StaffPage();
+		$this->announcements  = new AnnouncementsPage();
+		$this->reports        = new ReportsPage();
+		$this->weather        = new WeatherPage();
+		$this->schedule       = new SchedulePage();
+		$this->reservations   = new ReservationsPage();
+		$this->menu           = new MenuPage();
+		$this->communication  = new CommunicationPage();
+		$this->help           = new HelpPage();
+		$this->forms          = new FormsPage();
+		$this->settings       = new SettingsPage();
+		$this->logs           = new LogsPage();
+		$this->plan_templates = new PlanTemplatesPage();
+		$this->meal_options   = new MealOptionsPage();
+		$this->pdf            = new PdfPage();
 	}
 
 	// ── admin_menu hook ───────────────────────────────────────────────────────
@@ -194,6 +206,42 @@ final class AdminMenu {
 			'basemgmt-settings',
 			[$this->settings, 'render']
 		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Szablony planów dnia', 'basemgmt'),
+			__('Szablony planów', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-plan-templates',
+			[$this->plan_templates, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Opcje jadłospisu', 'basemgmt'),
+			__('Opcje jadłospisu', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-meal-options',
+			[$this->meal_options, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Drukuj / PDF', 'basemgmt'),
+			__('Drukuj / PDF', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-pdf',
+			[$this->pdf, 'render_list']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Logi operacji', 'basemgmt'),
+			__('Logi operacji', 'basemgmt'),
+			'manage_options',
+			'basemgmt-logs',
+			[$this->logs, 'render']
+		);
 	}
 
 	// ── Asset enqueueing ──────────────────────────────────────────────────────
@@ -321,6 +369,7 @@ final class AdminMenu {
 			'bm_create_thread'            => [$this->communication,'handle_create_thread'],
 			'bm_admin_reply'              => [$this->communication,'handle_reply'],
 			'bm_update_thread'            => [$this->communication,'handle_update_thread'],
+			'bm_create_thread_from_submission' => [$this->forms,   'handle_create_thread_from_submission'],
 			// Help (Pomoc)
 			'bm_save_help'                => [$this->help,         'handle_save'],
 			'bm_delete_help'              => [$this->help,         'handle_delete'],
@@ -331,6 +380,19 @@ final class AdminMenu {
 			'bm_delete_form_field'        => [$this->forms,        'handle_delete_field'],
 			'bm_update_submission'        => [$this->forms,        'handle_update_submission'],
 			'bm_download_attachment'      => [$this->forms,        'handle_download_attachment'],
+			// Plan Templates (Szablony planów dnia)
+			'bm_save_plan_template'       => [$this->plan_templates, 'handle_save'],
+			'bm_delete_plan_template'     => [$this->plan_templates, 'handle_delete'],
+			'bm_save_template_item'       => [$this->plan_templates, 'handle_save_item'],
+			'bm_delete_template_item'     => [$this->plan_templates, 'handle_delete_item'],
+			'bm_apply_plan_template'      => [$this->plan_templates, 'handle_apply'],
+			// Meal Options (Opcje jadłospisu)
+			'bm_save_meal_diet'           => [$this->meal_options,   'handle_save_diet'],
+			'bm_delete_meal_diet'         => [$this->meal_options,   'handle_delete_diet'],
+			'bm_save_meal_location'       => [$this->meal_options,   'handle_save_location'],
+			'bm_delete_meal_location'     => [$this->meal_options,   'handle_delete_location'],
+			// Staff unlock
+			'bm_unlock_staff'             => [$this->staff,          'handle_unlock'],
 		];
 	}
 
