@@ -27,6 +27,13 @@ final class SessionManager {
 	public static function create(int $staff_id, int $camp_id): string {
 		global $wpdb;
 
+		// Invalidate any existing sessions for this staff member in this camp before creating a new one.
+		$wpdb->delete(
+			Schema::table('sessions'),
+			['staff_id' => $staff_id, 'camp_id' => $camp_id],
+			['%d', '%d']
+		);
+
 		$token      = bin2hex(random_bytes(32)); // 64-char hex token (returned to caller / stored in cookie)
 		$token_hash = hash('sha256', $token);    // only the hash is persisted in DB
 		$expires_at = gmdate('Y-m-d H:i:s', time() + self::TTL);

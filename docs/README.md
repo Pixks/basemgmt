@@ -1,12 +1,12 @@
 # CampLink – Dokumentacja pluginu
 
-> Wersja: **1.1.2** | Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB
+> Wersja: **1.3.0** | Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB
 
 ## Spis treści
 
 | Dokument | Opis |
 |----------|------|
-| [01 – Przegląd i instalacja](01-overview-installation.md) | Wymagania, instalacja, pierwsze uruchomienie i nowości v1.1.2 |
+| [01 – Przegląd i instalacja](01-overview-installation.md) | Wymagania, instalacja, pierwsze uruchomienie i nowości v1.3.0 |
 | [02 – Architektura](02-architecture.md) | Struktura plików, PSR-4, wzorce, rozszerzalność |
 | [03 – System dostępu frontendowego](03-frontend-access.md) | Logowanie kadry, sesje, rate limiting |
 | [04 – Moduły](04-modules.md) | Obozy, Kadra, Ogłoszenia, Meldunki, Pogoda, Plan dnia, Rezerwacje, Jadłospis, Komunikacja, Pomoc, Formularze i Zgłoszenia |
@@ -49,9 +49,9 @@ wp plugin activate basemgmt
 - **Bezpieczeństwo**: haszowane 6-cyfrowe PIN-y, blokada czasowa i trwała kadry, sesje z TTL, wszystkie `/panel/*` endpointy chronione sesją.
 - **Snapshot zgłoszeń**: dane formularzy utrwalane w momencie wysłania, odporne na późniejsze zmiany.
 - **Komunikacja dwukierunkowa**: admin może inicjować wątki do obozów; kadra odpowiada przez panel.
-- **Nowości v1.1.2**: dopracowany raport zbiorczy meldunków, poprawione szablony email dla przypomnień i raportów okresowych, lepszy widok wydruku/PDF oraz zachowanie tytułu i zasięgu przy tworzeniu planów z dnia źródłowego.
+- **Nowości v1.3.0**: zmiana nazwy pozycji menu WordPress na „CampLink", zaktualizowana dokumentacja i README.
 - **Naprawy tabel inline**: jadłospis, pomoc i formularze wykrywają brak tabel i oferują przycisk naprawy bez reaktywacji pluginu.
 
 ---
 
-*Dokumentacja przygotowana dla pluginu CampLink v1.1.2.*
+*Dokumentacja przygotowana dla pluginu CampLink v1.3.0.*

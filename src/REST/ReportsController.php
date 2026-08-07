@@ -75,6 +75,10 @@ final class ReportsController extends BaseController {
 	}
 
 	public function save_draft(WP_REST_Request $request): WP_REST_Response {
+		if ( ! wp_verify_nonce( (string) $request->get_param('nonce'), 'bm_panel' ) ) {
+			return $this->error( 'bm_invalid_nonce', __( 'Nieprawidłowy token. Odśwież stronę.', 'basemgmt' ), 403 );
+		}
+
 		$camp_id  = (int) $request->get_param('_camp_id');
 		$staff_id = (int) $request->get_param('_staff_id');
 		$today    = gmdate('Y-m-d');
@@ -104,6 +108,10 @@ final class ReportsController extends BaseController {
 	}
 
 	public function submit_report(WP_REST_Request $request): WP_REST_Response {
+		if ( ! wp_verify_nonce( (string) $request->get_param('nonce'), 'bm_panel' ) ) {
+			return $this->error( 'bm_invalid_nonce', __( 'Nieprawidłowy token. Odśwież stronę.', 'basemgmt' ), 403 );
+		}
+
 		$camp_id  = (int) $request->get_param('_camp_id');
 		$staff_id = (int) $request->get_param('_staff_id');
 		$today    = gmdate('Y-m-d');

@@ -171,7 +171,7 @@ Zdefiniowane w `basemgmt.php`:
 
 | Stała | Wartość domyślna | Opis |
 |-------|-----------------|------|
-| `BASEMGMT_VERSION` | `1.1.2` | Wersja pluginu |
+| `BASEMGMT_VERSION` | `1.3.0` | Wersja pluginu |
 | `BASEMGMT_FILE` | `__FILE__` | Ścieżka do głównego pliku |
 | `BASEMGMT_DIR` | `plugin_dir_path(...)` | Ścieżka katalogu |
 | `BASEMGMT_URL` | `plugin_dir_url(...)` | URL katalogu |
@@ -182,12 +182,10 @@ Zdefiniowane w `basemgmt.php`:
 
 ---
 
-## Najważniejsze nowości w CampLink 1.1.2
+## Najważniejsze nowości w CampLink 1.3.0
 
-- **Dopracowany raport zbiorczy meldunków**: widok dnia czytelniej pokazuje sumy oraz listę obozów, które nie wysłały jeszcze meldunku.
-- **Lepsze powiadomienia email**: przypomnienia o brakujących meldunkach i raporty okresowe korzystają z dopracowanych szablonów HTML oraz aktualnej daty WordPress.
-- **Poprawiony wydruk / PDF**: eksporty planu dnia i jadłospisu prezentują spójniejszą datę i wyraźniejsze oznaczenia stanów alarmowych.
-- **Lepsze kopiowanie planów dnia po dacie**: masowe tworzenie nowych planów z dnia źródłowego zachowuje tytuł i zasięg planu, chyba że ustawisz własny wzorzec tytułu.
+- **Zmiana nazwy w menu WordPress**: pozycja w panelu administracyjnym zmieniona z „Baza Obozowa" na „CampLink".
+- **Zaktualizowana dokumentacja**: README i docs odzwierciedlają aktualną wersję i nazwę produktu.
 
 ---
 

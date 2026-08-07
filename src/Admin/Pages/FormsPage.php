@@ -123,15 +123,15 @@ final class FormsPage {
 		$id   = (int) ($_POST['form_id'] ?? 0);
 		$data = [
 			'id'          => $id,
-			'name'        => $_POST['name'] ?? '',
-			'description' => $_POST['description'] ?? '',
-			'category'    => $_POST['category'] ?? 'inne',
-			'status'      => $_POST['status'] ?? 'active',
+			'name'        => sanitize_text_field( wp_unslash( $_POST['name']        ?? '' ) ),
+			'description' => sanitize_textarea_field( wp_unslash( $_POST['description'] ?? '' ) ),
+			'category'    => sanitize_key( wp_unslash( $_POST['category']    ?? 'inne' ) ),
+			'status'      => sanitize_key( wp_unslash( $_POST['status']      ?? 'active' ) ),
 			'is_global'   => (int) isset($_POST['is_global']),
-			'sort_order'  => $_POST['sort_order'] ?? 0,
+			'sort_order'  => absint( $_POST['sort_order'] ?? 0 ),
 			'is_pinned'   => (int) isset($_POST['is_pinned']),
-			'info_before' => $_POST['info_before'] ?? '',
-			'info_after'  => $_POST['info_after'] ?? '',
+			'info_before' => wp_kses_post( wp_unslash( $_POST['info_before'] ?? '' ) ),
+			'info_after'  => wp_kses_post( wp_unslash( $_POST['info_after']  ?? '' ) ),
 		];
 
 		$saved_id = FormRepository::save($data);
@@ -187,15 +187,15 @@ final class FormsPage {
 		$field_data = [
 			'id'            => (int) ($_POST['field_id'] ?? 0),
 			'form_id'       => $form_id,
-			'label'         => $_POST['label'] ?? '',
-			'field_key'     => $_POST['field_key'] ?? '',
-			'type'          => $_POST['type'] ?? 'text',
+			'label'         => sanitize_text_field( wp_unslash( $_POST['label']         ?? '' ) ),
+			'field_key'     => sanitize_key( wp_unslash( $_POST['field_key']      ?? '' ) ),
+			'type'          => sanitize_key( wp_unslash( $_POST['type']           ?? 'text' ) ),
 			'is_required'   => (int) isset($_POST['is_required']),
-			'placeholder'   => $_POST['placeholder'] ?? '',
-			'help_text'     => $_POST['help_text'] ?? '',
-			'options'       => $_POST['options'] ?? '',
-			'default_value' => $_POST['default_value'] ?? '',
-			'validation'    => $_POST['validation'] ?? '',
+			'placeholder'   => sanitize_text_field( wp_unslash( $_POST['placeholder']   ?? '' ) ),
+			'help_text'     => sanitize_textarea_field( wp_unslash( $_POST['help_text']   ?? '' ) ),
+			'options'       => sanitize_textarea_field( wp_unslash( $_POST['options']     ?? '' ) ),
+			'default_value' => sanitize_text_field( wp_unslash( $_POST['default_value'] ?? '' ) ),
+			'validation'    => sanitize_key( wp_unslash( $_POST['validation']    ?? '' ) ),
 			'sort_order'    => (int) ($_POST['sort_order'] ?? 0),
 		];
 
@@ -259,8 +259,8 @@ final class FormsPage {
 		SubmissionRepository::update_admin_fields($sub_id, [
 			'status'        => $new_status ?: $old->status,
 			'priority'      => sanitize_key($_POST['priority'] ?? $old->priority),
-			'admin_comment' => $_POST['admin_comment'] ?? $old->admin_comment,
-			'assigned_to'   => $_POST['assigned_to'] ?? null,
+			'admin_comment' => wp_kses_post( wp_unslash( $_POST['admin_comment'] ?? $old->admin_comment ) ),
+			'assigned_to'   => isset($_POST['assigned_to']) ? absint($_POST['assigned_to']) : null,
 		]);
 
 		AdminMenu::set_notice(__('Zgłoszenie zaktualizowane.', 'basemgmt'), 'success');
@@ -279,10 +279,20 @@ final class FormsPage {
 		Capabilities::require_admin();
 
 		$att_id = (int) ($_GET['att_id'] ?? 0);
-		$att    = $att_id ? SubmissionRepository::get_attachment($att_id) : null;
+		check_admin_referer( 'bm_download_att_' . $att_id );
+
+		$att = $att_id ? SubmissionRepository::get_attachment($att_id) : null;
 
 		if ( ! $att || ! file_exists($att->file_path) ) {
 			wp_die(__('Plik nie istnieje.', 'basemgmt'), 404);
+		}
+
+		// Prevent path traversal: ensure file is inside uploads/basemgmt/.
+		$upload  = wp_upload_dir();
+		$allowed = realpath( trailingslashit( $upload['basedir'] ) . 'basemgmt' );
+		$real    = realpath( $att->file_path );
+		if ( ! $real || ! $allowed || ! str_starts_with( $real, $allowed . DIRECTORY_SEPARATOR ) ) {
+			wp_die( __( 'Niedozwolona lokalizacja pliku.', 'basemgmt' ), 403 );
 		}
 
 		nocache_headers();

@@ -84,8 +84,8 @@ final class AdminMenu {
 		$comm_badge   = $unread_comm ? " <span class='awaiting-mod'>$unread_comm</span>" : '';
 
 		add_menu_page(
-			__('Baza Obozowa', 'basemgmt'),
-			__('Baza Obozowa', 'basemgmt'),
+			__('CampLink', 'basemgmt'),
+			__('CampLink', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt',
 			[$this->dashboard, 'render'],

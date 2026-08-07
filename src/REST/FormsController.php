@@ -271,6 +271,14 @@ final class FormsController extends BaseController {
 			return new WP_REST_Response(['error' => __('Plik nie istnieje na serwerze.', 'basemgmt')], 404);
 		}
 
+		// Prevent path traversal: ensure file is inside uploads/basemgmt/.
+		$upload  = wp_upload_dir();
+		$allowed = realpath( trailingslashit( $upload['basedir'] ) . 'basemgmt' );
+		$real    = realpath( $att->file_path );
+		if ( ! $real || ! $allowed || ! str_starts_with( $real, $allowed . DIRECTORY_SEPARATOR ) ) {
+			return new WP_REST_Response( ['error' => __( 'Niedozwolona lokalizacja pliku.', 'basemgmt' )], 403 );
+		}
+
 		// Stream file and exit; headers are set directly.
 		nocache_headers();
 		header('Content-Type: ' . $att->mime_type);

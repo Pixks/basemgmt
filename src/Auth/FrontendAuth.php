@@ -48,7 +48,7 @@ final class FrontendAuth {
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, first_name, last_name, role_in_camp
+				"SELECT id, first_name, last_name
 				 FROM `" . Schema::table('staff') . "`
 				 WHERE camp_id = %d AND is_active = 1
 				 ORDER BY last_name ASC, first_name ASC",
@@ -60,7 +60,6 @@ final class FrontendAuth {
 			static fn($r) => [
 				'id'           => (int) $r->id,
 				'display_name' => esc_html($r->first_name . ' ' . $r->last_name),
-				'role'         => esc_html($r->role_in_camp ?? ''),
 			],
 			$rows ?: []
 		);
