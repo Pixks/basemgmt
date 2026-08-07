@@ -135,7 +135,7 @@ final class Scheduler {
 			return;
 		}
 
-		$to      = get_option('admin_email');
+		$to      = get_option('bm_missing_report_emails', get_option('admin_email'));
 		$subject = sprintf(
 			/* translators: %s: site name */
 			__('[%s] Brak dziennego meldunku', 'basemgmt'),
@@ -224,7 +224,7 @@ final class Scheduler {
 		$totals  = ['participants' => 0, 'staff' => 0, 'workers' => 0];
 
 		foreach ( $camps as $camp ) {
-			$count = \BaseMgmt\Modules\Camps\DailyCountRepository::get_for_date((int) $camp->id, $today);
+			$count = \BaseMgmt\Modules\Camps\DailyCountRepository::get_by_date((int) $camp->id, $today);
 			if ( $count ) {
 				$p = (int) $count->participants;
 				$s = (int) $count->staff;

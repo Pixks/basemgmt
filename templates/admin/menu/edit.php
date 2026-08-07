@@ -123,11 +123,37 @@ $is_new = !$day;
 			</tr>
 			<tr>
 				<th><?php esc_html_e('Miejsce wydawania', 'basemgmt'); ?></th>
-				<td><input type="text" name="location" id="bm-item-location" value="" class="regular-text"></td>
+				<td>
+					<?php if (! empty($location_names)): ?>
+					<select name="location" id="bm-item-location">
+						<option value=""><?php esc_html_e('— wybierz lub wpisz ręcznie —', 'basemgmt'); ?></option>
+						<?php foreach ($location_names as $lid => $lname): ?>
+						<option value="<?php echo esc_attr($lname); ?>"><?php echo esc_html($lname); ?></option>
+						<?php endforeach; ?>
+						<option value="__custom"><?php esc_html_e('Inne (wpisz poniżej)', 'basemgmt'); ?></option>
+					</select>
+					<input type="text" name="location_custom" id="bm-item-location-custom" value="" class="regular-text" style="margin-top:4px;display:none;" placeholder="<?php esc_attr_e('Wpisz własne miejsce', 'basemgmt'); ?>">
+					<?php else: ?>
+					<input type="text" name="location" id="bm-item-location" value="" class="regular-text">
+					<?php endif; ?>
+				</td>
 			</tr>
 			<tr>
 				<th><?php esc_html_e('Diety', 'basemgmt'); ?></th>
-				<td><input type="text" name="diet_info" id="bm-item-diet" value="" class="regular-text" placeholder="<?php esc_attr_e('np. wegetariańska, bezglutenowa', 'basemgmt'); ?>"></td>
+				<td>
+					<?php if (! empty($diet_names)): ?>
+					<select name="diet_info" id="bm-item-diet">
+						<option value=""><?php esc_html_e('— wybierz lub wpisz ręcznie —', 'basemgmt'); ?></option>
+						<?php foreach ($diet_names as $did => $dname): ?>
+						<option value="<?php echo esc_attr($dname); ?>"><?php echo esc_html($dname); ?></option>
+						<?php endforeach; ?>
+						<option value="__custom"><?php esc_html_e('Inne (wpisz poniżej)', 'basemgmt'); ?></option>
+					</select>
+					<input type="text" name="diet_info_custom" id="bm-item-diet-custom" value="" class="regular-text" style="margin-top:4px;display:none;" placeholder="<?php esc_attr_e('np. wegetariańska, bezglutenowa', 'basemgmt'); ?>">
+					<?php else: ?>
+					<input type="text" name="diet_info" id="bm-item-diet" value="" class="regular-text" placeholder="<?php esc_attr_e('np. wegetariańska, bezglutenowa', 'basemgmt'); ?>">
+					<?php endif; ?>
+				</td>
 			</tr>
 			<tr>
 				<th><?php esc_html_e('Alergeny', 'basemgmt'); ?></th>
@@ -144,11 +170,52 @@ $is_new = !$day;
 					<label><input type="checkbox" name="is_updated_today" id="bm-item-upd" value="1"> <?php esc_html_e('Zmienione dziś', 'basemgmt'); ?></label>
 				</td>
 			</tr>
+			<tr>
+				<th><?php esc_html_e('Plan dnia', 'basemgmt'); ?></th>
+				<td>
+					<label>
+						<input type="checkbox" name="add_to_plan" id="bm-item-add-plan" value="1">
+						<?php esc_html_e('Dodaj automatycznie do planu dnia', 'basemgmt'); ?>
+					</label>
+					<p class="description"><?php esc_html_e('Posiłek zostanie dodany jako pozycja w planie dnia dla tej daty.', 'basemgmt'); ?></p>
+				</td>
+			</tr>
 		</table>
 		<?php submit_button(__('Zapisz posiłek', 'basemgmt')); ?>
 	</form>
 
 	<script>
+	(function(){
+		function bmInitCustomSelect(selectId, customId, hiddenName) {
+			var sel = document.getElementById(selectId);
+			var cust = document.getElementById(customId);
+			if (!sel || !cust) return;
+
+			function bmToggle() {
+				cust.style.display = (sel.value === '__custom') ? 'block' : 'none';
+			}
+
+			sel.addEventListener('change', bmToggle);
+			bmToggle();
+
+			// On form submit, copy custom value to select if __custom
+			var form = sel.closest('form');
+			if (form) {
+				form.addEventListener('submit', function() {
+					if (sel.value === '__custom') {
+						sel.name = '';
+						cust.name = hiddenName;
+					}
+				});
+			}
+		}
+
+		document.addEventListener('DOMContentLoaded', function() {
+			bmInitCustomSelect('bm-item-location', 'bm-item-location-custom', 'location');
+			bmInitCustomSelect('bm-item-diet',     'bm-item-diet-custom',     'diet_info');
+		});
+	})();
+
 	function bmFillItem(item) {
 		document.getElementById('bm-item-id').value         = item.id;
 		document.getElementById('bm-item-meal-type').value  = item.meal_type;

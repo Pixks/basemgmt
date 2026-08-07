@@ -18,6 +18,31 @@ defined('ABSPATH') || exit;
 <div class="wrap bm-admin-wrap">
 	<h1><?php esc_html_e('Baza Obozowa – Dashboard', 'basemgmt'); ?></h1>
 
+	<!-- Quick action buttons – top of dashboard -->
+	<div class="bm-dashboard-links" style="margin-bottom:20px;">
+		<a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-camps&action=new')); ?>">
+			<?php esc_html_e('+ Nowy obóz', 'basemgmt'); ?>
+		</a>
+		<a class="button" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-staff&action=new')); ?>">
+			<?php esc_html_e('+ Nowa osoba kadry', 'basemgmt'); ?>
+		</a>
+		<a class="button" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-announcements&action=new')); ?>">
+			<?php esc_html_e('+ Nowe ogłoszenie', 'basemgmt'); ?>
+		</a>
+		<a class="button" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-reports&bm_action=view_day&date=' . $today)); ?>">
+			<?php esc_html_e('Raport zbiorczy dziś', 'basemgmt'); ?>
+		</a>
+		<a class="button" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-schedule&filter_date=' . $today)); ?>">
+			<?php esc_html_e('Plan dnia dziś', 'basemgmt'); ?>
+		</a>
+		<a class="button" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-menu&bm_action=new&date=' . $today)); ?>">
+			<?php esc_html_e('Dodaj jadłospis dziś', 'basemgmt'); ?>
+		</a>
+		<a class="button" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-pdf')); ?>">
+			<?php esc_html_e('🖨 Drukuj / PDF', 'basemgmt'); ?>
+		</a>
+	</div>
+
 	<!-- Camp overview -->
 	<h2 style="margin-top:20px;border-bottom:1px solid #ddd;padding-bottom:6px;"><?php esc_html_e('Obozy', 'basemgmt'); ?></h2>
 	<div class="bm-stats-grid">
@@ -149,20 +174,7 @@ defined('ABSPATH') || exit;
 	</table>
 	<?php endif; ?>
 
-	<div class="bm-dashboard-links" style="margin-top:20px;">
-		<a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-camps&action=new')); ?>">
-			<?php esc_html_e('+ Nowy obóz', 'basemgmt'); ?>
-		</a>
-		<a class="button" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-staff&action=new')); ?>">
-			<?php esc_html_e('+ Nowa osoba kadry', 'basemgmt'); ?>
-		</a>
-		<a class="button" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-announcements&action=new')); ?>">
-			<?php esc_html_e('+ Nowe ogłoszenie', 'basemgmt'); ?>
-		</a>
-		<a class="button" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-reports&bm_action=view_day&date=' . $today)); ?>">
-			<?php esc_html_e('Raport zbiorczy dziś', 'basemgmt'); ?>
-		</a>
-	</div>
+
 
 	<!-- Meal menu today widget -->
 	<h2 style="margin-top:24px;border-bottom:1px solid #ddd;padding-bottom:6px;">
@@ -173,11 +185,6 @@ defined('ABSPATH') || exit;
 	<?php else: ?>
 	<p style="color:#856404;">⚠ <?php esc_html_e('Brak jadłospisu na dziś.', 'basemgmt'); ?></p>
 	<?php endif; ?>
-	<p>
-		<a class="button button-small" href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-menu&bm_action=new&date=' . $today)); ?>">
-			<?php esc_html_e('Dodaj jadłospis na dziś', 'basemgmt'); ?> →
-		</a>
-	</p>
 
 	<!-- Communication widget -->
 	<h2 style="margin-top:24px;border-bottom:1px solid #ddd;padding-bottom:6px;">

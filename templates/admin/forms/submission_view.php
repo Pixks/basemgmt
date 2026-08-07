@@ -110,6 +110,21 @@ $snapshot_flds= $form_snapshot['fields'] ?? [];
 			<div class="postbox">
 				<div class="postbox-header"><h2 class="hndle"><?php esc_html_e('Zarządzanie', 'basemgmt'); ?></h2></div>
 				<div class="inside">
+					<!-- Create conversation thread -->
+					<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #eee;">
+						<p style="margin:0 0 8px;"><strong><?php esc_html_e('Komunikacja', 'basemgmt'); ?></strong></p>
+						<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+							<?php wp_nonce_field('bm_create_thread_from_submission'); ?>
+							<input type="hidden" name="action"        value="bm_create_thread_from_submission">
+							<input type="hidden" name="submission_id" value="<?php echo esc_attr($submission->id); ?>">
+							<button type="submit" class="button button-secondary">
+								💬 <?php esc_html_e('Utwórz wątek konwersacji', 'basemgmt'); ?>
+							</button>
+							<p class="description" style="margin-top:4px;">
+								<?php esc_html_e('Tworzy nowy wątek z treścią zgłoszenia jako pierwszą wiadomością.', 'basemgmt'); ?>
+							</p>
+						</form>
+					</div>
 					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
 						<?php wp_nonce_field('bm_update_submission'); ?>
 						<input type="hidden" name="action"        value="bm_update_submission">

@@ -6,6 +6,7 @@ namespace BaseMgmt\Auth;
 
 use BaseMgmt\Database\Schema;
 use BaseMgmt\Modules\Camps\StaffRepository;
+use BaseMgmt\Core\OperationLogger;
 
 defined('ABSPATH') || exit;
 
@@ -116,12 +117,23 @@ final class FrontendAuth {
 		// Verify security code.
 		if ( ! wp_check_password($security_code, $staff->security_code_hash) ) {
 			RateLimiter::record_failure((int) $staff->id, $staff);
+			OperationLogger::log(
+				(int) $staff->id,
+				OperationLogger::ACTION_LOGIN_FAILED,
+				sprintf('Nieudana próba logowania dla użytkownika %s %s (ID %d)', $staff->first_name, $staff->last_name, $staff->id)
+			);
 			return ['success' => false, 'message' => $generic_error];
 		}
 
 		// ── Auth OK ──────────────────────────────────────────────────────────
 		RateLimiter::clear((int) $staff->id);
 		$token = SessionManager::create((int) $staff->id, (int) $staff->camp_id);
+
+		OperationLogger::log(
+			(int) $staff->id,
+			OperationLogger::ACTION_LOGIN_SUCCESS,
+			sprintf('Pomyślne logowanie: %s %s (ID %d)', $staff->first_name, $staff->last_name, $staff->id)
+		);
 
 		return [
 			'success'      => true,

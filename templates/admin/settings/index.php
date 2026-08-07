@@ -127,6 +127,78 @@ wp_enqueue_style('wp-codemirror');
         </form>
     </div>
 
+    <!-- Notification settings -->
+    <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 10px;">🔔 <?php esc_html_e('Konfiguracja powiadomień', 'basemgmt'); ?></h2>
+        <p class="description" style="margin:0 0 14px;">
+            <?php esc_html_e('Ustawienia powiadomień email oraz blokad kont kadry.', 'basemgmt'); ?>
+        </p>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <?php wp_nonce_field('bm_save_settings'); ?>
+            <input type="hidden" name="action" value="bm_save_settings">
+            <!-- Pass email settings fields as hidden so existing values are preserved -->
+            <input type="hidden" name="from_name"          value="<?php echo esc_attr($s['from_name']); ?>">
+            <input type="hidden" name="from_email"         value="<?php echo esc_attr($s['from_email']); ?>">
+            <input type="hidden" name="admin_notify_email" value="<?php echo esc_attr($s['admin_notify_email']); ?>">
+            <input type="hidden" name="header_color"       value="<?php echo esc_attr($s['header_color']); ?>">
+            <input type="hidden" name="logo_url"           value="<?php echo esc_attr($s['logo_url']); ?>">
+            <input type="hidden" name="header_title"       value="<?php echo esc_attr($s['header_title']); ?>">
+            <input type="hidden" name="header_html"        value="<?php echo esc_attr($s['header_html']); ?>">
+            <input type="hidden" name="footer_text"        value="<?php echo esc_attr($s['footer_text']); ?>">
+            <table class="form-table" style="margin:0;">
+                <tr>
+                    <th><label for="bm-missing-emails"><?php esc_html_e('Email(e) dla brakujących meldunków', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="text" id="bm-missing-emails" name="missing_report_emails" class="regular-text"
+                               value="<?php echo esc_attr((string) get_option('bm_missing_report_emails', '')); ?>">
+                        <p class="description"><?php esc_html_e('Adresy rozdzielone przecinkami. Powiadomienie wysyłane gdy obóz nie przysłał meldunku dziennego.', 'basemgmt'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-report-emails"><?php esc_html_e('Email(e) dla cyklicznych raportów', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="text" id="bm-report-emails" name="report_emails" class="regular-text"
+                               value="<?php echo esc_attr((string) get_option('bm_report_emails', '')); ?>">
+                        <p class="description"><?php esc_html_e('Adresy rozdzielone przecinkami. Zostaw puste aby wyłączyć cykliczne raporty.', 'basemgmt'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-report-interval"><?php esc_html_e('Interwał raportów', 'basemgmt'); ?></label></th>
+                    <td>
+                        <select id="bm-report-interval" name="report_interval">
+                            <?php
+                            $current_interval = get_option('bm_report_interval', 'daily');
+                            $intervals = [
+                                'hourly'      => __('Co godzinę', 'basemgmt'),
+                                'twicedaily'  => __('Dwa razy dziennie', 'basemgmt'),
+                                'daily'       => __('Raz dziennie', 'basemgmt'),
+                            ];
+                            foreach ($intervals as $k => $v):
+                            ?>
+                            <option value="<?php echo esc_attr($k); ?>" <?php selected($current_interval, $k); ?>><?php echo esc_html($v); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-lockout-minutes"><?php esc_html_e('Czas blokady konta kadry (minuty)', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="number" id="bm-lockout-minutes" name="lockout_minutes" min="1" max="1440"
+                               value="<?php echo esc_attr((string) (int) get_option('bm_lockout_minutes', 15)); ?>"
+                               style="width:80px;">
+                        <p class="description">
+                            <?php printf(
+                                esc_html__('Po %d nieudanych próbach logowania konto kadry zostaje zablokowane na podany czas. Po 1 kolejnej próbie – blokada trwała.', 'basemgmt'),
+                                BASEMGMT_MAX_ATTEMPTS
+                            ); ?>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            <?php submit_button(__('Zapisz ustawienia powiadomień', 'basemgmt')); ?>
+        </form>
+    </div>
+
     <!-- Plugin info -->
     <div class="postbox" style="max-width:700px;padding:16px 20px;">
         <h2 class="hndle" style="padding:0 0 10px;"><?php esc_html_e('O pluginie', 'basemgmt'); ?></h2>

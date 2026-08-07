@@ -96,6 +96,43 @@ $plan_id = $header ? (int) $header->id : 0;
     </div>
 
     <?php if ($plan_id): ?>
+    <!-- Apply plan template -->
+    <?php
+    $templates = \BaseMgmt\Modules\Schedule\PlanTemplateRepository::get_all();
+    if (! empty($templates)):
+    ?>
+    <div class="postbox" style="padding:16px 20px;margin-bottom:24px;max-width:700px;border-left:4px solid #2271b1;">
+        <h2 class="hndle" style="padding:0 0 10px;">📋 <?php esc_html_e('Zastosuj szablon planu', 'basemgmt'); ?></h2>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <?php wp_nonce_field('bm_apply_plan_template'); ?>
+            <input type="hidden" name="action"  value="bm_apply_plan_template">
+            <input type="hidden" name="plan_id" value="<?php echo esc_attr((string) $plan_id); ?>">
+            <table class="form-table" style="margin:0;">
+                <tr>
+                    <th><label><?php esc_html_e('Szablon', 'basemgmt'); ?></label></th>
+                    <td>
+                        <select name="template_id">
+                            <?php foreach ($templates as $tpl): ?>
+                            <option value="<?php echo esc_attr((string) $tpl->id); ?>"><?php echo esc_html($tpl->name); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="replace_existing" value="1">
+                            <?php esc_html_e('Usuń istniejące pozycje przed zastosowaniem', 'basemgmt'); ?>
+                        </label>
+                    </td>
+                </tr>
+            </table>
+            <?php submit_button(__('Zastosuj szablon', 'basemgmt'), 'secondary'); ?>
+        </form>
+    </div>
+    <?php endif; ?>
+
     <!-- Items list -->
     <div class="postbox" style="padding:16px 20px;margin-bottom:24px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">

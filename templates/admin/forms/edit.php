@@ -182,12 +182,15 @@ $back_url  = add_query_arg(['page' => 'basemgmt-forms'], admin_url('admin.php'))
 				<table class="form-table">
 					<tr>
 						<th><?php esc_html_e('Etykieta', 'basemgmt'); ?> <span class="required">*</span></th>
-						<td><input type="text" name="label" id="bm-f-label" class="regular-text" required></td>
+						<td>
+							<input type="text" name="label" id="bm-f-label" class="regular-text" required>
+							<p class="description"><?php esc_html_e('Tekst wyświetlany obok pola w formularzu, np. „Imię i nazwisko", „Opis problemu".', 'basemgmt'); ?></p>
+						</td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e('Klucz (field_key)', 'basemgmt'); ?></th>
 						<td><input type="text" name="field_key" id="bm-f-key" class="regular-text">
-							<p class="description"><?php esc_html_e('Pozostaw puste, aby wygenerować automatycznie.', 'basemgmt'); ?></p>
+							<p class="description"><?php esc_html_e('Unikalny identyfikator pola używany w bazie danych i eksportach. Tylko małe litery, cyfry i podkreślniki, np. „imie_nazwisko". Zostaw puste, aby wygenerować automatycznie z etykiety.', 'basemgmt'); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -198,34 +201,51 @@ $back_url  = add_query_arg(['page' => 'basemgmt-forms'], admin_url('admin.php'))
 									<option value="<?php echo esc_attr($k); ?>"><?php echo esc_html($v); ?></option>
 								<?php endforeach; ?>
 							</select>
+							<p class="description" id="bm-f-type-hint"></p>
 						</td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e('Wymagane', 'basemgmt'); ?></th>
-						<td><label><input type="checkbox" name="is_required" id="bm-f-required" value="1"> <?php esc_html_e('Tak', 'basemgmt'); ?></label></td>
+						<td>
+							<label><input type="checkbox" name="is_required" id="bm-f-required" value="1"> <?php esc_html_e('Tak', 'basemgmt'); ?></label>
+							<p class="description"><?php esc_html_e('Formularz nie zostanie wysłany jeśli to pole pozostanie puste.', 'basemgmt'); ?></p>
+						</td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e('Placeholder', 'basemgmt'); ?></th>
-						<td><input type="text" name="placeholder" id="bm-f-placeholder" class="regular-text"></td>
+						<td>
+							<input type="text" name="placeholder" id="bm-f-placeholder" class="regular-text">
+							<p class="description"><?php esc_html_e('Szary tekst widoczny w pustym polu jako podpowiedź, np. „Wpisz swoje imię". Znika po kliknięciu.', 'basemgmt'); ?></p>
+						</td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e('Opis pomocniczy', 'basemgmt'); ?></th>
-						<td><input type="text" name="help_text" id="bm-f-help" class="regular-text"></td>
+						<td>
+							<input type="text" name="help_text" id="bm-f-help" class="regular-text">
+							<p class="description"><?php esc_html_e('Krótki opis wyświetlany pod polem, tłumaczący co wpisać, np. „Podaj 6-cyfrowy kod obozu". Zawsze widoczny.', 'basemgmt'); ?></p>
+						</td>
 					</tr>
 					<tr id="bm-f-row-options">
 						<th><?php esc_html_e('Opcje (select/radio/checkbox)', 'basemgmt'); ?></th>
 						<td>
 							<textarea name="options" id="bm-f-options" class="large-text" rows="4"
 								placeholder="<?php esc_attr_e('Jedna opcja w linii', 'basemgmt'); ?>"></textarea>
+							<p class="description"><?php esc_html_e('Wprowadź każdą opcję w osobnej linii. Dotyczy pól typu: lista rozwijana (select), przyciski radiowe (radio), pola wyboru (checkbox). Przykład: Tak / Nie / Nie dotyczy.', 'basemgmt'); ?></p>
 						</td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e('Wartość domyślna', 'basemgmt'); ?></th>
-						<td><input type="text" name="default_value" id="bm-f-default" class="regular-text"></td>
+						<td>
+							<input type="text" name="default_value" id="bm-f-default" class="regular-text">
+							<p class="description"><?php esc_html_e('Wartość wstępnie wpisana w polu. Dla select/radio podaj dokładnie jedną z opcji powyżej.', 'basemgmt'); ?></p>
+						</td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e('Kolejność', 'basemgmt'); ?></th>
-						<td><input type="number" name="sort_order" id="bm-f-order" class="small-text" min="0" value="0"></td>
+						<td>
+							<input type="number" name="sort_order" id="bm-f-order" class="small-text" min="0" value="0">
+							<p class="description"><?php esc_html_e('Niższa liczba = wyżej na liście. Pola z tą samą kolejnością są sortowane według daty dodania.', 'basemgmt'); ?></p>
+						</td>
 					</tr>
 				</table>
 
@@ -240,10 +260,25 @@ $back_url  = add_query_arg(['page' => 'basemgmt-forms'], admin_url('admin.php'))
 
 <script>
 (function($){
+	var typeHints = {
+		'text':     '<?php esc_html_e('Pole tekstowe (jeden wiersz). Idealne do imienia, adresu, krótkiego opisu.', 'basemgmt'); ?>',
+		'textarea': '<?php esc_html_e('Pole tekstowe wielowierszowe. Używaj do dłuższych opisów, uwag, pytań.', 'basemgmt'); ?>',
+		'number':   '<?php esc_html_e('Pole numeryczne. Akceptuje tylko liczby. Przydatne do ilości, wieku itp.', 'basemgmt'); ?>',
+		'email':    '<?php esc_html_e('Pole adresu email z automatyczną walidacją formatu (np. jan@example.com).', 'basemgmt'); ?>',
+		'tel':      '<?php esc_html_e('Pole na numer telefonu. Na urządzeniach mobilnych wyświetla klawiaturę numeryczną.', 'basemgmt'); ?>',
+		'date':     '<?php esc_html_e('Pole daty z kalendarzem. Zwraca datę w formacie RRRR-MM-DD.', 'basemgmt'); ?>',
+		'select':   '<?php esc_html_e('Lista rozwijana z gotowymi opcjami do wyboru (tylko jedna opcja). Uzupełnij pole „Opcje" poniżej.', 'basemgmt'); ?>',
+		'radio':    '<?php esc_html_e('Przyciski radiowe – widoczne wszystkie opcje, wybierz jedną. Uzupełnij pole „Opcje" poniżej.', 'basemgmt'); ?>',
+		'checkbox': '<?php esc_html_e('Pola wyboru – możliwy wybór wielu opcji naraz. Uzupełnij pole „Opcje" poniżej.', 'basemgmt'); ?>',
+		'file':     '<?php esc_html_e('Pole do przesyłania pliku. Obsługuje zdjęcia i dokumenty. Ograniczenia wielkości zależą od serwera.', 'basemgmt'); ?>',
+		'hidden':   '<?php esc_html_e('Pole ukryte – niewidoczne dla użytkownika, ale wysyłane razem ze zgłoszeniem. Użyj wartości domyślnej.', 'basemgmt'); ?>',
+	};
+
 	// Show/hide options row based on field type
 	function bmToggleOptions(type) {
 		var needsOpts = ['select','radio','checkbox'].indexOf(type) !== -1;
 		$('#bm-f-row-options').toggle(needsOpts);
+		$('#bm-f-type-hint').text(typeHints[type] || '');
 	}
 
 	$('#bm-f-type').on('change', function(){ bmToggleOptions(this.value); });

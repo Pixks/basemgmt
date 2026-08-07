@@ -54,7 +54,7 @@ final class PdfPage {
 		// Per-camp counts for the given date.
 		$camp_counts = [];
 		foreach ( $camps as $camp ) {
-			$camp_counts[$camp->id] = DailyCountRepository::get_for_date((int) $camp->id, $date);
+			$camp_counts[$camp->id] = DailyCountRepository::get_by_date((int) $camp->id, $date);
 		}
 
 		$generated_at = current_time('d.m.Y H:i');
