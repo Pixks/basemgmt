@@ -43,8 +43,30 @@ $is_new = !$day;
 
 	<?php if (!$is_new): ?>
 	<!-- Actions -->
-	<div style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;">
+	<div style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
 		<a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=bm_reset_menu_flags&day_id=' . $day->id), 'bm_reset_menu_flags_' . $day->id)); ?>" class="button" onclick="return confirm('<?php esc_attr_e('Zresetować flagi zmian?', 'basemgmt'); ?>')"><?php esc_html_e('Resetuj flagi zmian', 'basemgmt'); ?></a>
+
+		<?php
+		$meal_tpls = \BaseMgmt\Modules\Menu\MealTemplateRepository::get_all();
+		if ( ! empty($meal_tpls) ):
+		?>
+		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-flex;gap:6px;align-items:center;">
+			<?php wp_nonce_field('bm_apply_meal_template'); ?>
+			<input type="hidden" name="action"      value="bm_apply_meal_template">
+			<input type="hidden" name="meal_day_id" value="<?php echo esc_attr((string) $day->id); ?>">
+			<select name="template_id" required>
+				<option value=""><?php esc_html_e('– wybierz szablon –', 'basemgmt'); ?></option>
+				<?php foreach ($meal_tpls as $tpl): ?>
+				<option value="<?php echo esc_attr((string) $tpl->id); ?>"><?php echo esc_html($tpl->name); ?></option>
+				<?php endforeach; ?>
+			</select>
+			<label style="font-size:13px;">
+				<input type="checkbox" name="replace_existing" value="1">
+				<?php esc_html_e('Zastąp istniejące', 'basemgmt'); ?>
+			</label>
+			<button type="submit" class="button button-secondary"><?php esc_html_e('Zastosuj szablon', 'basemgmt'); ?></button>
+		</form>
+		<?php endif; ?>
 	</div>
 
 	<!-- Meal items list -->

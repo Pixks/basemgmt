@@ -12,6 +12,7 @@ use BaseMgmt\Admin\Pages\FormsPage;
 use BaseMgmt\Admin\Pages\HelpPage;
 use BaseMgmt\Admin\Pages\LogsPage;
 use BaseMgmt\Admin\Pages\MealOptionsPage;
+use BaseMgmt\Admin\Pages\MealTemplatesPage;
 use BaseMgmt\Admin\Pages\MenuPage;
 use BaseMgmt\Admin\Pages\PdfPage;
 use BaseMgmt\Admin\Pages\PlanTemplatesPage;
@@ -49,26 +50,28 @@ final class AdminMenu {
 	private LogsPage          $logs;
 	private PlanTemplatesPage $plan_templates;
 	private MealOptionsPage   $meal_options;
+	private MealTemplatesPage $meal_templates;
 	private PdfPage           $pdf;
 
 	public function __construct() {
-		$this->dashboard      = new DashboardPage();
-		$this->camps          = new CampsPage();
-		$this->staff          = new StaffPage();
-		$this->announcements  = new AnnouncementsPage();
-		$this->reports        = new ReportsPage();
-		$this->weather        = new WeatherPage();
-		$this->schedule       = new SchedulePage();
-		$this->reservations   = new ReservationsPage();
-		$this->menu           = new MenuPage();
-		$this->communication  = new CommunicationPage();
-		$this->help           = new HelpPage();
-		$this->forms          = new FormsPage();
-		$this->settings       = new SettingsPage();
-		$this->logs           = new LogsPage();
-		$this->plan_templates = new PlanTemplatesPage();
-		$this->meal_options   = new MealOptionsPage();
-		$this->pdf            = new PdfPage();
+		$this->dashboard       = new DashboardPage();
+		$this->camps           = new CampsPage();
+		$this->staff           = new StaffPage();
+		$this->announcements   = new AnnouncementsPage();
+		$this->reports         = new ReportsPage();
+		$this->weather         = new WeatherPage();
+		$this->schedule        = new SchedulePage();
+		$this->reservations    = new ReservationsPage();
+		$this->menu            = new MenuPage();
+		$this->communication   = new CommunicationPage();
+		$this->help            = new HelpPage();
+		$this->forms           = new FormsPage();
+		$this->settings        = new SettingsPage();
+		$this->logs            = new LogsPage();
+		$this->plan_templates  = new PlanTemplatesPage();
+		$this->meal_options    = new MealOptionsPage();
+		$this->meal_templates  = new MealTemplatesPage();
+		$this->pdf             = new PdfPage();
 	}
 
 	// ── admin_menu hook ───────────────────────────────────────────────────────
@@ -119,20 +122,20 @@ final class AdminMenu {
 
 		add_submenu_page(
 			'basemgmt',
-			__('Ogłoszenia', 'basemgmt'),
-			__('Ogłoszenia', 'basemgmt') . $badge,
-			'manage_bm_announcements',
-			'basemgmt-announcements',
-			[$this->announcements, 'render']
-		);
-
-		add_submenu_page(
-			'basemgmt',
 			__('Meldunki', 'basemgmt'),
 			__('Meldunki', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-reports',
 			[$this->reports, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Ogłoszenia', 'basemgmt'),
+			__('Ogłoszenia', 'basemgmt') . $badge,
+			'manage_bm_announcements',
+			'basemgmt-announcements',
+			[$this->announcements, 'render']
 		);
 
 		add_submenu_page(
@@ -155,6 +158,15 @@ final class AdminMenu {
 
 		add_submenu_page(
 			'basemgmt',
+			__('Szablony planów dnia', 'basemgmt'),
+			'↳ ' . __('Szablony', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-plan-templates',
+			[$this->plan_templates, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
 			__('Rezerwacje', 'basemgmt'),
 			__('Rezerwacje', 'basemgmt'),
 			'manage_basemgmt',
@@ -173,20 +185,29 @@ final class AdminMenu {
 
 		add_submenu_page(
 			'basemgmt',
+			__('Szablony jadłospisów', 'basemgmt'),
+			'↳ ' . __('Szablony', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-meal-templates',
+			[$this->meal_templates, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Opcje jadłospisu', 'basemgmt'),
+			'↳ ' . __('Opcje', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-meal-options',
+			[$this->meal_options, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
 			__('Komunikacja', 'basemgmt'),
 			__('Komunikacja', 'basemgmt') . $comm_badge,
 			'manage_basemgmt',
 			'basemgmt-communication',
 			[$this->communication, 'render']
-		);
-
-		add_submenu_page(
-			'basemgmt',
-			__('Pomoc', 'basemgmt'),
-			__('Pomoc', 'basemgmt'),
-			'manage_basemgmt',
-			'basemgmt-help',
-			[$this->help, 'render']
 		);
 
 		add_submenu_page(
@@ -200,6 +221,24 @@ final class AdminMenu {
 
 		add_submenu_page(
 			'basemgmt',
+			__('Pomoc', 'basemgmt'),
+			__('Pomoc', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-help',
+			[$this->help, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Raporty (PDF)', 'basemgmt'),
+			__('Raporty (PDF)', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-pdf',
+			[$this->pdf, 'render_list']
+		);
+
+		add_submenu_page(
+			'basemgmt',
 			__('Ustawienia', 'basemgmt'),
 			__('Ustawienia', 'basemgmt'),
 			'manage_options',
@@ -207,33 +246,8 @@ final class AdminMenu {
 			[$this->settings, 'render']
 		);
 
-		add_submenu_page(
-			'basemgmt',
-			__('Szablony planów dnia', 'basemgmt'),
-			__('Szablony planów', 'basemgmt'),
-			'manage_basemgmt',
-			'basemgmt-plan-templates',
-			[$this->plan_templates, 'render']
-		);
-
-		add_submenu_page(
-			'basemgmt',
-			__('Opcje jadłospisu', 'basemgmt'),
-			__('Opcje jadłospisu', 'basemgmt'),
-			'manage_basemgmt',
-			'basemgmt-meal-options',
-			[$this->meal_options, 'render']
-		);
-
-		add_submenu_page(
-			'basemgmt',
-			__('Drukuj / PDF', 'basemgmt'),
-			__('Drukuj / PDF', 'basemgmt'),
-			'manage_basemgmt',
-			'basemgmt-pdf',
-			[$this->pdf, 'render_list']
-		);
-
+		// Logs page: registered so it remains accessible via URL, but hidden from the sidebar.
+		// Accessible from the Settings page.
 		add_submenu_page(
 			'basemgmt',
 			__('Logi operacji', 'basemgmt'),
@@ -242,6 +256,7 @@ final class AdminMenu {
 			'basemgmt-logs',
 			[$this->logs, 'render']
 		);
+		remove_submenu_page('basemgmt', 'basemgmt-logs');
 	}
 
 	// ── Asset enqueueing ──────────────────────────────────────────────────────
@@ -346,6 +361,7 @@ final class AdminMenu {
 			'bm_delete_plan_item'       => [$this->schedule,      'handle_delete_item'],
 			'bm_copy_plan'              => [$this->schedule,      'handle_copy'],
 			'bm_reset_plan_flags'       => [$this->schedule,      'handle_reset_flags'],
+			'bm_bulk_create_plans'      => [$this->schedule,      'handle_bulk_create'],
 			// Reservations (Rezerwacje)
 			'bm_save_resource'          => [$this->reservations,  'handle_save_resource'],
 			'bm_delete_resource'        => [$this->reservations,  'handle_delete_resource'],
@@ -393,6 +409,12 @@ final class AdminMenu {
 			'bm_delete_meal_location'     => [$this->meal_options,   'handle_delete_location'],
 			// Staff unlock
 			'bm_unlock_staff'             => [$this->staff,          'handle_unlock'],
+			// Meal Templates (Szablony jadłospisów)
+			'bm_save_meal_template'       => [$this->meal_templates, 'handle_save'],
+			'bm_delete_meal_template'     => [$this->meal_templates, 'handle_delete'],
+			'bm_save_meal_template_item'  => [$this->meal_templates, 'handle_save_item'],
+			'bm_delete_meal_template_item'=> [$this->meal_templates, 'handle_delete_item'],
+			'bm_apply_meal_template'      => [$this->meal_templates, 'handle_apply'],
 		];
 	}
 

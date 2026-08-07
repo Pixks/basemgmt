@@ -44,6 +44,38 @@ defined('ABSPATH') || exit;
         </form>
     </details>
 
+    <!-- Bulk create plans form -->
+    <details style="margin-bottom:20px;">
+        <summary style="cursor:pointer;font-weight:600;color:#2271b1;"><?php esc_html_e('📆 Masowe tworzenie planów na zakres dat', 'basemgmt'); ?></summary>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:12px;">
+            <?php wp_nonce_field('bm_bulk_create_plans'); ?>
+            <input type="hidden" name="action" value="bm_bulk_create_plans">
+            <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+                <label>
+                    <?php esc_html_e('Od:', 'basemgmt'); ?><br>
+                    <input type="date" name="bulk_date_from" required>
+                </label>
+                <label>
+                    <?php esc_html_e('Do:', 'basemgmt'); ?><br>
+                    <input type="date" name="bulk_date_to" required>
+                </label>
+                <label>
+                    <?php esc_html_e('Prefix tytułu (opcjonalnie):', 'basemgmt'); ?><br>
+                    <input type="text" name="bulk_title" class="regular-text" placeholder="<?php esc_attr_e('np. Plan obozu letniego', 'basemgmt'); ?>">
+                </label>
+                <label>
+                    <?php esc_html_e('Zasięg:', 'basemgmt'); ?><br>
+                    <select name="bulk_is_global">
+                        <option value="1"><?php esc_html_e('Globalny', 'basemgmt'); ?></option>
+                        <option value="0"><?php esc_html_e('Wybrane obozy', 'basemgmt'); ?></option>
+                    </select>
+                </label>
+                <button type="submit" class="button button-secondary"><?php esc_html_e('Utwórz plany', 'basemgmt'); ?></button>
+            </div>
+            <p class="description" style="margin-top:8px;"><?php esc_html_e('Tworzy pusty plan dla każdego dnia w wybranym zakresie (maks. 90 dni). Dni, dla których plan już istnieje, są pomijane.', 'basemgmt'); ?></p>
+        </form>
+    </details>
+
     <!-- Plan list -->
     <table class="wp-list-table widefat fixed striped">
         <thead>
