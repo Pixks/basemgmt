@@ -1,12 +1,12 @@
-# Baza Obozowa – Dokumentacja Pluginu
+# CampLink – Dokumentacja pluginu
 
-> Wersja: **1.6.0** | Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB
+> Wersja: **1.1.0** | Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB
 
 ## Spis treści
 
 | Dokument | Opis |
 |----------|------|
-| [01 – Przegląd i instalacja](01-overview-installation.md) | Wymagania, instalacja, pierwsze uruchomienie |
+| [01 – Przegląd i instalacja](01-overview-installation.md) | Wymagania, instalacja, pierwsze uruchomienie i nowości v1.1.0 |
 | [02 – Architektura](02-architecture.md) | Struktura plików, PSR-4, wzorce, rozszerzalność |
 | [03 – System dostępu frontendowego](03-frontend-access.md) | Logowanie kadry, sesje, rate limiting |
 | [04 – Moduły](04-modules.md) | Obozy, Kadra, Ogłoszenia, Meldunki, Pogoda, Plan dnia, Rezerwacje, Jadłospis, Komunikacja, Pomoc, Formularze i Zgłoszenia |
@@ -21,6 +21,7 @@
 | [13 – Breakdance Custom Elements](13-breakdance-elements.md) | Gotowe bloki HTML/Alpine dla każdego elementu UI (styl neutralny) |
 | [14 – Breakdance Elements – styl ZHP](14-breakdance-elements-zhp.md) | **Gotowe bloki ze stylowaniem ZHP** (paleta zhp.pl, CSS design system) |
 | [15 – Gotowy panel – jeden blok](15-panel-full-breakdance.md) | **Kompletna strona panelu** – jeden blok do wklejenia w Breakdance |
+| [16 – Logi operacji](16-operation-logs.md) | Dziennik zdarzeń, filtrowanie, retencja i zastosowania audytowe |
 
 ---
 
@@ -34,7 +35,7 @@ cp -r basemgmt /var/www/html/wp-content/plugins/
 # lub
 wp plugin activate basemgmt
 
-# 3. Przejdź do Baza Obozowa → Dashboard
+# 3. Przejdź do CampLink → Dashboard
 ```
 
 ## Kluczowe koncepcje
@@ -45,11 +46,12 @@ wp plugin activate basemgmt
 - **Modularność**: każdy moduł w osobnym namespace pod `src/Modules/`.
 - **Breakdance-ready**: `bmConfig` i Alpine.js ładowane globalnie – nie wymaga shortcode. Każdy element UI to osobny blok HTML gotowy do wklejenia w Breakdance Studio (→ [doc 13](13-breakdance-elements.md)).
 - **Edytowalne szablony email**: każdy email konfigurowalny przez edytor HTML (CodeMirror) z tokenami `{{zmiennych}}`. Nagłówek i stopka emaila również edytowalne jako pełny HTML.
-- **Bezpieczeństwo**: haszowane kody, rate limiting, sesje z TTL, wszystkie `/panel/*` endpointy chronione sesją.
+- **Bezpieczeństwo**: haszowane 6-cyfrowe PIN-y, blokada czasowa i trwała kadry, sesje z TTL, wszystkie `/panel/*` endpointy chronione sesją.
 - **Snapshot zgłoszeń**: dane formularzy utrwalane w momencie wysłania, odporne na późniejsze zmiany.
 - **Komunikacja dwukierunkowa**: admin może inicjować wątki do obozów; kadra odpowiada przez panel.
+- **Nowości v1.1.0**: szablony planów dnia, opcje jadłospisu (diety i miejsca), logi operacji, raporty cykliczne email oraz eksporty Drukuj / PDF bez zewnętrznych bibliotek.
 - **Naprawy tabel inline**: jadłospis, pomoc i formularze wykrywają brak tabel i oferują przycisk naprawy bez reaktywacji pluginu.
 
 ---
 
-*Dokumentacja wygenerowana dla pluginu Baza Obozowa v1.6.0.*
+*Dokumentacja przygotowana dla pluginu CampLink v1.1.0.*

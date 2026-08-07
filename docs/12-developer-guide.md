@@ -239,6 +239,7 @@ $this->loader->add_action('rest_api_init', new MojModulController(), 'register_r
 | `bm_reservations_expired` | `int $count` | Po wygaśnięciu rezerwacji |
 | `bm_reservation_created` | `int $id, array $data` | Nowa rezerwacja |
 | `bm_reservation_status_changed` | `int $id, string $status, int $user_id` | Zmiana statusu rezerwacji |
+| `bm_periodic_staff_report_sent` | `array $totals, array $camps` | Po wysłaniu raportu stanów osobowych |
 
 ### Przykład użycia
 
@@ -256,6 +257,62 @@ add_action('bm_missing_reports_checked', function(array $missing, string $date):
     }
 }, 10, 2);
 ```
+
+---
+
+## OperationLogger – logowanie zdarzeń
+
+W CampLink 1.1.0 zalecanym mechanizmem audytu jest `OperationLogger`.
+
+```php
+use BaseMgmt\Core\OperationLogger;
+
+OperationLogger::log(
+    OperationLogger::ACTION_THREAD_CREATED,
+    'submission',
+    $submission_id,
+    ['thread_id' => $thread_id],
+    null
+);
+```
+
+Stosuj go wszędzie tam, gdzie:
+
+- zmieniasz stan istotnego obiektu,
+- wykonujesz operacje bezpieczeństwa,
+- tworzysz wpisy, które administrator powinien móc odtworzyć w logach.
+
+Typowe stałe obejmują m.in. logowania, odblokowania kadry, zapisy szablonów i tworzenie wątków.
+
+---
+
+## Szablony planów dnia – rozszerzenie modułu Schedule
+
+Jeżeli rozwijasz plan dnia, używaj istniejących klas:
+
+- `ScheduleRepository` – konkretne plany,
+- `PlanTemplateRepository` – szablony globalne.
+
+Przykład zastosowania szablonu:
+
+```php
+PlanTemplateRepository::apply_to_plan($template_id, $plan_id, true);
+```
+
+`true` w trzecim argumencie oznacza zastąpienie istniejących pozycji planu.
+
+---
+
+## Opcje jadłospisu – słowniki diet i miejsc
+
+Zamiast twardo wpisywać listy w formularzach używaj `MealOptionRepository`:
+
+```php
+MealOptionRepository::get_all_diets();
+MealOptionRepository::get_all_locations();
+```
+
+Pozwala to zachować spójność z ekranem **Opcje jadłospisu** i formularzem pozycji jadłospisu, który obsługuje także wariant „Inne – wpisz ręcznie”.
 
 ---
 

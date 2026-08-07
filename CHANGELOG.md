@@ -7,7 +7,7 @@ Renamed plugin to **CampLink**.
 ### New features
 
 #### Auth & security
-- **Staff account lockout** — 3 failed attempts → configurable temp lock (default 15 min); 1 failure after temp-unlock → permanent lock. Admin panel unlocks with forced security code reset. (`RateLimiter` rewritten; `permanent_lock` column added to `bm_staff`)
+- **Staff account lockout** — 5 failed attempts → configurable temp lock (default 15 min); 1 failure after temp-unlock → permanent lock. Admin panel unlocks with forced security code reset. (`RateLimiter` rewritten; `permanent_lock` column added to `bm_staff`)
 
 #### Scheduling
 - **Global day plan templates** — `bm_plan_templates` / `bm_plan_template_items` tables; full CRUD panel; "Apply template" widget inline on the plan edit page

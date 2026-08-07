@@ -2,473 +2,208 @@
 
 ## Architektura
 
-`EmailService` (`src/Core/EmailService.php`) to globalny, statyczny serwis email używany przez wszystkie moduły pluginu. Zapewnia:
+`EmailService` (`src/Core/EmailService.php`) to globalny, statyczny serwis email używany przez CampLink. Zapewnia:
 
-- spójny wygląd (nagłówek, logo, kolory, stopka),
-- konfigurowalną personalizację przez admina,
-- **edytowalne szablony z DB z podstawianiem zmiennych `{{token}}`**,
-- fallback do plików PHP gdy brak customowego szablonu,
-- integrację z `wp_mail()`.
-
----
-
-## Konfiguracja
-
-WP Admin → **Baza Obozowa → Ustawienia** → sekcja "Ustawienia powiadomień email"
-
-| Ustawienie | Domyślnie | Opis |
-|------------|-----------|------|
-| Nazwa nadawcy | Nazwa strony WP | Widoczna jako "Od:" |
-| Email nadawcy | admin email WP | Adres "Od:" |
-| Email admina (powiadomienia) | admin email WP | Adres, na który trafiają notyfikacje systemowe |
-| Kolor nagłówka | `#2271b1` | Hex kolor paska nagłówka (gdy brak własnego HTML nagłówka) |
-| URL logo | *(puste)* | Wyświetlane zamiast tytułu (gdy brak własnego HTML nagłówka) |
-| Tytuł nagłówka | Nazwa strony WP | Tekst w nagłówku gdy brak logo i brak HTML nagłówka |
-| **Nagłówek emaila (HTML)** | *(puste)* | Pełny HTML nagłówka – nadpisuje logo/kolor/tytuł. Edytor CodeMirror. |
-| **Stopka emaila (HTML)** | Auto-generowana | HTML stopki. Obsługuje `<a>`, `<strong>`, `<br>` itp. Edytor CodeMirror. |
-
-Ustawienia przechowywane jako `basemgmt_email_settings` (WP Option).
+- wspólny layout HTML (nagłówek, treść, stopka),
+- ustawienia nadawcy i wyglądu przechowywane w WP Options,
+- edytowalne szablony email z tokenami `{{zmiennych}}`,
+- wysyłkę przez `wp_mail()`,
+- integrację z powiadomieniami rezerwacji i raportami systemowymi.
 
 ---
 
-## Wysyłka emaila
+## Gdzie konfiguruje się email?
+
+WP Admin → **CampLink → Ustawienia**
+
+W praktyce strona ustawień ma cztery obszary związane z komunikacją:
+
+1. **Ustawienia powiadomień email** – nadawca, nagłówek, stopka.
+2. **Szablony emaili** – edycja tematów i HTML dla zdefiniowanych typów wiadomości.
+3. **Test emaila** – wysyłka wiadomości testowej.
+4. **Konfiguracja powiadomień** – adresy odbiorców dla brakujących meldunków i cyklicznych raportów oraz interwał raportów.
+
+---
+
+## Ustawienia ogólne
+
+Przechowywane głównie w opcji `basemgmt_email_settings`.
+
+| Ustawienie | Opis |
+|------------|------|
+| Nazwa nadawcy (`from_name`) | Nazwa widoczna w polu „Od” |
+| Email nadawcy (`from_email`) | Adres nadawcy |
+| Email admina (`admin_notify_email`) | Główny adres dla notyfikacji administracyjnych, np. rezerwacji |
+| Kolor nagłówka (`header_color`) | Kolor paska nagłówka w domyślnym layoucie |
+| URL logo (`logo_url`) | Logo w nagłówku |
+| Tytuł nagłówka (`header_title`) | Tekst zastępczy, gdy nie ma logo |
+| Nagłówek emaila (HTML) (`header_html`) | Pełny własny HTML nagłówka |
+| Stopka emaila (HTML) (`footer_text`) | Pełny HTML stopki |
+
+> Jeśli `header_html` jest uzupełnione, nadpisuje prosty układ oparty o logo, kolor i tytuł.
+
+---
+
+## Konfigurowalne adresy odbiorców
+
+Nowości v1.1.0 rozszerzają konfigurację o osobne listy odbiorców dla określonych typów komunikacji:
+
+| Opcja | Zastosowanie |
+|-------|--------------|
+| `bm_missing_report_emails` | Adresy dla przypomnień o brakujących meldunkach dziennych |
+| `bm_report_emails` | Adresy dla cyklicznych raportów stanów osobowych |
+| `bm_report_interval` | Interwał raportu `hourly` / `twicedaily` / `daily` |
+
+Adresy są wpisywane jako lista rozdzielona przecinkami.
+
+### Jak działają odbiorcy?
+
+- **Brakujące meldunki**: `Scheduler::send_daily_reminders()` pobiera odbiorców z `bm_missing_report_emails`, a gdy opcja jest pusta – używa `admin_email`.
+- **Raport okresowy stanów osobowych**: `Scheduler::send_periodic_staff_report()` pobiera odbiorców z `bm_report_emails`. Pusta wartość wyłącza harmonogram.
+- **Rezerwacje**: `ReservationNotifier` korzysta z `admin_notify_email` dla strony administracyjnej oraz z adresów zapisanych przy członkach kadry.
+
+---
+
+## Wysyłka emaila w kodzie
 
 ```php
 use BaseMgmt\Core\EmailService;
 
-// Prosty email z szablonu
-EmailService::send(
-    'odbiorca@example.com',         // $to
-    EmailService::subject('Temat'), // $subject  → "[Nazwa Strony] Temat"
-    'reservation_created',          // $template – slug
-    [                               // $data     – zmienne kontekstowe
-        'reservation'   => $reservation_array,
-        'resource_name' => 'Boisko',
-        'camp_name'     => 'Obóz Harcerzy',
-        'is_admin'      => false,
-    ]
-);
-
-// Email do wielu odbiorców
-EmailService::send_many(
-    ['a@example.com', 'b@example.com'],
-    EmailService::subject('Komunikat'),
-    'reservation_approved',
-    $data
-);
-```
-
-### `EmailService::subject(string $text): string`
-
-Dodaje prefix `[Nazwa Strony]` do tematu:
-```
-[Baza Obozowa] Nowa rezerwacja: Boisko – Obóz Harcerzy
-```
-
----
-
-## Szablony email – priorytety renderowania
-
-```
-EmailService::render('reservation_created', $data)
-    │
-    ├─ 1. Sprawdź DB: basemgmt_email_tpl_reservation_created
-    │      │
-    │      ├─ Istnieje → EmailTemplateRepository::render_body() → $content
-    │      │             (podstawia zmienne {{token}} w zapisanym HTML)
-    │      │
-    │      └─ Brak → Wczytaj templates/email/reservation_created.php → $content
-    │
-    └─ 2. Owiń w templates/email/base.php ($content, $settings)
-               → Gotowy HTML email
-```
-
----
-
-## EmailTemplateRepository
-
-`src/Core/EmailTemplateRepository.php` zarządza edytowalnymi szablonami.
-
-### Rejestr szablonów
-
-```php
-EmailTemplateRepository::get_registry();
-// Zwraca: array<slug, [label, default_subject, variables, default_html]>
-```
-
-Każdy wpis zawiera:
-- `label` – nazwa wyświetlana w panelu
-- `default_subject` – domyślny temat (może zawierać `{{token}}`)
-- `variables` – mapa `{{token}}` → opis (pokazywana jako podpowiedzi w edytorze)
-- `default_html` – wbudowany HTML body (używany gdy brak override w DB)
-
-### Storage
-
-Każdy szablon przechowywany jako `basemgmt_email_tpl_{slug}` (WP Option, `autoload=false`).
-
-```php
-// Pobierz zapisany override (lub null gdy nie customizowany)
-$saved = EmailTemplateRepository::get_saved('reservation_created');
-// ['subject' => '...', 'html_body' => '...'] | null
-
-// Zapisz
-EmailTemplateRepository::save($slug, $subject, $html_body);
-// html_body jest filtrowany przez wp_kses_post()
-
-// Usuń override → powrót do domyślnego
-EmailTemplateRepository::reset($slug);
-```
-
-### Podstawianie zmiennych
-
-```php
-// W zapisanym HTML: "Witaj w {{oboz}}! Zasób {{zasob}} jest zarezerwowany."
-// Zmienne: {{oboz}} → "Obóz Harcerek", {{zasob}} → "Boisko"
-// Wynik:   "Witaj w Obóz Harcerek! Zasób Boisko jest zarezerwowany."
-```
-
----
-
-## Edytor szablonów w panelu admina
-
-WP Admin → **Baza Obozowa → Ustawienia** → sekcja "Szablony emaili" → kliknij **Edytuj**
-
-Funkcje edytora:
-- **CodeMirror HTML editor** (wbudowany w WordPress, podświetlanie składni, numery linii)
-- **Lista dostępnych zmiennych** (prawy sidebar) – kliknięcie tokena wstawia go w miejscu kursora
-- **Pole tematu** z obsługą zmiennych
-- **Przycisk "Przywróć domyślny"** – usuwa override z DB
-- **Wskaźnik statusu** – "Własny" (●) lub "Domyślny" (○) na liście i w edytorze
-
-### Zarejestrowane szablony i ich zmienne
-
-| Slug | Label | Dodatkowe zmienne |
-|------|-------|-------------------|
-| `reservation_created` | Rezerwacja – nowe zgłoszenie | `{{link_panelu_admin}}` |
-| `reservation_approved` | Rezerwacja – zatwierdzona | – |
-| `reservation_rejected` | Rezerwacja – odrzucona | `{{komentarz}}` |
-| `reservation_cancelled` | Rezerwacja – anulowana | `{{komentarz}}` |
-
-### Zmienne wspólne dla szablonów rezerwacji
-
-| Zmienna | Opis |
-|---------|------|
-| `{{oboz}}` | Nazwa obozu |
-| `{{zasob}}` | Nazwa zasobu (boisko, sala itp.) |
-| `{{data}}` | Data rezerwacji (dd.mm.rrrr) |
-| `{{godzina_od}}` | Godzina rozpoczęcia |
-| `{{godzina_do}}` | Godzina zakończenia |
-| `{{cel}}` | Cel rezerwacji |
-| `{{nazwa_systemu}}` | Nazwa strony / systemu |
-
----
-
-## base.php
-
-Szablon bazowy z:
-- nagłówkiem (logo lub tytuł, kolor tła konfigurowalny)
-- blokiem `$content`
-- stopką z tekstem z ustawień
-
-Zmienne dostępne w `base.php`:
-- `$content` – wyrenderowany HTML z szablonu treści
-- `$subject` – temat emaila
-- `$settings` – tablica z ustawieniami EmailService
-
----
-
-## Dodawanie nowego szablonu (deweloper)
-
-### 1. Zarejestruj w `EmailTemplateRepository::get_registry()`
-
-```php
-'moj_szablon' => [
-    'label'           => __('Mój moduł – zdarzenie', 'basemgmt'),
-    'default_subject' => __('Zdarzenie w {{oboz}}', 'basemgmt'),
-    'variables'       => [
-        '{{oboz}}'   => __('Nazwa obozu', 'basemgmt'),
-        '{{szczegol}}' => __('Szczegóły zdarzenia', 'basemgmt'),
-    ],
-    'default_html'    => '<h2>Tytuł</h2><p>{{szczegol}}</p>',
-],
-```
-
-### 2. Dodaj zmienne do `build_vars()` w tym samym pliku
-
-```php
-'{{szczegol}}' => esc_html((string) ($data['szczegol'] ?? '')),
-```
-
-### 3. Wywołaj `EmailService::send()`
-
-```php
 EmailService::send(
     'odbiorca@example.com',
-    EmailService::subject('Zdarzenie'),
-    'moj_szablon',
-    ['oboz' => 'Obóz Harcerek', 'szczegol' => 'Opis zdarzenia']
-);
-```
-
-Fallback PHP file: utwórz `templates/email/moj_szablon.php` jeśli chcesz domyślnego template'a opartego o logikę PHP (np. z if/else).
-
----
-
-## Powiadomienia o rezerwacjach (ReservationNotifier)
-
-`ReservationNotifier` (`src/Modules/Reservations/ReservationNotifier.php`) nasłuchuje hooków WP i wywołuje `EmailService::send()`:
-
-```php
-add_action('bm_reservation_created',        [$this, 'notify_created'],        10, 2);
-add_action('bm_reservation_status_changed', [$this, 'notify_status_changed'], 10, 3);
-```
-
-### Logika adresata
-
-1. Notifier pobiera `staff_id` z rezerwacji i szuka jego emaila w `bm_staff`
-2. Jeśli brak – bierze email pierwszego aktywnego członka kadry tego obozu
-3. Email admina pochodzi z `EmailService::get_settings()['admin_notify_email']`
-
----
-
-## Filtrowanie `wp_mail`
-
-```php
-// Przed wysyłką – ustawia Content-Type i nadawcę
-add_filter('wp_mail_content_type', fn() => 'text/html');
-add_filter('wp_mail_from',         fn() => $settings['from_email']);
-add_filter('wp_mail_from_name',    fn() => $settings['from_name']);
-
-$result = wp_mail($to, $subject, $body);
-
-// Po wysyłce – natychmiastowe czyszczenie filtrów
-remove_all_filters('wp_mail_content_type');
-remove_all_filters('wp_mail_from');
-remove_all_filters('wp_mail_from_name');
-```
-
----
-
-## Test wysyłki emaila
-
-WP Admin → **Baza Obozowa → Ustawienia** → sekcja "Test emaila"
-
-- Wpisz adres odbiorcy
-- Kliknij "Wyślij testowy email"
-- Zostanie wysłany przykładowy email z szablonu `reservation_created` (z przykładowymi danymi)
-- Test używa aktywnego szablonu – jeśli `reservation_created` jest customizowany, wysyłany jest customowy
-
-
----
-
-## Konfiguracja
-
-WP Admin → **Baza Obozowa → Ustawienia** → sekcja "Ustawienia powiadomień email"
-
-| Ustawienie | Domyślnie | Opis |
-|------------|-----------|------|
-| Nazwa nadawcy | Nazwa strony WP | Widoczna jako "Od:" |
-| Email nadawcy | admin email WP | Adres "Od:" |
-| Email admina (powiadomienia) | admin email WP | Adres, na który trafiają notyfikacje systemowe |
-| Kolor nagłówka | `#2271b1` | Hex kolor paska nagłówka (gdy brak własnego HTML nagłówka) |
-| URL logo | *(puste)* | Wyświetlane zamiast tytułu (gdy brak własnego HTML nagłówka) |
-| Tytuł nagłówka | Nazwa strony WP | Tekst w nagłówku gdy brak logo i brak HTML nagłówka |
-| **Nagłówek emaila (HTML)** | *(puste)* | Pełny HTML nagłówka – nadpisuje logo/kolor/tytuł. Edytor CodeMirror. |
-| **Stopka emaila (HTML)** | Auto-generowana | HTML stopki. Obsługuje `<a>`, `<strong>`, `<br>` itp. Edytor CodeMirror. |
-
-Ustawienia przechowywane jako `basemgmt_email_settings` (WP Option).
-
----
-
-## Wysyłka emaila
-
-```php
-use BaseMgmt\Core\EmailService;
-
-// Prosty email z szablonu
-EmailService::send(
-    'odbiorca@example.com',         // $to
-    EmailService::subject('Temat'), // $subject  → "[Nazwa Strony] Temat"
-    'reservation_created',          // $template – slug pliku w templates/email/
-    [                               // $data     – zmienne dostępne w szablonie
-        'reservation'   => $reservation_array,
-        'resource_name' => 'Boisko',
+    EmailService::subject('Temat wiadomości'),
+    'reservation_created',
+    [
+        'reservation'   => $reservation,
+        'resource_name' => 'Boisko główne',
         'camp_name'     => 'Obóz Harcerzy',
         'is_admin'      => false,
     ]
 );
-
-// Email do wielu odbiorców
-EmailService::send_many(
-    ['a@example.com', 'b@example.com'],
-    EmailService::subject('Komunikat'),
-    'reservation_approved',
-    $data
-);
 ```
 
-### `EmailService::subject(string $text): string`
+### Temat wiadomości
 
-Dodaje prefix `[Nazwa Strony]` do tematu:
-```
-[Baza Obozowa] Nowa rezerwacja: Boisko – Obóz Harcerzy
+`EmailService::subject()` dodaje prefix oparty o nazwę witryny:
+
+```text
+[CampLink] Nowa rezerwacja: Boisko główne – Obóz Harcerzy
 ```
 
 ---
 
 ## Szablony email
 
-Szablony znajdują się w `templates/email/`.
+Za rejestr i zapis odpowiada `EmailTemplateRepository`.
 
-### Struktura renderowania
+### Zasada renderowania
 
-```
+```text
 EmailService::send()
-    │
-    └─ render('reservation_created', $data)
-           │
-           ├─ 1. Wczytaj templates/email/reservation_created.php → $content
-           │
-           └─ 2. Owiń w templates/email/base.php ($content, $settings)
-                  → Gotowy HTML email
+  └─ render($slug, $data)
+       ├─ 1. sprawdź override w opcji basemgmt_email_tpl_{slug}
+       ├─ 2. jeśli brak override → użyj definicji domyślnej z rejestru
+       └─ 3. owiń wynik w templates/email/base.php
 ```
 
-### base.php
+### Zarejestrowane szablony
 
-Szablon bazowy z:
-- nagłówkiem (logo lub tytuł, kolor tła konfigurowalny)
-- blokiem `$content`
-- stopką z tekstem z ustawień
+| Slug | Zastosowanie |
+|------|--------------|
+| `reservation_created` | Nowa rezerwacja |
+| `reservation_approved` | Rezerwacja zatwierdzona |
+| `reservation_rejected` | Rezerwacja odrzucona |
+| `reservation_cancelled` | Rezerwacja anulowana |
 
-Zmienne dostępne w `base.php`:
-- `$content` – wyrenderowany HTML z szablonu treści
-- `$subject` – temat emaila
-- `$settings` – tablica z ustawieniami EmailService
+### Typowe tokeny
 
-### Szablony treści
+| Token | Opis |
+|-------|------|
+| `{{oboz}}` | Nazwa obozu |
+| `{{zasob}}` | Nazwa zasobu |
+| `{{data}}` | Data rezerwacji |
+| `{{godzina_od}}` / `{{godzina_do}}` | Godziny |
+| `{{cel}}` | Cel rezerwacji |
+| `{{komentarz}}` | Komentarz administratora |
+| `{{nazwa_systemu}}` | Nazwa witryny / systemu |
 
-| Plik | Kiedy wysyłany |
-|------|----------------|
-| `reservation_created.php` | Nowa rezerwacja złożona przez obóz |
-| `reservation_approved.php` | Admin zatwierdził rezerwację |
-| `reservation_rejected.php` | Admin odrzucił rezerwację |
-| `reservation_cancelled.php` | Rezerwacja anulowana (przez obóz lub admina) |
+### Edytor szablonów
 
-### Zmienne dostępne w szablonach treści
+WP Admin → **CampLink → Ustawienia → Szablony emaili**
 
-```php
-// reservation_created.php, reservation_approved.php, ...
-$reservation    // array/object – dane rezerwacji
-$resource_name  // string – nazwa zasobu
-$camp_name      // string – nazwa obozu
-$is_admin       // bool – czy email dla admina (true) czy kadry (false)
-$admin_comment  // string – komentarz admina (przy odrzuceniu/anulowaniu)
-$settings       // array – ustawienia email
-```
+Funkcje edytora:
+
+- CodeMirror dla HTML,
+- osobne pole tematu,
+- lista dostępnych tokenów,
+- status **Własny / Domyślny**,
+- przycisk **Przywróć domyślny**.
 
 ---
 
-## Tworzenie nowego szablonu
+## Powiadomienia systemowe powiązane z cronem
 
-1. Utwórz plik `templates/email/moj_szablon.php`
-2. Użyj dostępnych zmiennych z `$data` przekazanego do `send()`
+### 1. Przypomnienia o brakujących meldunkach
 
-```php
-<?php
-// templates/email/moj_szablon.php
-defined('ABSPATH') || exit;
-?>
-<h2>Witaj!</h2>
-<p>Twoja wiadomość: <?php echo esc_html($tresc); ?></p>
-```
+Hook: `bm_daily_reminders`
 
-3. Wywołaj:
-```php
-EmailService::send('odbiorca@example.com', EmailService::subject('Temat'), 'moj_szablon', [
-    'tresc' => 'Przykładowa treść',
-]);
-```
+`Scheduler::send_daily_reminders()`:
 
----
+1. pobiera aktywne obozy,
+2. sprawdza, które nie wysłały meldunku na dziś,
+3. buduje prostą wiadomość tekstową,
+4. wysyła ją na adresy z `bm_missing_report_emails`.
 
-## Powiadomienia o rezerwacjach (ReservationNotifier)
+### 2. Okresowy raport stanów osobowych
 
-`ReservationNotifier` (`src/Modules/Reservations/ReservationNotifier.php`) nasłuchuje hooków WP i wywołuje `EmailService::send()`:
+Hook: `bm_periodic_staff_report`
 
-```php
-// Rejestracja (Bootstrap.php)
-$notifier = new ReservationNotifier();
-$notifier->register();
+`Scheduler::send_periodic_staff_report()`:
 
-// Hooksli
-add_action('bm_reservation_created',        [$this, 'notify_created'],        10, 2);
-add_action('bm_reservation_status_changed', [$this, 'notify_status_changed'], 10, 3);
-```
+1. pobiera odbiorców z `bm_report_emails`,
+2. dla każdego aktywnego obozu pobiera meldunek z bieżącego dnia,
+3. buduje zbiorczy raport tekstowy,
+4. wysyła go do wszystkich skonfigurowanych adresów.
 
-### Logika adresata
-
-1. Notifier pobiera `staff_id` z rezerwacji i szuka jego emaila w `bm_staff`
-2. Jeśli brak – bierze email pierwszego aktywnego członka kadry tego obozu
-3. Email admina pochodzi z `EmailService::get_settings()['admin_notify_email']`
+Jeżeli `bm_report_emails` jest puste, `Scheduler::reschedule_staff_report()` usuwa harmonogram i raport nie jest wysyłany.
 
 ---
 
-## Filtrowanie `wp_mail`
+## Test emaila
 
-```php
-// Przed wysyłką – ustawia Content-Type i nadawcę
-add_filter('wp_mail_content_type', fn() => 'text/html');
-add_filter('wp_mail_from',         fn() => $settings['from_email']);
-add_filter('wp_mail_from_name',    fn() => $settings['from_name']);
+WP Admin → **CampLink → Ustawienia → Test emaila**
 
-$result = wp_mail($to, $subject, $body);
+Test:
 
-// Po wysyłce – natychmiastowe czyszczenie filtrów
-remove_all_filters('wp_mail_content_type');
-remove_all_filters('wp_mail_from');
-remove_all_filters('wp_mail_from_name');
-```
-
-Filtrowanie jest aktywne tylko na czas wysyłki pojedynczego emaila, aby nie wpływać na inne emaile WordPress.
+- używa aktywnego layoutu email,
+- renderuje szablon `reservation_created`,
+- pozwala sprawdzić zarówno wygląd HTML, jak i konfigurację serwera pocztowego.
 
 ---
 
-## Test wysyłki emaila
+## Zachowanie `wp_mail()`
 
-WP Admin → **Baza Obozowa → Ustawienia** → sekcja "Test emaila"
+Na czas wysyłki CampLink ustawia:
 
-- Wpisz adres odbiorcy
-- Kliknij "Wyślij testowy email"
-- Zostanie wysłany przykładowy email z szablonu `reservation_created`
+- `wp_mail_content_type` → `text/html`,
+- `wp_mail_from` → skonfigurowany adres,
+- `wp_mail_from_name` → skonfigurowaną nazwę.
+
+Po wysyłce filtry są czyszczone, aby nie wpływać na inne wiadomości WordPress.
 
 ---
 
-## Dodawanie powiadomień z innych modułów
+## Dodawanie nowego typu wiadomości
 
-Aby dodać email z nowego modułu:
+1. Dodaj wpis do rejestru w `EmailTemplateRepository::get_registry()`.
+2. Dodaj mapowanie tokenów w metodzie budującej zmienne.
+3. Wywołaj `EmailService::send()` z nowym slugiem.
+4. Jeśli potrzebujesz logiki warunkowej, użyj `templates/email/base.php` jako layoutu i przygotuj własny domyślny HTML.
 
-```php
-// 1. Uruchom akcję w odpowiednim miejscu (np. w repozytorium)
-do_action('bm_moj_event', $id, $data);
+---
 
-// 2. Utwórz klasę Notifier dla modułu
-final class MojModulNotifier {
-    public function register(): void {
-        add_action('bm_moj_event', [$this, 'notify'], 10, 2);
-    }
+## Powiązane dokumenty
 
-    public function notify(int $id, array $data): void {
-        $settings = EmailService::get_settings();
-        EmailService::send(
-            $settings['admin_notify_email'],
-            EmailService::subject(__('Nowe zdarzenie', 'basemgmt')),
-            'moj_szablon',
-            $data
-        );
-    }
-}
-
-// 3. Zarejestruj w Bootstrap::register_notifications()
-$notifier = new MojModulNotifier();
-$notifier->register();
-```
+- [08 – Panel administratora](08-admin-panel.md)
+- [11 – Zadania cykliczne (Cron)](11-cron.md)
+- [16 – Logi operacji](16-operation-logs.md)

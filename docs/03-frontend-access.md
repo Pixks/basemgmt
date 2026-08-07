@@ -6,7 +6,7 @@ Kadra obozów **nie posiada kont WordPress**. Dostęp do panelu obozu odbywa si�
 
 - własnej tabeli `bm_staff` z haszowanymi kodami bezpieczeństwa,
 - tokenach sesji przechowywanych w cookie `HttpOnly; SameSite=Strict`,
-- mechanizmie rate limiting z automatyczną blokadą konta.
+- mechanizmie rate limiting z blokadą czasową i trwałą konta.
 
 > Administratorzy ośrodka używają normalnych kont WordPress i panelu WP Admin.
 
@@ -105,10 +105,18 @@ RateLimiter::lockout_remaining(object $staff): int // sekundy do odblokowania
 
 | Stała | Wartość | Opis |
 |-------|---------|------|
-| `BASEMGMT_MAX_ATTEMPTS` | `5` | Próby przed blokadą |
-| `BASEMGMT_LOCKOUT_TTL` | `900 s` (15 min) | Czas blokady |
+| `BASEMGMT_MAX_ATTEMPTS` | `5` | Próby przed blokadą czasową |
+| `BASEMGMT_LOCKOUT_TTL` | `900 s` (15 min) | Bazowa wartość w kodzie |
+| `bm_lockout_minutes` | `15` | Faktyczny czas blokady konfigurowany w ustawieniach |
 
-Dane blokady (`failed_attempts`, `locked_until`) przechowywane są bezpośrednio w rekordzie `bm_staff`, co eliminuje potrzebę osobnej tabeli.
+Dane blokady (`failed_attempts`, `locked_until`, `permanent_lock`) przechowywane są bezpośrednio w rekordzie `bm_staff`, co eliminuje potrzebę osobnej tabeli.
+
+### Scenariusz blokady
+
+1. Po `BASEMGMT_MAX_ATTEMPTS` błędnych próbach ustawiane jest `locked_until`.
+2. Po wygaśnięciu tej blokady licznik nie jest zerowany automatycznie.
+3. **Pierwsza kolejna nieudana próba** ustawia `permanent_lock = 1`.
+4. Konto może odblokować wyłącznie administrator przez akcję `bm_unlock_staff`, a po odblokowaniu powinien od razu zresetować kod bezpieczeństwa.
 
 ---
 
@@ -174,7 +182,7 @@ POST /bm/v1/auth/logout
 
 ### Dodawanie osoby
 
-WP Admin → **Baza Obozowa → Kadra → Dodaj osobę**
+WP Admin → **CampLink → Kadra → Dodaj osobę**
 
 Formularz POST na `admin-post.php?action=bm_save_staff`. Kod bezpieczeństwa jest haszowany w `StaffRepository::create()`.
 
@@ -197,6 +205,7 @@ bm_staff
 ├── security_code_hash (bcrypt)
 ├── failed_attempts
 ├── locked_until
+├── permanent_lock
 ├── last_login
 └── is_active
 
@@ -225,3 +234,6 @@ Tak – zmień stałą `BASEMGMT_SESSION_TTL` w `basemgmt.php` (domyślnie `8 * 
 
 **Czy można wymusić wylogowanie konkretnej osoby?**
 Tak – usuń rekord z tabeli `bm_sessions` gdzie `staff_id = X`, lub ustaw `is_active = 0` dla tej osoby.
+
+**Co oznacza blokada trwała?**
+To stan `permanent_lock = 1` w `bm_staff`. Frontend nie odblokuje go sam po czasie – wymagane jest działanie administratora i reset 6-cyfrowego PIN-u.

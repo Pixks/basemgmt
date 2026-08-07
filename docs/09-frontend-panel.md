@@ -54,7 +54,11 @@ window.bmConfig = {
     wpNonce:    'abc123',      // nonce WordPress REST API
     panelNonce: 'def456',      // nonce dla operacji panelowych
     loginNonce: 'ghi789',      // nonce dla logowania
-    version:    '1.3.0'
+    authenticated: false,
+    campId:        0,
+    staffId:       0,
+    displayName:   '',
+    sessionExpires:'2026-08-07 20:00:00'
 };
 ```
 
@@ -68,9 +72,10 @@ Wszystkie komponenty zdefiniowane jako `Alpine.data('nazwaKomponentu', () => {..
 |-----------|------|
 | `bmLogin` | Ekran logowania (wybór obozu → kadry → wpisanie kodu) |
 | `bmCamp` | Główny kontener panelu po zalogowaniu |
+| `bmDailyCount` | Prosty formularz meldunku dziennego |
 | `bmAnnouncements` | Lista ogłoszeń |
 | `bmAnnForm` | Formularz zgłoszenia ogłoszenia |
-| `bmDailyCount` | Meldunek dzienny |
+| `bmReports` | Pełny moduł meldunków: status dnia, zapis roboczy, wysyłka, historia |
 | `bmWeather` | Pogoda i ostrzeżenia |
 | `bmSchedule` | Plan dnia |
 | `bmReservations` | Rezerwacje (lista zasobów, składanie, podgląd) |
@@ -129,6 +134,7 @@ Strona ładuje się
 **Walidacja**:
 - Wszystkie pola wymagane
 - Komunikat o blokadzie z odliczaniem (`locked_until` w sekundach)
+- Przy blokadzie trwałej konto pozostaje niedostępne do czasu odblokowania w panelu admina
 - Neutralny komunikat błędu (bez ujawniania szczegółów)
 
 ---
@@ -202,7 +208,7 @@ Strona ładuje się
 - Widok dzienny – pobiera `GET /panel/menu?date=YYYY-MM-DD`
 - Widok tygodniowy – pobiera `GET /panel/menu/week?from=YYYY-MM-DD`
 - Nawigacja po dniach (strzałki lub lista dat z `GET /panel/menu/dates`)
-- Grupowanie pozycji po `meal_type` (śniadanie / obiad / kolacja)
+- Grupowanie pozycji po `meal_type` (śniadanie / drugie śniadanie / obiad / podwieczorek / kolacja / inne)
 - Widok tylko do odczytu
 
 ---
@@ -240,6 +246,7 @@ Strona ładuje się
 - Otwieranie formularza → renderowanie pól według definicji
   - Obsługiwane typy: `text`, `textarea`, `number`, `email`, `tel`, `select`, `radio`, `checkbox`, `date`
   - Pola `file` obsługiwane osobno (nativny `<input type="file">`)
+  - `help_text` jest prezentowany jako stała podpowiedź pod polem
 - Wysyłanie zgłoszenia przez `POST /panel/submissions`
 - Walidacja wymaganych pól po stronie klienta (UX); prawdziwa walidacja server-side
 - Po wysłaniu: tekst `info_after` z odpowiedzi

@@ -1,8 +1,8 @@
 # 01 – Przegląd i instalacja
 
-## Czym jest Baza Obozowa?
+## Czym jest CampLink?
 
-**Baza Obozowa** to produkcyjna wtyczka WordPress do kompleksowego zarządzania ośrodkiem obozowym. Obsługuje ewidencję obozów, meldunki dzienne, ogłoszenia, plan dnia, rezerwacje zasobów, informacje pogodowe oraz dedykowany panel frontendowy dla kadry obozów — bez konieczności tworzenia kont WordPress dla każdego pracownika.
+**CampLink** to produkcyjna wtyczka WordPress do kompleksowego zarządzania ośrodkiem obozowym. Obsługuje ewidencję obozów, meldunki dzienne, ogłoszenia, plan dnia, rezerwacje zasobów, jadłospis, komunikację, formularze zgłoszeń oraz dedykowany panel frontendowy dla kadry obozów — bez konieczności tworzenia kont WordPress dla każdego pracownika.
 
 ### Główne cechy
 
@@ -46,7 +46,7 @@ chmod -R 755 wp-content/plugins/basemgmt
 ```
 
 3. Zaloguj się do WP Admin → **Wtyczki → Zainstalowane wtyczki**
-4. Znajdź **Baza Obozowa** i kliknij **Aktywuj**
+4. Znajdź **CampLink** i kliknij **Aktywuj**
 
 ### Metoda 2 – WP-CLI
 
@@ -64,9 +64,9 @@ WP Admin → Wtyczki → Dodaj nową → Wyślij wtyczkę → wybierz archiwum `
 
 Aktywacja wywołuje `Activator::activate()`, który:
 
-1. **Tworzy 15 tabel** w bazie danych przez `dbDelta()` (bezpieczne przy aktualizacjach)
+1. **Tworzy 30 tabel** w bazie danych przez `dbDelta()` (bezpieczne przy aktualizacjach)
 2. **Rejestruje role i uprawnienia** WordPress (capability `manage_basemgmt`)
-3. **Planuje zadania cykliczne** WP-Cron (8 hooków)
+3. **Planuje zadania cykliczne** WP-Cron (9 hooków)
 4. **Zapisuje wersję pluginu** w opcji `basemgmt_db_version`
 
 Tabele tworzone podczas aktywacji:
@@ -86,6 +86,22 @@ wp_bm_plan_camps             – powiązania plan→obóz
 wp_bm_resources              – zasoby do rezerwacji
 wp_bm_resource_reservations  – rezerwacje
 wp_bm_resource_blocks        – blokady techniczne zasobów
+wp_bm_meal_days              – dni jadłospisu
+wp_bm_meal_items             – pozycje jadłospisu
+wp_bm_conv_threads           – wątki komunikacji
+wp_bm_conv_messages          – wiadomości w wątkach
+wp_bm_help_articles          – baza pomocy
+wp_bm_forms                  – definicje formularzy
+wp_bm_form_fields            – pola formularzy
+wp_bm_form_camps             – przypisania formularzy do obozów
+wp_bm_submissions            – zgłoszenia
+wp_bm_submission_attachments – załączniki zgłoszeń
+wp_bm_submission_history     – historia zmian zgłoszeń
+wp_bm_operation_logs         – logi operacji
+wp_bm_plan_templates         – szablony planów dnia
+wp_bm_plan_template_items    – pozycje szablonów planów
+wp_bm_meal_diets             – predefiniowane diety
+wp_bm_meal_locations         – predefiniowane miejsca wydawania
 ```
 
 ---
@@ -114,7 +130,7 @@ Plugin używa `dbDelta()` – wystarczy nadpisać pliki i ponownie aktywować (l
 
 ### 1. Utwórz pierwszy obóz
 
-WP Admin → **Baza Obozowa → Obozy → Nowy obóz**
+WP Admin → **CampLink → Obozy → Nowy obóz**
 
 Wypełnij:
 - Nazwa obozu
@@ -123,14 +139,14 @@ Wypełnij:
 
 ### 2. Dodaj członków kadry
 
-WP Admin → **Baza Obozowa → Kadra → Dodaj osobę**
+WP Admin → **CampLink → Kadra → Dodaj osobę**
 
 Dla każdej osoby:
 - Imię i nazwisko
 - Przypisanie do obozu
 - Rola (komendant, zastępca, kwatermistrz…)
 - Email (do powiadomień)
-- **Kod bezpieczeństwa** – dowolny ciąg znaków; zostanie automatycznie zahaszowany
+- **Kod bezpieczeństwa** – dokładnie 6 cyfr; zostanie automatycznie zahaszowany
 
 ### 3. Skonfiguruj panel frontendowy
 
@@ -138,11 +154,11 @@ Wstaw shortcode `[camp_panel]` na wybraną stronę WordPress lub skonfiguruj go 
 
 ### 4. Skonfiguruj email
 
-WP Admin → **Baza Obozowa → Ustawienia** → sekcja "Ustawienia powiadomień email"
+WP Admin → **CampLink → Ustawienia** → sekcja "Ustawienia powiadomień email"
 
 ### 5. Opcjonalnie: Skonfiguruj pogodę
 
-WP Admin → **Baza Obozowa → Pogoda → Ustawienia**
+WP Admin → **CampLink → Pogoda → Ustawienia**
 - Wybierz dostawcę (Open-Meteo lub IMGW)
 - Ustaw współrzędne lub województwo/powiat
 - Włącz synchronizację IMGW
@@ -155,14 +171,24 @@ Zdefiniowane w `basemgmt.php`:
 
 | Stała | Wartość domyślna | Opis |
 |-------|-----------------|------|
-| `BASEMGMT_VERSION` | `1.3.0` | Wersja pluginu |
+| `BASEMGMT_VERSION` | `1.1.0` | Wersja pluginu |
 | `BASEMGMT_FILE` | `__FILE__` | Ścieżka do głównego pliku |
 | `BASEMGMT_DIR` | `plugin_dir_path(...)` | Ścieżka katalogu |
 | `BASEMGMT_URL` | `plugin_dir_url(...)` | URL katalogu |
 | `BASEMGMT_SESSION_COOKIE` | `bm_session` | Nazwa ciasteczka sesji |
 | `BASEMGMT_SESSION_TTL` | `28800` (8h) | Czas życia sesji w sekundach |
-| `BASEMGMT_MAX_ATTEMPTS` | `5` | Maks. prób logowania przed blokadą |
-| `BASEMGMT_LOCKOUT_TTL` | `900` (15 min) | Czas blokady po przekroczeniu limitu |
+| `BASEMGMT_MAX_ATTEMPTS` | `5` | Maks. prób logowania przed blokadą czasową |
+| `BASEMGMT_LOCKOUT_TTL` | `900` (15 min) | Bazowy czas blokady; realna wartość jest konfigurowalna w ustawieniach |
+
+---
+
+## Najważniejsze nowości w CampLink 1.1.0
+
+- **Blokada kont kadry**: po przekroczeniu limitu prób konto trafia na blokadę czasową, a kolejna nieudana próba po jej wygaśnięciu powoduje blokadę trwałą wymagającą odblokowania przez administratora i resetu PIN-u.
+- **Szablony planów dnia**: osobny panel CRUD dla globalnych szablonów oraz przycisk „Zastosuj szablon” bezpośrednio na ekranie edycji planu dnia.
+- **Rozszerzony jadłospis**: gotowe słowniki diet i miejsc wydawania, opcja „Inne – wpisz ręcznie” oraz checkbox automatycznego dodania posiłku do planu dnia.
+- **Nowe powiadomienia email**: osobne adresy dla brakujących meldunków oraz okresowych raportów stanów osobowych wysyłanych przez WP-Cron.
+- **Logi operacji i eksporty**: dziennik zdarzeń w panelu admina oraz widoki Drukuj / PDF generowane w czystym HTML przez przeglądarkę.
 
 ---
 

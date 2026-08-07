@@ -23,6 +23,7 @@ $this->loader->add_action('bm_expire_weather_alerts', $sched, 'expire_weather_al
 $this->loader->add_action('bm_check_missing_reports', $sched, 'check_missing_reports');
 $this->loader->add_action('bm_sync_imgw_alerts',      $sched, 'sync_imgw_alerts');
 $this->loader->add_action('bm_expire_reservations',   $sched, 'expire_reservations');
+$this->loader->add_action('bm_periodic_staff_report', $sched, 'send_periodic_staff_report');
 ```
 
 ---
@@ -39,6 +40,7 @@ $this->loader->add_action('bm_expire_reservations',   $sched, 'expire_reservatio
 | `bm_expire_weather_alerts` | hourly | – | Dezaktywuje ostrzeżenia po `valid_until` |
 | `bm_sync_imgw_alerts` | konfigurowalne | – | Synchronizacja ostrzeżeń IMGW |
 | `bm_expire_reservations` | daily | 00:05 | `pending` → `expired` dla przeszłych dat |
+| `bm_periodic_staff_report` | konfigurowalne | – | Okresowy email ze stanami osobowymi aktywnych obozów |
 
 ---
 
@@ -52,7 +54,7 @@ Scheduler::send_daily_reminders()
 
 1. Pobiera wszystkie aktywne obozy
 2. Sprawdza `DailyCountRepository::is_submitted_today()` dla każdego
-3. Jeśli są brakujące meldunki → wysyła email do admina (`get_option('admin_email')`)
+3. Jeśli są brakujące meldunki → wysyła email na adresy z `bm_missing_report_emails` (fallback: `admin_email`)
 4. Uruchamia hook `do_action('bm_daily_reminders_sent', $missing_camps)`
 
 ---
@@ -165,6 +167,36 @@ do_action('bm_missing_reports_checked', $missing, $today);
 ```
 
 Pozwala zewnętrznym rozszerzeniom reagować na brakujące meldunki.
+
+---
+
+### bm_periodic_staff_report
+
+```php
+Scheduler::send_periodic_staff_report()
+```
+
+1. Pobiera odbiorców z opcji `bm_report_emails`
+2. Jeśli lista jest pusta – kończy działanie bez wysyłki
+3. Pobiera wszystkie aktywne obozy
+4. Dla każdego obozu pobiera dzisiejszy meldunek przez `DailyCountRepository::get_by_date()`
+5. Buduje zbiorczy raport tekstowy z sumami i informacją o brakujących meldunkach
+6. Wysyła email do wszystkich skonfigurowanych odbiorców
+7. Uruchamia `do_action('bm_periodic_staff_report_sent', $totals, $camps)`
+
+### Dynamiczne przeplanowanie raportu okresowego
+
+Przy zapisie ustawień:
+
+```php
+Scheduler::reschedule_staff_report();
+```
+
+Logika:
+
+- opcja `bm_report_emails` pusta → cron jest usuwany,
+- opcja `bm_report_interval` określa interwał (`hourly`, `twicedaily`, `daily`),
+- przy zmianie interwału zdarzenie jest przepinane automatycznie.
 
 ---
 
