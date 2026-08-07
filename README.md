@@ -71,4 +71,4 @@ GPL-2.0-or-later
 
 ---
 
-*Wersja 1.1.1 | PHP 8.1+ | WordPress 6.0+*
+*Wersja 1.1.2 | PHP 8.1+ | WordPress 6.0+*

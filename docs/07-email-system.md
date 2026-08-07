@@ -151,8 +151,8 @@ Hook: `bm_daily_reminders`
 
 1. pobiera aktywne obozy,
 2. sprawdza, które nie wysłały meldunku na dziś,
-3. buduje prostą wiadomość tekstową,
-4. wysyła ją na adresy z `bm_missing_report_emails`.
+3. buduje szablon HTML z bieżącą datą WordPress, liczbą braków i listą obozów,
+4. wysyła go na adresy z `bm_missing_report_emails`.
 
 ### 2. Okresowy raport stanów osobowych
 
@@ -162,7 +162,7 @@ Hook: `bm_periodic_staff_report`
 
 1. pobiera odbiorców z `bm_report_emails`,
 2. dla każdego aktywnego obozu pobiera meldunek z bieżącego dnia,
-3. buduje zbiorczy raport tekstowy,
+3. buduje zbiorczy raport HTML z listą obozów i sumami,
 4. wysyła go do wszystkich skonfigurowanych adresów.
 
 Jeżeli `bm_report_emails` jest puste, `Scheduler::reschedule_staff_report()` usuwa harmonogram i raport nie jest wysyłany.

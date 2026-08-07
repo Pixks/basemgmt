@@ -160,6 +160,7 @@ Widok tabelaryczny z meldunkami dziennymi wszystkich obozów.
 
 - Filtrowanie po dacie i obozie
 - Widok sumaryczny: uczestnicy + kadra + pracownicy
+- Widok dzienny z czytelną listą obozów bez meldunku
 - Eksport (jeśli zaimplementowany)
 - Ręczne dodanie/korekta meldunku przez admina: `bm_save_report`
 
@@ -209,6 +210,7 @@ Widok tabelaryczny z meldunkami dziennymi wszystkich obozów.
 - Filtrowanie po dacie i zasięgu
 - Akcje: edytuj, usuń, kopiuj z poprzedniego dnia
 - Formularz **masowego tworzenia planów** dla zakresu dat (maks. 90 dni, bez duplikatów)
+- Przy kopiowaniu z **dnia źródłowego** nowe plany zachowują jego tytuł i zasięg, jeśli nie ustawisz własnego wzorca tytułu
 
 ### Edycja planu
 
@@ -599,7 +601,8 @@ Eksport działa bez zewnętrznej biblioteki PDF. CampLink otwiera osobną stron�
 - otwarcie w nowej karcie,
 - przycisk **Drukuj / Zapisz PDF**,
 - przycisk **Zamknij**,
-- układ zoptymalizowany pod druk.
+- układ zoptymalizowany pod druk,
+- spójny format daty i mocniejsze wyróżnienie stanów alarmowych.
 
 ---
 
