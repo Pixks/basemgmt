@@ -10,8 +10,8 @@
  * Author URI:        https://pixks.pl
  * Text Domain:       basemgmt
  * Domain Path:       /languages
- * License:           MIT
- * License URI:       https://opensource.org/licenses/MIT
+ * License:           MIT + Commons Clause
+ * License URI:       https://commonsclause.com
  */
 
 declare(strict_types=1);
