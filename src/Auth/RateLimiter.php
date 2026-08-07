@@ -10,39 +10,83 @@ defined('ABSPATH') || exit;
 
 /**
  * Tracks failed login attempts and enforces lockouts.
- * Data stored directly in bm_staff table (failed_attempts, locked_until).
+ *
+ * Logic:
+ *   • After BASEMGMT_MAX_ATTEMPTS (default 3) consecutive failures → temporary
+ *     lockout for BASEMGMT_LOCKOUT_TTL minutes (default 15).
+ *   • If the account was previously temp-locked and the staff member fails
+ *     again after it expires → permanent lock (permanent_lock = 1).
+ *   • Permanent locks can only be lifted by an administrator from the Staff
+ *     panel; lifting requires a mandatory security-code reset.
  */
 final class RateLimiter {
 
-	/** Returns true when the staff member is currently locked out. */
+	/** Returns true when the staff member is currently locked out (temp or permanent). */
 	public static function is_locked(object $staff): bool {
+		if ( ! empty($staff->permanent_lock) && (int) $staff->permanent_lock === 1 ) {
+			return true;
+		}
 		if ( empty($staff->locked_until) ) {
 			return false;
 		}
 		return strtotime($staff->locked_until) > time();
 	}
 
-	/** Record a failed attempt; lock if threshold exceeded. */
+	/** Returns true only for permanent (admin-required) lock. */
+	public static function is_permanently_locked(object $staff): bool {
+		return ! empty($staff->permanent_lock) && (int) $staff->permanent_lock === 1;
+	}
+
+	/**
+	 * Record a failed login attempt.
+	 * Applies temp lock after threshold; permanent lock if attempt follows
+	 * a prior temp-lock cycle.
+	 */
 	public static function record_failure(int $staff_id, object $staff): void {
 		global $wpdb;
+
+		// If a previous temp-lock has expired but was set → permanent lock now.
+		$had_temp_lock = ! empty($staff->locked_until);
+		$lock_expired  = $had_temp_lock && strtotime($staff->locked_until) <= time();
+
+		if ( $lock_expired ) {
+			// First failure after temp-lock expires → permanent lock.
+			$wpdb->update(
+				Schema::table('staff'),
+				[
+					'permanent_lock'  => 1,
+					'failed_attempts' => (int) $staff->failed_attempts + 1,
+				],
+				['id' => $staff_id],
+				['%d', '%d'],
+				['%d']
+			);
+			return;
+		}
+
+		$lockout_minutes = (int) get_option('bm_lockout_minutes', 15);
+		$lockout_ttl     = $lockout_minutes * MINUTE_IN_SECONDS;
 
 		$attempts = (int) $staff->failed_attempts + 1;
 		$data     = ['failed_attempts' => $attempts];
 
 		if ( $attempts >= BASEMGMT_MAX_ATTEMPTS ) {
-			$data['locked_until'] = gmdate('Y-m-d H:i:s', time() + BASEMGMT_LOCKOUT_TTL);
+			$data['locked_until'] = gmdate('Y-m-d H:i:s', time() + $lockout_ttl);
 		}
+
+		$formats = array_fill(0, count($data), '%s');
+		$formats[0] = '%d'; // failed_attempts is integer.
 
 		$wpdb->update(
 			Schema::table('staff'),
 			$data,
 			['id' => $staff_id],
-			array_fill(0, count($data), '%s'),
+			$formats,
 			['%d']
 		);
 	}
 
-	/** Reset counters after a successful login. */
+	/** Reset all counters after a successful login. */
 	public static function clear(int $staff_id): void {
 		global $wpdb;
 		$wpdb->update(
@@ -50,17 +94,41 @@ final class RateLimiter {
 			[
 				'failed_attempts' => 0,
 				'locked_until'    => null,
+				'permanent_lock'  => 0,
 				'last_login'      => gmdate('Y-m-d H:i:s'),
 			],
 			['id' => $staff_id],
-			['%d', '%s', '%s'],
+			['%d', '%s', '%d', '%s'],
 			['%d']
 		);
 	}
 
-	/** Remaining lockout seconds, or 0 if not locked. */
+	/**
+	 * Administratively unlock a staff member.
+	 * Clears temp lock, permanent lock, and resets attempt counter.
+	 * Caller MUST also reset the security code.
+	 */
+	public static function admin_unlock(int $staff_id): void {
+		global $wpdb;
+		$wpdb->update(
+			Schema::table('staff'),
+			[
+				'failed_attempts' => 0,
+				'locked_until'    => null,
+				'permanent_lock'  => 0,
+			],
+			['id' => $staff_id],
+			['%d', '%s', '%d'],
+			['%d']
+		);
+	}
+
+	/** Remaining lockout seconds, or 0 if not temp-locked (permanent lock returns 0). */
 	public static function lockout_remaining(object $staff): int {
-		if ( ! self::is_locked($staff) ) {
+		if ( self::is_permanently_locked($staff) ) {
+			return 0;
+		}
+		if ( empty($staff->locked_until) || strtotime($staff->locked_until) <= time() ) {
 			return 0;
 		}
 		return max(0, (int) strtotime($staff->locked_until) - time());

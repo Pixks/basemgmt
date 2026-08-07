@@ -292,4 +292,98 @@ final class FormsPage {
 		readfile($att->file_path);
 		exit;
 	}
+
+	/**
+	 * Create a communication thread from a form submission.
+	 * Triggered by the "Utwórz wątek konwersacji" button on the submission view page.
+	 */
+	public function handle_create_thread_from_submission(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_create_thread_from_submission');
+
+		$sub_id = (int) ($_POST['submission_id'] ?? 0);
+		$sub    = $sub_id ? SubmissionRepository::get($sub_id) : null;
+
+		if ( ! $sub ) {
+			wp_die(__('Zgłoszenie nie istnieje.', 'basemgmt'));
+		}
+
+		$form_snapshot   = json_decode($sub->form_snapshot ?? '{}', true);
+		$submission_data = json_decode($sub->submission_data ?? '{}', true);
+		$form_name       = $form_snapshot['form']['name'] ?? ('Form #' . $sub->form_id);
+
+		// Build message content from submission data.
+		$message_lines = [
+			sprintf(__('Zgłoszenie #%d z formularza: %s', 'basemgmt'), $sub_id, $form_name),
+			'',
+		];
+		foreach ( ($form_snapshot['fields'] ?? []) as $fld ) {
+			$val = $submission_data[$fld['field_key']] ?? '';
+			if ( is_array($val) ) {
+				$val = implode(', ', $val);
+			}
+			if ( (string) $val !== '' ) {
+				$message_lines[] = $fld['label'] . ': ' . $val;
+			}
+		}
+		$message_body = implode("\n", $message_lines);
+
+		$subject = sprintf(
+			__('Zgłoszenie #%d – %s', 'basemgmt'),
+			$sub_id,
+			$form_name
+		);
+
+		global $wpdb;
+		$threads_table  = \BaseMgmt\Database\Schema::table('conv_threads');
+		$messages_table = \BaseMgmt\Database\Schema::table('conv_messages');
+
+		$wpdb->insert(
+			$threads_table,
+			[
+				'camp_id'            => (int) $sub->camp_id,
+				'subject'            => $subject,
+				'status'             => \BaseMgmt\Modules\Communication\ConversationRepository::STATUS_OPEN,
+				'priority'           => \BaseMgmt\Modules\Communication\ConversationRepository::PRIORITY_NORMAL,
+				'is_urgent'          => 0,
+				'last_message_at'    => current_time('mysql'),
+				'unread_admin'       => 0,
+				'unread_camp'        => 1,
+				'created_by_staff_id'=> 0,
+			]
+		);
+		$thread_id = (int) $wpdb->insert_id;
+
+		if ( $thread_id ) {
+			$wpdb->insert(
+				$messages_table,
+				[
+					'thread_id'   => $thread_id,
+					'author_type' => 'admin',
+					'author_id'   => get_current_user_id(),
+					'content'     => $message_body,
+					'is_system'   => 1,
+				]
+			);
+
+			\BaseMgmt\Core\OperationLogger::log(
+				\BaseMgmt\Core\OperationLogger::ACTION_THREAD_CREATED,
+				'submission',
+				$sub_id,
+				"thread_id={$thread_id}"
+			);
+		}
+
+		AdminMenu::set_notice(
+			$thread_id
+				? sprintf(__('Wątek konwersacji #%d utworzony.', 'basemgmt'), $thread_id)
+				: __('Błąd tworzenia wątku.', 'basemgmt'),
+			$thread_id ? 'success' : 'error'
+		);
+		wp_safe_redirect(add_query_arg(
+			['page' => 'basemgmt-forms', 'view' => 'view_submission', 'id' => $sub_id],
+			admin_url('admin.php')
+		));
+		exit;
+	}
 }

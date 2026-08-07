@@ -124,6 +124,7 @@ final class Bootstrap {
 		$this->loader->add_action('bm_check_missing_reports',    $sched, 'check_missing_reports');
 		$this->loader->add_action('bm_sync_imgw_alerts',         $sched, 'sync_imgw_alerts');
 		$this->loader->add_action('bm_expire_reservations',      $sched, 'expire_reservations');
+		$this->loader->add_action('bm_periodic_staff_report',    $sched, 'send_periodic_staff_report');
 	}
 
 	private function register_notifications(): void {
