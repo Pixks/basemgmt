@@ -6,7 +6,7 @@ defined('ABSPATH') || exit;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?php echo esc_html($title); ?> – <?php echo esc_html(date_i18n('d.m.Y', strtotime($date))); ?></title>
+<title><?php echo esc_html($title); ?> – <?php echo esc_html($formatted_date); ?></title>
 <style>
 * { box-sizing: border-box; }
 body { margin: 0; background: #eef2f7; color: #111827; font: 14px/1.5 Arial, sans-serif; }

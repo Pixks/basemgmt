@@ -250,7 +250,6 @@ final class SchedulePage {
 			$date = gmdate('Y-m-d', $ts);
 
 			if ( $source_mode === 'date' && $source_plan && $date === $source_date ) {
-				$skipped++;
 				continue;
 			}
 

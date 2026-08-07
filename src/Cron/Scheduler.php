@@ -228,6 +228,7 @@ final class Scheduler {
 		$camps   = CampRepository::get_all(['status' => 'active']);
 
 		$lines   = [];
+		$lines_html_rows = '';
 		$totals  = ['participants' => 0, 'staff' => 0, 'workers' => 0];
 
 		foreach ( $camps as $camp ) {
@@ -243,8 +244,18 @@ final class Scheduler {
 					"  %s: %d uczestników, %d kadra, %d pracownicy",
 					$camp->name, $p, $s, $w
 				);
+				$lines_html_rows .= sprintf(
+					'<tr><td>%1$s</td><td>%2$s</td></tr>',
+					esc_html($camp->name),
+					esc_html(sprintf(__('%1$d uczestników, %2$d kadra, %3$d pracownicy', 'basemgmt'), $p, $s, $w))
+				);
 			} else {
 				$lines[] = "  {$camp->name}: brak meldunku";
+				$lines_html_rows .= sprintf(
+					'<tr><td>%1$s</td><td>%2$s</td></tr>',
+					esc_html($camp->name),
+					esc_html__('brak meldunku', 'basemgmt')
+				);
 			}
 		}
 
@@ -254,12 +265,7 @@ final class Scheduler {
 			date_i18n('d.m.Y', strtotime($today)),
 			$time
 		);
-		$lines_html = '<table class="meta-table"><thead><tr><th>' . esc_html__('Obóz', 'basemgmt') . '</th><th>' . esc_html__('Stan', 'basemgmt') . '</th></tr></thead><tbody>';
-		foreach ( $lines as $line ) {
-			[$camp_name, $camp_status] = array_pad(explode(': ', $line, 2), 2, '');
-			$lines_html .= '<tr><td>' . esc_html(trim($camp_name)) . '</td><td>' . esc_html(trim($camp_status)) . '</td></tr>';
-		}
-		$lines_html .= '</tbody></table>';
+		$lines_html = '<table class="meta-table"><thead><tr><th>' . esc_html__('Obóz', 'basemgmt') . '</th><th>' . esc_html__('Stan', 'basemgmt') . '</th></tr></thead><tbody>' . $lines_html_rows . '</tbody></table>';
 
 		EmailService::send_many(
 			$emails,
