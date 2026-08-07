@@ -15,20 +15,20 @@ CampLink
 ├── Dashboard
 ├── Obozy
 ├── Kadra
-├── Ogłoszenia  [badge z liczbą oczekujących]
 ├── Meldunki
+├── Ogłoszenia  [badge z liczbą oczekujących]
 ├── Pogoda
 ├── Plan dnia
+│   └── ↳ Szablony
 ├── Rezerwacje
 ├── Jadłospis
+│   ├── ↳ Szablony
+│   └── ↳ Opcje
 ├── Komunikacja  [badge z liczbą nieprzeczytanych]
-├── Pomoc
 ├── Formularze   (Formularze i Zgłoszenia)
-├── Szablony planów
-├── Opcje jadłospisu
-├── Drukuj / PDF
-├── Logi operacji
-└── Ustawienia    [tylko dla WP Admin z manage_options]
+├── Pomoc
+├── Raporty (PDF)
+└── Ustawienia    [tylko dla WP Admin z manage_options; zawiera link do logów operacji]
 ```
 
 ---
@@ -39,7 +39,7 @@ Strona startowa z widgetem podsumowania.
 
 ### Szybkie akcje na górze dashboardu
 
-W v1.1.0 przyciski akcji zostały przeniesione na górę ekranu. Dostępne są m.in.:
+Przyciski akcji są dostępne na górze ekranu. Dostępne są m.in.:
 
 - **Nowy obóz**
 - **Nowa osoba kadry**
@@ -208,6 +208,7 @@ Widok tabelaryczny z meldunkami dziennymi wszystkich obozów.
 - Tabela z datami i statusami planów
 - Filtrowanie po dacie i zasięgu
 - Akcje: edytuj, usuń, kopiuj z poprzedniego dnia
+- Formularz **masowego tworzenia planów** dla zakresu dat (maks. 90 dni, bez duplikatów)
 
 ### Edycja planu
 
@@ -259,6 +260,7 @@ Akcja `bm_copy_plan` kopiuje nagłówek i pozycje z wybranej daty do nowej daty.
 | Dodaj/edytuj pozycję | `bm_save_plan_item` |
 | Usuń pozycję | `bm_delete_plan_item` |
 | Kopiuj plan | `bm_copy_plan` |
+| Masowe tworzenie planów | `bm_bulk_create_plans` |
 | Reset flag | `bm_reset_plan_flags` |
 | Reorder (AJAX) | `wp_ajax_bm_reorder_plan_items` |
 
@@ -343,6 +345,7 @@ Widoczne tylko dla użytkowników z uprawnieniem `manage_options` (domyślnie ty
 3. **Test emaila** – wysyłka testowego emaila na podany adres
 4. **Konfiguracja powiadomień** – osobne adresy dla brakujących meldunków i raportów okresowych, interwał raportu, czas blokady kont kadry
 5. **O pluginie** – wersja, lista tabel, wymagania
+6. **Logi operacji** – szybki link do dziennika zdarzeń (`admin.php?page=basemgmt-logs`)
 
 ### Operacje
 
@@ -412,6 +415,7 @@ Przechowywany jako WP Transient `bm_admin_notice_{user_id}` z TTL 60 sekund.
   - Checkbox: **Dodaj automatycznie do planu dnia**
   - Selecty diet i miejsc z fallbackiem **„Inne (wpisz poniżej)”**
 - **Kopiowanie** – kopiowanie jadłospisu z innej daty
+- **Zastosowanie szablonu jadłospisu** – szybkie uzupełnienie dnia gotowym zestawem posiłków (z opcją zastąpienia istniejących pozycji)
 
 ### Operacje (admin-post)
 
@@ -469,6 +473,30 @@ Przechowywany jako WP Transient `bm_admin_notice_{user_id}` z TTL 60 sekund.
 | `bm_delete_meal_diet` | Usuwa dietę |
 | `bm_save_meal_location` | Zapisuje miejsce wydawania |
 | `bm_delete_meal_location` | Usuwa miejsce wydawania |
+
+---
+
+## Szablony jadłospisów
+
+**Plik**: `src/Admin/Pages/MealTemplatesPage.php`  
+**Menu**: WP Admin → CampLink → Jadłospis → Szablony
+
+### Funkcje
+
+- lista szablonów z liczbą pozycji,
+- edycja nazwy i opisu szablonu,
+- dodawanie/edycja/usuwanie pozycji szablonu,
+- zastosowanie szablonu bezpośrednio na ekranie edycji dnia jadłospisu.
+
+### Operacje
+
+| Action | Opis |
+|--------|------|
+| `bm_save_meal_template` | Tworzy / aktualizuje szablon jadłospisu |
+| `bm_delete_meal_template` | Usuwa szablon |
+| `bm_save_meal_template_item` | Dodaje / edytuje pozycję szablonu |
+| `bm_delete_meal_template_item` | Usuwa pozycję szablonu |
+| `bm_apply_meal_template` | Zastosowuje szablon do dnia jadłospisu |
 
 ---
 

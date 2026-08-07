@@ -171,24 +171,23 @@ Zdefiniowane w `basemgmt.php`:
 
 | Stała | Wartość domyślna | Opis |
 |-------|-----------------|------|
-| `BASEMGMT_VERSION` | `1.1.0` | Wersja pluginu |
+| `BASEMGMT_VERSION` | `1.1.1` | Wersja pluginu |
 | `BASEMGMT_FILE` | `__FILE__` | Ścieżka do głównego pliku |
 | `BASEMGMT_DIR` | `plugin_dir_path(...)` | Ścieżka katalogu |
 | `BASEMGMT_URL` | `plugin_dir_url(...)` | URL katalogu |
 | `BASEMGMT_SESSION_COOKIE` | `bm_session` | Nazwa ciasteczka sesji |
 | `BASEMGMT_SESSION_TTL` | `28800` (8h) | Czas życia sesji w sekundach |
-| `BASEMGMT_MAX_ATTEMPTS` | `5` | Maks. prób logowania przed blokadą czasową |
+| `BASEMGMT_MAX_ATTEMPTS` | `3` | Maks. prób logowania przed blokadą czasową |
 | `BASEMGMT_LOCKOUT_TTL` | `900` (15 min) | Bazowy czas blokady; realna wartość jest konfigurowalna w ustawieniach |
 
 ---
 
-## Najważniejsze nowości w CampLink 1.1.0
+## Najważniejsze nowości w CampLink 1.1.1
 
-- **Blokada kont kadry**: po przekroczeniu limitu prób konto trafia na blokadę czasową, a kolejna nieudana próba po jej wygaśnięciu powoduje blokadę trwałą wymagającą odblokowania przez administratora i resetu PIN-u.
-- **Szablony planów dnia**: osobny panel CRUD dla globalnych szablonów oraz przycisk „Zastosuj szablon” bezpośrednio na ekranie edycji planu dnia.
-- **Rozszerzony jadłospis**: gotowe słowniki diet i miejsc wydawania, opcja „Inne – wpisz ręcznie” oraz checkbox automatycznego dodania posiłku do planu dnia.
-- **Nowe powiadomienia email**: osobne adresy dla brakujących meldunków oraz okresowych raportów stanów osobowych wysyłanych przez WP-Cron.
-- **Logi operacji i eksporty**: dziennik zdarzeń w panelu admina oraz widoki Drukuj / PDF generowane w czystym HTML przez przeglądarkę.
+- **Wzmocniona blokada kont kadry**: limit błędnych prób logowania został ustawiony na 3, a kolejna nieudana próba po blokadzie czasowej uruchamia blokadę trwałą.
+- **Szablony jadłospisów**: nowy panel do tworzenia i edycji szablonów posiłków oraz szybkie zastosowanie szablonu do wybranego dnia.
+- **Masowe tworzenie planów dnia**: generator pustych planów na zakres dat (do 90 dni), z automatycznym pomijaniem dat już istniejących.
+- **Uspójniony panel admina**: przegrupowane menu CampLink z wyodrębnionymi pozycjami podrzędnymi dla planów i jadłospisu.
 
 ---
 
