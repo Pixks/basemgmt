@@ -267,7 +267,7 @@ final class Scheduler {
 
 	/**
 	 * (Re)schedule the periodic staff report cron based on current settings.
-	 * Interval is stored as 'bm_report_interval': hourly | twicedaily | daily | every6hours | every12hours.
+	 * Interval is stored as 'bm_report_interval': hourly | twicedaily | daily.
 	 */
 	public static function reschedule_staff_report(): void {
 		$hook     = 'bm_periodic_staff_report';

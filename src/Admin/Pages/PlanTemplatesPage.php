@@ -151,7 +151,10 @@ final class PlanTemplatesPage {
 
 		if ( ! $template_id || ! $plan_id ) {
 			AdminMenu::set_notice(__('Nieprawidłowe dane.', 'basemgmt'), 'error');
-			wp_safe_redirect(admin_url('admin.php?page=basemgmt-schedule'));
+			$redirect = $plan_id
+				? admin_url('admin.php?page=basemgmt-schedule&bm_action=edit&id=' . $plan_id)
+				: admin_url('admin.php?page=basemgmt-schedule');
+			wp_safe_redirect($redirect);
 			exit;
 		}
 

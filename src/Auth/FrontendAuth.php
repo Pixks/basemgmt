@@ -118,9 +118,11 @@ final class FrontendAuth {
 		if ( ! wp_check_password($security_code, $staff->security_code_hash) ) {
 			RateLimiter::record_failure((int) $staff->id, $staff);
 			OperationLogger::log(
-				(int) $staff->id,
 				OperationLogger::ACTION_LOGIN_FAILED,
-				sprintf('Nieudana próba logowania dla użytkownika %s %s (ID %d)', $staff->first_name, $staff->last_name, $staff->id)
+				'staff',
+				(int) $staff->id,
+				sprintf('Nieudana próba logowania dla użytkownika %s %s (ID %d)', $staff->first_name, $staff->last_name, $staff->id),
+				(int) $staff->id
 			);
 			return ['success' => false, 'message' => $generic_error];
 		}
@@ -130,9 +132,11 @@ final class FrontendAuth {
 		$token = SessionManager::create((int) $staff->id, (int) $staff->camp_id);
 
 		OperationLogger::log(
-			(int) $staff->id,
 			OperationLogger::ACTION_LOGIN_SUCCESS,
-			sprintf('Pomyślne logowanie: %s %s (ID %d)', $staff->first_name, $staff->last_name, $staff->id)
+			'staff',
+			(int) $staff->id,
+			sprintf('Pomyślne logowanie: %s %s (ID %d)', $staff->first_name, $staff->last_name, $staff->id),
+			(int) $staff->id
 		);
 
 		return [

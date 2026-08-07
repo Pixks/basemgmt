@@ -55,7 +55,6 @@
 								<?php echo $m->is_active ? esc_html__('Aktywny', 'basemgmt') : esc_html__('Nieaktywny', 'basemgmt'); ?>
 							</span>
 						</td>
-						<td><?php echo $m->last_login ? esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), strtotime($m->last_login))) : '—'; ?></td>
 						<td>
 							<?php
 							$is_perm   = ! empty($m->permanent_lock) && (int) $m->permanent_lock === 1;
