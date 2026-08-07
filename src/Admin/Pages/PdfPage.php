@@ -103,8 +103,7 @@ final class PdfPage {
 
 	private function render_document(string $title, string $date, string $content): void {
 		$settings = PdfSettings::get_settings();
-		$timestamp = strtotime($date) ?: current_time('timestamp');
-		$formatted_date = date_i18n('d.m.Y', $timestamp);
+		$formatted_date = date_i18n('d.m.Y', strtotime($date));
 		include BASEMGMT_DIR . 'templates/admin/pdf/base.php';
 	}
 

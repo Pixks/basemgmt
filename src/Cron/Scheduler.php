@@ -142,15 +142,18 @@ final class Scheduler {
 			__('[%s] Brak dziennego meldunku', 'basemgmt'),
 			get_bloginfo('name')
 		);
+		$missing_html = empty($missing)
+			? ''
+			: '<ul><li>' . implode('</li><li>', array_map('esc_html', $missing)) . '</li></ul>';
 
 		EmailService::send_many(
 			array_filter(array_map('sanitize_email', explode(',', (string) $to))),
 			$subject,
 			'missing_report_notification',
 			[
-				'report_date'        => date_i18n('d.m.Y', strtotime(gmdate('Y-m-d'))),
+				'report_date'        => date_i18n('d.m.Y'),
 				'missing_count'      => count($missing),
-				'missing_camps_html' => '<ul><li>' . implode('</li><li>', array_map('esc_html', $missing)) . '</li></ul>',
+				'missing_camps_html' => $missing_html,
 			]
 		);
 

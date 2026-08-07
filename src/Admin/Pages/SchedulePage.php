@@ -256,6 +256,12 @@ final class SchedulePage {
 			$title = $title_tpl
 				? sprintf('%s %s', $title_tpl, date_i18n('d.m.Y', $ts))
 				: sprintf(__('Plan dnia %s', 'basemgmt'), date_i18n('d.m.Y', $ts));
+			$new_title = $title;
+			$new_is_global = $is_global;
+			if ( $source_mode === 'date' && $source_plan ) {
+				$new_title = ! $title_tpl ? (string) $source_plan->title : $title;
+				$new_is_global = (int) $source_plan->is_global;
+			}
 
 			$existing = ScheduleRepository::get_header_for_date($date);
 			if ( $existing && $existing_mode === 'skip' ) {
@@ -267,8 +273,8 @@ final class SchedulePage {
 				? (int) $existing->id
 				: ScheduleRepository::create_header([
 					'plan_date'  => $date,
-					'title'      => $source_mode === 'date' && $source_plan && ! $title_tpl ? (string) $source_plan->title : $title,
-					'is_global'  => $source_mode === 'date' && $source_plan ? (int) $source_plan->is_global : $is_global,
+					'title'      => $new_title,
+					'is_global'  => $new_is_global,
 					'status'     => ScheduleRepository::PLAN_ACTIVE,
 					'created_by' => $user_id,
 				]);

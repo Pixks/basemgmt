@@ -27,7 +27,7 @@ th, td { border:1px solid #d1d5db; padding:7px 9px; text-align:left; vertical-al
 th { background:#f8fafc; font-weight:700; }
 .pill { display:inline-block; padding:2px 7px; border-radius:999px; font-size:11px; background:#e0f2fe; color:#0c4a6e; }
 .warning { color:#b45309; }
-.danger { color:#b91c1c; }
+.danger { color:#b91c1c; font-weight:700; }
 .total-row { font-weight:700; background:#ecfdf5; }
 @media print {
 	body { background:#fff; }
