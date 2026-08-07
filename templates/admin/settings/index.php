@@ -208,6 +208,11 @@ wp_enqueue_style('wp-codemirror');
             <li><?php esc_html_e('REST API: /wp-json/bm/v1/...', 'basemgmt'); ?></li>
             <li><?php esc_html_e('Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB', 'basemgmt'); ?></li>
         </ul>
+        <p>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-logs')); ?>" class="button">
+                🗒 <?php esc_html_e('Logi operacji', 'basemgmt'); ?>
+            </a>
+        </p>
     </div>
 </div>
 

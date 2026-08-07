@@ -39,6 +39,13 @@ final class PdfPage {
 
 	public function render_list(): void {
 		Capabilities::require_admin();
+
+		// If a specific report type is requested, render the print view directly.
+		if ( ! empty($_GET['type']) ) {
+			$this->render();
+			return;
+		}
+
 		$today = gmdate('Y-m-d');
 		include BASEMGMT_DIR . 'templates/admin/pdf/index.php';
 	}

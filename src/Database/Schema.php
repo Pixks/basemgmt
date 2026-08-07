@@ -55,6 +55,9 @@ final class Schema {
 			// Meal Options
 			'meal_diets'             => $wpdb->prefix . 'bm_meal_diets',
 			'meal_locations'         => $wpdb->prefix . 'bm_meal_locations',
+			// Meal Templates
+			'meal_templates'         => $wpdb->prefix . 'bm_meal_templates',
+			'meal_template_items'    => $wpdb->prefix . 'bm_meal_template_items',
 		];
 	}
 
@@ -99,6 +102,7 @@ final class Schema {
 			is_active          TINYINT(1)      NOT NULL DEFAULT 1,
 			failed_attempts    TINYINT UNSIGNED NOT NULL DEFAULT 0,
 			locked_until       DATETIME        DEFAULT NULL,
+			permanent_lock     TINYINT(1)      NOT NULL DEFAULT 0,
 			last_login         DATETIME        DEFAULT NULL,
 			created_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -633,6 +637,39 @@ final class Schema {
 		) $charset;";
 
 		foreach ( $mopts_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Szablony jadłospisów (Meal Menu Templates) ────────────────────────────
+
+		$mtpl_sql = [];
+
+		$mtpl_sql[] = "CREATE TABLE {$p}bm_meal_templates (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name         VARCHAR(255)    NOT NULL,
+			description  TEXT            DEFAULT NULL,
+			created_by   BIGINT UNSIGNED DEFAULT NULL,
+			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id)
+		) $charset;";
+
+		$mtpl_sql[] = "CREATE TABLE {$p}bm_meal_template_items (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			template_id  BIGINT UNSIGNED NOT NULL,
+			meal_type    VARCHAR(30)     NOT NULL DEFAULT 'inne',
+			time_from    VARCHAR(10)     NOT NULL DEFAULT '',
+			title        VARCHAR(255)    NOT NULL,
+			description  TEXT            DEFAULT NULL,
+			location     VARCHAR(255)    NOT NULL DEFAULT '',
+			diet_info    VARCHAR(255)    NOT NULL DEFAULT '',
+			allergens    VARCHAR(255)    NOT NULL DEFAULT '',
+			sort_order   INT             NOT NULL DEFAULT 0,
+			PRIMARY KEY (id),
+			KEY idx_template (template_id)
+		) $charset;";
+
+		foreach ( $mtpl_sql as $statement ) {
 			dbDelta($statement);
 		}
 

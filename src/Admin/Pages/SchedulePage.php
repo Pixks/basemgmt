@@ -173,6 +173,83 @@ final class SchedulePage {
 		exit;
 	}
 
+	/**
+	 * Bulk-create empty plan headers for every day in a date range.
+	 */
+	public function handle_bulk_create(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_bulk_create_plans');
+
+		$date_from = sanitize_text_field($_POST['bulk_date_from'] ?? '');
+		$date_to   = sanitize_text_field($_POST['bulk_date_to']   ?? '');
+		$title_tpl = sanitize_text_field($_POST['bulk_title']     ?? '');
+		$is_global = (int) ($_POST['bulk_is_global'] ?? 1);
+		$user_id   = get_current_user_id();
+
+		if ( ! $date_from || ! $date_to ) {
+			AdminMenu::set_notice(__('Podaj zakres dat.', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-schedule'));
+			exit;
+		}
+
+		$ts_from = strtotime($date_from);
+		$ts_to   = strtotime($date_to);
+
+		if ( $ts_from > $ts_to ) {
+			AdminMenu::set_notice(__('Data początkowa musi być przed datą końcową.', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-schedule'));
+			exit;
+		}
+
+		// Limit range to 90 days to prevent abuse.
+		$max_days = 90;
+		if ( ($ts_to - $ts_from) / DAY_IN_SECONDS > $max_days ) {
+			AdminMenu::set_notice(
+				sprintf(__('Zakres dat może wynosić maksymalnie %d dni.', 'basemgmt'), $max_days),
+				'error'
+			);
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-schedule'));
+			exit;
+		}
+
+		$created = 0;
+		$skipped = 0;
+
+		for ( $ts = $ts_from; $ts <= $ts_to; $ts += DAY_IN_SECONDS ) {
+			$date = gmdate('Y-m-d', $ts);
+
+			// Skip if a plan already exists for this date.
+			$existing = ScheduleRepository::get_all_headers(['date' => $date]);
+			if ( ! empty($existing) ) {
+				$skipped++;
+				continue;
+			}
+
+			$title = $title_tpl
+				? sprintf('%s %s', $title_tpl, date_i18n('d.m.Y', $ts))
+				: sprintf(__('Plan dnia %s', 'basemgmt'), date_i18n('d.m.Y', $ts));
+
+			ScheduleRepository::create_header([
+				'plan_date'  => $date,
+				'title'      => $title,
+				'is_global'  => $is_global,
+				'status'     => ScheduleRepository::PLAN_ACTIVE,
+				'created_by' => $user_id,
+			]);
+			$created++;
+		}
+
+		AdminMenu::set_notice(
+			sprintf(
+				__('Utworzono %d planów. Pominięto %d (już istniały).', 'basemgmt'),
+				$created,
+				$skipped
+			)
+		);
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-schedule'));
+		exit;
+	}
+
 	public function handle_reset_flags(): void {
 		Capabilities::require_admin();
 		$plan_id = (int) ($_GET['plan_id'] ?? 0);

@@ -25,7 +25,7 @@ define('BASEMGMT_DIR',            plugin_dir_path(__FILE__));
 define('BASEMGMT_URL',            plugin_dir_url(__FILE__));
 define('BASEMGMT_SESSION_COOKIE', 'bm_session');
 define('BASEMGMT_SESSION_TTL',    8 * HOUR_IN_SECONDS);   // 8 h
-define('BASEMGMT_MAX_ATTEMPTS',   5);
+define('BASEMGMT_MAX_ATTEMPTS',   3);
 define('BASEMGMT_LOCKOUT_TTL',    15 * MINUTE_IN_SECONDS); // 15 min
 
 // ── PSR-4 autoloader  (BaseMgmt\ → src/) ─────────────────────────────────────
