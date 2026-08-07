@@ -191,6 +191,43 @@ final class MenuPage {
 		exit;
 	}
 
+	public function handle_import_day_to_plan(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_import_day_to_plan');
+
+		$meal_day_id = (int) ($_POST['meal_day_id'] ?? 0);
+		$day         = $meal_day_id ? MealRepository::get_day($meal_day_id) : null;
+
+		if ( ! $day ) {
+			AdminMenu::set_notice(__('Nie znaleziono jadłospisu do importu.', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-menu'));
+			exit;
+		}
+
+		$plan_id = $this->get_or_create_global_plan((string) $day->meal_date);
+		if ( ! $plan_id ) {
+			AdminMenu::set_notice(__('Nie udało się przygotować planu dnia.', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-menu&bm_action=edit&id=' . $meal_day_id));
+			exit;
+		}
+
+		$added   = 0;
+		$skipped = 0;
+		foreach ( MealRepository::get_items($meal_day_id) as $item ) {
+			if ( $this->add_meal_to_plan_item($plan_id, $item->title, $item->time_from, $item->meal_type) ) {
+				$added++;
+			} else {
+				$skipped++;
+			}
+		}
+
+		AdminMenu::set_notice(
+			sprintf(__('Dodano %1$d posiłków do planu dnia. Pominięto duplikaty: %2$d.', 'basemgmt'), $added, $skipped)
+		);
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-menu&bm_action=edit&id=' . $meal_day_id));
+		exit;
+	}
+
 	public function handle_reset_flags(): void {
 		Capabilities::require_admin();
 		$day_id = (int) ($_GET['day_id'] ?? 0);
@@ -208,7 +245,15 @@ final class MenuPage {
 	 * Creates the plan header if none exists.
 	 */
 	private function auto_add_meal_to_plan(string $date, string $title, string $time_from, string $meal_type): void {
-		// Get or create global plan for this date.
+		$plan_id = $this->get_or_create_global_plan($date);
+		if ( ! $plan_id ) {
+			return;
+		}
+
+		$this->add_meal_to_plan_item($plan_id, $title, $time_from, $meal_type);
+	}
+
+	private function get_or_create_global_plan(string $date): int {
 		$plans = \BaseMgmt\Modules\Schedule\ScheduleRepository::get_all_headers([
 			'date'     => $date,
 			'status'   => \BaseMgmt\Modules\Schedule\ScheduleRepository::PLAN_ACTIVE,
@@ -228,17 +273,31 @@ final class MenuPage {
 		}
 
 		if ( ! $plan_id ) {
-			return;
+			return 0;
 		}
 
+		return $plan_id;
+	}
+
+	private function add_meal_to_plan_item(int $plan_id, string $title, string $time_from, string $meal_type): bool {
 		$meal_type_labels = MealRepository::MEAL_TYPES;
-		$category         = \BaseMgmt\Modules\Schedule\ScheduleRepository::CAT_INNE;
+		$category         = \BaseMgmt\Modules\Schedule\ScheduleRepository::CAT_POSILEK;
+		$plan_title       = sprintf('%s – %s', $meal_type_labels[$meal_type] ?? $meal_type, $title);
+
+		if ( \BaseMgmt\Modules\Schedule\ScheduleRepository::has_matching_item($plan_id, [
+			'time_from' => $time_from,
+			'time_to'   => '',
+			'title'     => $plan_title,
+			'category'  => $category,
+		]) ) {
+			return false;
+		}
 
 		\BaseMgmt\Modules\Schedule\ScheduleRepository::create_item([
 			'plan_id'          => $plan_id,
 			'time_from'        => $time_from,
 			'time_to'          => '',
-			'title'            => sprintf('%s – %s', $meal_type_labels[$meal_type] ?? $meal_type, $title),
+			'title'            => $plan_title,
 			'description'      => '',
 			'category'         => $category,
 			'item_status'      => \BaseMgmt\Modules\Schedule\ScheduleRepository::ITEM_ACTIVE,
@@ -247,5 +306,7 @@ final class MenuPage {
 			'is_new_today'     => 0,
 			'is_updated_today' => 0,
 		]);
+
+		return true;
 	}
 }

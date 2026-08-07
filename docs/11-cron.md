@@ -54,7 +54,7 @@ Scheduler::send_daily_reminders()
 
 1. Pobiera wszystkie aktywne obozy
 2. Sprawdza `DailyCountRepository::is_submitted_today()` dla każdego
-3. Jeśli są brakujące meldunki → wysyła email na adresy z `bm_missing_report_emails` (fallback: `admin_email`)
+3. Jeśli są brakujące meldunki → wysyła szablon HTML z bieżącą datą WordPress, liczbą braków i listą obozów na adresy z `bm_missing_report_emails` (fallback: `admin_email`)
 4. Uruchamia hook `do_action('bm_daily_reminders_sent', $missing_camps)`
 
 ---
@@ -180,7 +180,7 @@ Scheduler::send_periodic_staff_report()
 2. Jeśli lista jest pusta – kończy działanie bez wysyłki
 3. Pobiera wszystkie aktywne obozy
 4. Dla każdego obozu pobiera dzisiejszy meldunek przez `DailyCountRepository::get_by_date()`
-5. Buduje zbiorczy raport tekstowy z sumami i informacją o brakujących meldunkach
+5. Buduje zbiorczy raport HTML z sumami i informacją o brakujących meldunkach
 6. Wysyła email do wszystkich skonfigurowanych odbiorców
 7. Uruchamia `do_action('bm_periodic_staff_report_sent', $totals, $camps)`
 

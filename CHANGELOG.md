@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.2] – 2026-08-07
+
+### Usprawnienia i poprawki
+
+- **Raport zbiorczy meldunków** — widok dnia lepiej eksponuje sumy oraz listę obozów bez meldunku, co przyspiesza weryfikację braków.
+- **Powiadomienia email o meldunkach** — dopracowane szablony przypomnień i raportów okresowych; przypomnienie korzysta z bieżącej daty WordPress i bezpiecznie obsługuje pustą listę HTML.
+- **Drukuj / PDF** — poprawione formatowanie daty w widokach wydruku oraz mocniejsze wyróżnienie stanów alarmowych.
+- **Masowe tworzenie planów dnia z dnia źródłowego** — nowe wpisy zachowują tytuł i zasięg planu źródłowego, o ile nie podano własnego wzorca tytułu.
+
 ## [1.1.1] – 2026-08-07
 
 ### Usprawnienia i poprawki

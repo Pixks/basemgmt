@@ -171,7 +171,7 @@ Zdefiniowane w `basemgmt.php`:
 
 | Stała | Wartość domyślna | Opis |
 |-------|-----------------|------|
-| `BASEMGMT_VERSION` | `1.1.1` | Wersja pluginu |
+| `BASEMGMT_VERSION` | `1.1.2` | Wersja pluginu |
 | `BASEMGMT_FILE` | `__FILE__` | Ścieżka do głównego pliku |
 | `BASEMGMT_DIR` | `plugin_dir_path(...)` | Ścieżka katalogu |
 | `BASEMGMT_URL` | `plugin_dir_url(...)` | URL katalogu |
@@ -182,12 +182,12 @@ Zdefiniowane w `basemgmt.php`:
 
 ---
 
-## Najważniejsze nowości w CampLink 1.1.1
+## Najważniejsze nowości w CampLink 1.1.2
 
-- **Wzmocniona blokada kont kadry**: limit błędnych prób logowania został ustawiony na 3, a kolejna nieudana próba po blokadzie czasowej uruchamia blokadę trwałą.
-- **Szablony jadłospisów**: nowy panel do tworzenia i edycji szablonów posiłków oraz szybkie zastosowanie szablonu do wybranego dnia.
-- **Masowe tworzenie planów dnia**: generator pustych planów na zakres dat (do 90 dni), z automatycznym pomijaniem dat już istniejących.
-- **Uspójniony panel admina**: przegrupowane menu CampLink z wyodrębnionymi pozycjami podrzędnymi dla planów i jadłospisu.
+- **Dopracowany raport zbiorczy meldunków**: widok dnia czytelniej pokazuje sumy oraz listę obozów, które nie wysłały jeszcze meldunku.
+- **Lepsze powiadomienia email**: przypomnienia o brakujących meldunkach i raporty okresowe korzystają z dopracowanych szablonów HTML oraz aktualnej daty WordPress.
+- **Poprawiony wydruk / PDF**: eksporty planu dnia i jadłospisu prezentują spójniejszą datę i wyraźniejsze oznaczenia stanów alarmowych.
+- **Lepsze kopiowanie planów dnia po dacie**: masowe tworzenie nowych planów z dnia źródłowego zachowuje tytuł i zasięg planu, chyba że ustawisz własny wzorzec tytułu.
 
 ---
 

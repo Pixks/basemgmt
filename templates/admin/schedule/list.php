@@ -3,6 +3,7 @@ defined('ABSPATH') || exit;
 /**
  * @var array   $headers      – list of plan headers
  * @var string  $filter_date  – currently filtered date
+ * @var array   $templates    – list of plan templates
  */
 ?>
 <div class="wrap bm-wrap">
@@ -70,9 +71,38 @@ defined('ABSPATH') || exit;
                         <option value="0"><?php esc_html_e('Wybrane obozy', 'basemgmt'); ?></option>
                     </select>
                 </label>
+                <label>
+                    <?php esc_html_e('Źródło:', 'basemgmt'); ?><br>
+                    <select name="bulk_source_mode" id="bm-bulk-source-mode">
+                        <option value="empty"><?php esc_html_e('Puste plany', 'basemgmt'); ?></option>
+                        <option value="template"><?php esc_html_e('Szablon planu', 'basemgmt'); ?></option>
+                        <option value="date"><?php esc_html_e('Inny istniejący dzień', 'basemgmt'); ?></option>
+                    </select>
+                </label>
+                <label id="bm-bulk-template-wrap" style="display:none;">
+                    <?php esc_html_e('Szablon:', 'basemgmt'); ?><br>
+                    <select name="bulk_template_id">
+                        <option value=""><?php esc_html_e('— wybierz szablon —', 'basemgmt'); ?></option>
+                        <?php foreach ($templates as $template): ?>
+                        <option value="<?php echo esc_attr((string) $template->id); ?>"><?php echo esc_html($template->name); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label id="bm-bulk-date-wrap" style="display:none;">
+                    <?php esc_html_e('Dzień źródłowy:', 'basemgmt'); ?><br>
+                    <input type="date" name="bulk_source_date">
+                </label>
+                <label>
+                    <?php esc_html_e('Dla istniejących dni:', 'basemgmt'); ?><br>
+                    <select name="bulk_existing_mode">
+                        <option value="skip"><?php esc_html_e('Pomiń istniejące plany', 'basemgmt'); ?></option>
+                        <option value="replace"><?php esc_html_e('Nadpisz plan i pozycje', 'basemgmt'); ?></option>
+                        <option value="missing"><?php esc_html_e('Dodaj tylko brakujące pozycje', 'basemgmt'); ?></option>
+                    </select>
+                </label>
                 <button type="submit" class="button button-secondary"><?php esc_html_e('Utwórz plany', 'basemgmt'); ?></button>
             </div>
-            <p class="description" style="margin-top:8px;"><?php esc_html_e('Tworzy pusty plan dla każdego dnia w wybranym zakresie (maks. 90 dni). Dni, dla których plan już istnieje, są pomijane.', 'basemgmt'); ?></p>
+            <p class="description" style="margin-top:8px;"><?php esc_html_e('Tworzy plan dla każdego dnia w wybranym zakresie (maks. 90 dni). Możesz utworzyć pusty plan, skopiować szablon albo przenieść pozycje z innego dnia.', 'basemgmt'); ?></p>
         </form>
     </details>
 
@@ -130,3 +160,19 @@ defined('ABSPATH') || exit;
         </tbody>
     </table>
 </div>
+<script>
+(function() {
+    var sourceSelect = document.getElementById('bm-bulk-source-mode');
+    var templateWrap = document.getElementById('bm-bulk-template-wrap');
+    var dateWrap = document.getElementById('bm-bulk-date-wrap');
+    if (!sourceSelect || !templateWrap || !dateWrap) return;
+
+    function toggleBulkSourceFields() {
+        templateWrap.style.display = sourceSelect.value === 'template' ? 'block' : 'none';
+        dateWrap.style.display = sourceSelect.value === 'date' ? 'block' : 'none';
+    }
+
+    sourceSelect.addEventListener('change', toggleBulkSourceFields);
+    toggleBulkSourceFields();
+})();
+</script>

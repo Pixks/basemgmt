@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BaseMgmt\Cron;
 
 use BaseMgmt\Auth\SessionManager;
+use BaseMgmt\Core\EmailService;
 use BaseMgmt\Modules\Announcements\AnnouncementRepository;
 use BaseMgmt\Modules\Camps\CampRepository;
 use BaseMgmt\Modules\Camps\DailyCountRepository;
@@ -141,11 +142,20 @@ final class Scheduler {
 			__('[%s] Brak dziennego meldunku', 'basemgmt'),
 			get_bloginfo('name')
 		);
-		$body  = __("Następujące obozy nie wysłały meldunku dziennego:\n\n", 'basemgmt');
-		$body .= implode("\n", $missing);
-		$body .= "\n\n" . __('Zaloguj się do panelu, aby sprawdzić szczegóły.', 'basemgmt');
+		$missing_html = empty($missing)
+			? ''
+			: '<ul><li>' . implode('</li><li>', array_map('esc_html', $missing)) . '</li></ul>';
 
-		wp_mail($to, $subject, $body);
+		EmailService::send_many(
+			array_filter(array_map('sanitize_email', explode(',', (string) $to))),
+			$subject,
+			'missing_report_notification',
+			[
+				'report_date'        => date_i18n('d.m.Y'),
+				'missing_count'      => count($missing),
+				'missing_camps_html' => $missing_html,
+			]
+		);
 
 		/** @param string[] $missing Camp names that haven't submitted. */
 		do_action('bm_daily_reminders_sent', $missing);
@@ -221,6 +231,7 @@ final class Scheduler {
 		$camps   = CampRepository::get_all(['status' => 'active']);
 
 		$lines   = [];
+		$lines_html_rows = '';
 		$totals  = ['participants' => 0, 'staff' => 0, 'workers' => 0];
 
 		foreach ( $camps as $camp ) {
@@ -236,8 +247,18 @@ final class Scheduler {
 					"  %s: %d uczestników, %d kadra, %d pracownicy",
 					$camp->name, $p, $s, $w
 				);
+				$lines_html_rows .= sprintf(
+					'<tr><td>%1$s</td><td>%2$s</td></tr>',
+					esc_html($camp->name),
+					esc_html(sprintf(__('%1$d uczestników, %2$d kadra, %3$d pracownicy', 'basemgmt'), $p, $s, $w))
+				);
 			} else {
 				$lines[] = "  {$camp->name}: brak meldunku";
+				$lines_html_rows .= sprintf(
+					'<tr><td>%1$s</td><td>%2$s</td></tr>',
+					esc_html($camp->name),
+					esc_html__('brak meldunku', 'basemgmt')
+				);
 			}
 		}
 
@@ -247,20 +268,21 @@ final class Scheduler {
 			date_i18n('d.m.Y', strtotime($today)),
 			$time
 		);
+		$lines_html = '<table class="meta-table"><thead><tr><th>' . esc_html__('Obóz', 'basemgmt') . '</th><th>' . esc_html__('Stan', 'basemgmt') . '</th></tr></thead><tbody>' . $lines_html_rows . '</tbody></table>';
 
-		$body  = "Raport stanów osobowych bazy obozowej\n";
-		$body .= sprintf("Data: %s, godzina: %s\n\n", date_i18n('d.m.Y', strtotime($today)), $time);
-		$body .= implode("\n", $lines) . "\n\n";
-		$body .= sprintf(
-			"Suma: %d uczestników, %d kadra, %d pracownicy",
-			$totals['participants'],
-			$totals['staff'],
-			$totals['workers']
+		EmailService::send_many(
+			$emails,
+			$subject,
+			'periodic_staff_report',
+			[
+				'report_date'        => date_i18n('d.m.Y', strtotime($today)),
+				'report_time'        => $time,
+				'report_lines_html'  => $lines_html,
+				'total_participants' => $totals['participants'],
+				'total_staff'        => $totals['staff'],
+				'total_workers'      => $totals['workers'],
+			]
 		);
-
-		foreach ( $emails as $email ) {
-			wp_mail($email, $subject, $body);
-		}
 
 		do_action('bm_periodic_staff_report_sent', $totals, $camps);
 	}

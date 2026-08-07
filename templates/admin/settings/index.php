@@ -2,7 +2,9 @@
 defined('ABSPATH') || exit;
 use BaseMgmt\Core\EmailService;
 use BaseMgmt\Core\EmailTemplateRepository;
+use BaseMgmt\Core\PdfSettings;
 $s        = EmailService::get_settings();
+$pdf      = PdfSettings::get_settings();
 $registry = EmailTemplateRepository::get_registry();
 
 // Enqueue CodeMirror for the HTML fields.
@@ -113,6 +115,49 @@ wp_enqueue_style('wp-codemirror');
                 <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+
+    <!-- PDF settings -->
+    <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 10px;">🖨 <?php esc_html_e('Wygląd widoków do druku', 'basemgmt'); ?></h2>
+        <p class="description" style="margin:0 0 14px;">
+            <?php esc_html_e('Ustaw branding i podstawowy wygląd raportów otwieranych w nowej karcie do wydruku lub zapisu jako PDF.', 'basemgmt'); ?>
+        </p>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <?php wp_nonce_field('bm_save_settings'); ?>
+            <input type="hidden" name="action" value="bm_save_settings">
+            <table class="form-table" style="margin:0;">
+                <tr>
+                    <th><label for="bm-pdf-title"><?php esc_html_e('Tytuł nagłówka', 'basemgmt'); ?></label></th>
+                    <td><input type="text" id="bm-pdf-title" name="pdf_header_title" class="regular-text" value="<?php echo esc_attr($pdf['header_title']); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="bm-pdf-subtitle"><?php esc_html_e('Podtytuł', 'basemgmt'); ?></label></th>
+                    <td><input type="text" id="bm-pdf-subtitle" name="pdf_header_subtitle" class="regular-text" value="<?php echo esc_attr($pdf['header_subtitle']); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="bm-pdf-color"><?php esc_html_e('Kolor akcentu', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="color" id="bm-pdf-color" name="pdf_accent_color" value="<?php echo esc_attr($pdf['accent_color']); ?>">
+                        <code><?php echo esc_html($pdf['accent_color']); ?></code>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-pdf-logo"><?php esc_html_e('URL logo', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="url" id="bm-pdf-logo" name="pdf_logo_url" class="large-text" value="<?php echo esc_attr($pdf['logo_url']); ?>">
+                        <?php if ($pdf['logo_url']): ?>
+                        <br><img src="<?php echo esc_url($pdf['logo_url']); ?>" style="max-height:50px;margin-top:6px;" alt="logo preview">
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-pdf-footer"><?php esc_html_e('Stopka dokumentu', 'basemgmt'); ?></label></th>
+                    <td><input type="text" id="bm-pdf-footer" name="pdf_footer_text" class="large-text" value="<?php echo esc_attr($pdf['footer_text']); ?>"></td>
+                </tr>
+            </table>
+            <?php submit_button(__('Zapisz wygląd wydruków', 'basemgmt')); ?>
+        </form>
     </div>
 
     <!-- Test email -->

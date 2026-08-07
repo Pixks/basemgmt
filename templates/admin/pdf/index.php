@@ -14,8 +14,9 @@ $today = gmdate('Y-m-d');
 		<div class="postbox" style="padding:16px;">
 			<h2 style="margin-top:0;">📊 <?php esc_html_e('Stany osobowe obozów', 'basemgmt'); ?></h2>
 			<p class="description"><?php esc_html_e('Aktualne liczby uczestników, kadry i pracowników na bazie.', 'basemgmt'); ?></p>
-			<form method="get" target="_blank" action="<?php echo esc_url(admin_url('admin.php')); ?>">
-				<input type="hidden" name="page" value="basemgmt-pdf">
+			<form method="get" target="_blank" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+				<input type="hidden" name="action" value="bm_render_pdf">
+				<input type="hidden" name="_wpnonce" value="<?php echo esc_attr(wp_create_nonce('bm_render_pdf')); ?>">
 				<input type="hidden" name="type" value="camps">
 				<p>
 					<label><?php esc_html_e('Data:', 'basemgmt'); ?>
@@ -30,8 +31,9 @@ $today = gmdate('Y-m-d');
 		<div class="postbox" style="padding:16px;">
 			<h2 style="margin-top:0;">📅 <?php esc_html_e('Plan dnia', 'basemgmt'); ?></h2>
 			<p class="description"><?php esc_html_e('Plan dnia dla wybranej daty.', 'basemgmt'); ?></p>
-			<form method="get" target="_blank" action="<?php echo esc_url(admin_url('admin.php')); ?>">
-				<input type="hidden" name="page" value="basemgmt-pdf">
+			<form method="get" target="_blank" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+				<input type="hidden" name="action" value="bm_render_pdf">
+				<input type="hidden" name="_wpnonce" value="<?php echo esc_attr(wp_create_nonce('bm_render_pdf')); ?>">
 				<input type="hidden" name="type" value="schedule">
 				<p>
 					<label><?php esc_html_e('Data:', 'basemgmt'); ?>
@@ -46,8 +48,9 @@ $today = gmdate('Y-m-d');
 		<div class="postbox" style="padding:16px;">
 			<h2 style="margin-top:0;">🍽 <?php esc_html_e('Jadłospis', 'basemgmt'); ?></h2>
 			<p class="description"><?php esc_html_e('Jadłospis na wybrany dzień.', 'basemgmt'); ?></p>
-			<form method="get" target="_blank" action="<?php echo esc_url(admin_url('admin.php')); ?>">
-				<input type="hidden" name="page" value="basemgmt-pdf">
+			<form method="get" target="_blank" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+				<input type="hidden" name="action" value="bm_render_pdf">
+				<input type="hidden" name="_wpnonce" value="<?php echo esc_attr(wp_create_nonce('bm_render_pdf')); ?>">
 				<input type="hidden" name="type" value="menu">
 				<p>
 					<label><?php esc_html_e('Data:', 'basemgmt'); ?>

@@ -8,6 +8,7 @@ use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Core\EmailService;
 use BaseMgmt\Core\EmailTemplateRepository;
+use BaseMgmt\Core\PdfSettings;
 
 defined('ABSPATH') || exit;
 
@@ -33,7 +34,15 @@ final class SettingsPage {
 		Capabilities::require_admin();
 		check_admin_referer('bm_save_settings');
 
-		EmailService::save_settings($_POST);
+		EmailService::save_settings(wp_parse_args($_POST, EmailService::get_settings()));
+		$pdf_settings = PdfSettings::get_settings();
+		PdfSettings::save_settings(wp_parse_args($_POST, [
+			'pdf_header_title'    => $pdf_settings['header_title'],
+			'pdf_header_subtitle' => $pdf_settings['header_subtitle'],
+			'pdf_accent_color'    => $pdf_settings['accent_color'],
+			'pdf_logo_url'        => $pdf_settings['logo_url'],
+			'pdf_footer_text'     => $pdf_settings['footer_text'],
+		]));
 
 		// Notification settings.
 		update_option('bm_missing_report_emails', sanitize_text_field(wp_unslash($_POST['missing_report_emails'] ?? '')));
@@ -136,4 +145,3 @@ final class SettingsPage {
 		include BASEMGMT_DIR . 'templates/admin/settings/email_template.php';
 	}
 }
-

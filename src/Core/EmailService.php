@@ -73,6 +73,7 @@ final class EmailService {
 
 		$body = self::render($template, $data);
 		if ( ! $body ) return false;
+		$subject = EmailTemplateRepository::get_subject_override($template, $data) ?: $subject;
 
 		$settings = self::get_settings();
 
