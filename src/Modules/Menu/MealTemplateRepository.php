@@ -70,6 +70,22 @@ final class MealTemplateRepository {
 		) ?: [];
 	}
 
+	/**
+	 * Returns a map of template_id → item count for all templates.
+	 *
+	 * @return array<int, int>
+	 */
+	public static function get_item_counts(): array {
+		global $wpdb;
+		$t    = Schema::table('meal_template_items');
+		$rows = $wpdb->get_results("SELECT template_id, COUNT(*) AS cnt FROM {$t} GROUP BY template_id") ?: [];
+		$map  = [];
+		foreach ( $rows as $row ) {
+			$map[(int) $row->template_id] = (int) $row->cnt;
+		}
+		return $map;
+	}
+
 	public static function save_item(array $data): int {
 		global $wpdb;
 		$t  = Schema::table('meal_template_items');
@@ -109,8 +125,9 @@ final class MealTemplateRepository {
 	 * @return int Number of items added.
 	 */
 	public static function apply_to_day(int $template_id, int $meal_day_id, bool $replace = false): int {
+		global $wpdb;
+
 		if ( $replace ) {
-			global $wpdb;
 			$wpdb->delete(Schema::table('meal_items'), ['meal_day_id' => $meal_day_id]);
 		}
 

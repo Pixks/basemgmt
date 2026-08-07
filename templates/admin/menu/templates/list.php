@@ -3,6 +3,7 @@ defined('ABSPATH') || exit;
 /**
  * @var array $templates
  */
+$item_counts = \BaseMgmt\Modules\Menu\MealTemplateRepository::get_item_counts();
 ?>
 <div class="wrap bm-admin-wrap">
 	<h1 class="wp-heading-inline"><?php esc_html_e('Szablony jadłospisów', 'basemgmt'); ?></h1>
@@ -24,7 +25,7 @@ defined('ABSPATH') || exit;
 		</tr></thead>
 		<tbody>
 		<?php foreach ($templates as $tpl):
-			$items   = \BaseMgmt\Modules\Menu\MealTemplateRepository::get_items((int) $tpl->id);
+			$count   = $item_counts[(int) $tpl->id] ?? 0;
 			$del_url = wp_nonce_url(admin_url('admin-post.php?action=bm_delete_meal_template&id=' . $tpl->id), 'bm_delete_meal_template_' . $tpl->id);
 		?>
 		<tr>
@@ -34,7 +35,7 @@ defined('ABSPATH') || exit;
 				</a></strong>
 				<?php if ($tpl->description): ?><br><small style="color:#666;"><?php echo esc_html(wp_trim_words($tpl->description, 10)); ?></small><?php endif; ?>
 			</td>
-			<td><?php echo esc_html((string) count($items)); ?></td>
+			<td><?php echo esc_html((string) $count); ?></td>
 			<td>
 				<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-meal-templates&bm_action=edit&id=' . $tpl->id)); ?>" class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
 				<a href="<?php echo esc_url($del_url); ?>" class="button button-small"

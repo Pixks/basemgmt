@@ -202,8 +202,9 @@ final class SchedulePage {
 		}
 
 		// Limit range to 90 days to prevent abuse.
-		$max_days = 90;
-		if ( ($ts_to - $ts_from) / DAY_IN_SECONDS > $max_days ) {
+		$max_days  = 90;
+		$num_days  = (int) round(($ts_to - $ts_from) / DAY_IN_SECONDS) + 1;
+		if ( $num_days > $max_days ) {
 			AdminMenu::set_notice(
 				sprintf(__('Zakres dat może wynosić maksymalnie %d dni.', 'basemgmt'), $max_days),
 				'error'
