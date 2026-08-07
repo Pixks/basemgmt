@@ -46,6 +46,13 @@ $is_new = !$day;
 	<div style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
 		<a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=bm_reset_menu_flags&day_id=' . $day->id), 'bm_reset_menu_flags_' . $day->id)); ?>" class="button" onclick="return confirm('<?php esc_attr_e('Zresetować flagi zmian?', 'basemgmt'); ?>')"><?php esc_html_e('Resetuj flagi zmian', 'basemgmt'); ?></a>
 
+		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-flex;">
+			<?php wp_nonce_field('bm_import_day_to_plan'); ?>
+			<input type="hidden" name="action" value="bm_import_day_to_plan">
+			<input type="hidden" name="meal_day_id" value="<?php echo esc_attr((string) $day->id); ?>">
+			<button type="submit" class="button button-secondary"><?php esc_html_e('Dodaj cały jadłospis do planu dnia', 'basemgmt'); ?></button>
+		</form>
+
 		<?php
 		$meal_tpls = \BaseMgmt\Modules\Menu\MealTemplateRepository::get_all();
 		if ( ! empty($meal_tpls) ):

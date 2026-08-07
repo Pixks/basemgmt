@@ -139,18 +139,19 @@ final class PlanTemplateRepository {
 	 *
 	 * @param int  $template_id   Source template.
 	 * @param int  $plan_id       Target plan_headers ID.
-	 * @param bool $replace       If true, delete existing items first.
+	 * @param bool $replace         If true, delete existing items first.
+	 * @param bool $skip_duplicates If true, only missing items are added.
 	 * @return int Number of items added.
 	 */
-	public static function apply_to_plan(int $template_id, int $plan_id, bool $replace = false): int {
+	public static function apply_to_plan(int $template_id, int $plan_id, bool $replace = false, bool $skip_duplicates = false): int {
 		if ( $replace ) {
-			global $wpdb;
-			$wpdb->delete(Schema::table('plan_items'), ['plan_id' => $plan_id]);
+			ScheduleRepository::delete_items_for_plan($plan_id);
 		}
 
 		$items = self::get_items($template_id);
+		$added = 0;
 		foreach ( $items as $item ) {
-			ScheduleRepository::create_item([
+			$payload = [
 				'plan_id'      => $plan_id,
 				'time_from'    => $item->time_from,
 				'time_to'      => $item->time_to,
@@ -160,9 +161,16 @@ final class PlanTemplateRepository {
 				'item_status'  => ScheduleRepository::ITEM_ACTIVE,
 				'is_mandatory' => $item->is_mandatory,
 				'sort_order'   => $item->sort_order,
-			]);
+			];
+
+			if ( $skip_duplicates && ScheduleRepository::has_matching_item($plan_id, $payload) ) {
+				continue;
+			}
+
+			ScheduleRepository::create_item($payload);
+			$added++;
 		}
-		return count($items);
+		return $added;
 	}
 
 	/**

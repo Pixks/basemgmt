@@ -252,7 +252,7 @@ final class AdminMenu {
 			'basemgmt',
 			__('Logi operacji', 'basemgmt'),
 			__('Logi operacji', 'basemgmt'),
-			'manage_options',
+			'manage_basemgmt',
 			'basemgmt-logs',
 			[$this->logs, 'render']
 		);
@@ -381,6 +381,7 @@ final class AdminMenu {
 			'bm_delete_meal_item'         => [$this->menu,         'handle_delete_item'],
 			'bm_copy_menu'                => [$this->menu,         'handle_copy'],
 			'bm_reset_menu_flags'         => [$this->menu,         'handle_reset_flags'],
+			'bm_import_day_to_plan'       => [$this->menu,         'handle_import_day_to_plan'],
 			// Communication (Komunikacja)
 			'bm_create_thread'            => [$this->communication,'handle_create_thread'],
 			'bm_admin_reply'              => [$this->communication,'handle_reply'],
@@ -415,6 +416,7 @@ final class AdminMenu {
 			'bm_save_meal_template_item'  => [$this->meal_templates, 'handle_save_item'],
 			'bm_delete_meal_template_item'=> [$this->meal_templates, 'handle_delete_item'],
 			'bm_apply_meal_template'      => [$this->meal_templates, 'handle_apply'],
+			'bm_render_pdf'               => [$this->pdf,            'handle_render'],
 		];
 	}
 

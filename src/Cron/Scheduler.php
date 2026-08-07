@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BaseMgmt\Cron;
 
 use BaseMgmt\Auth\SessionManager;
+use BaseMgmt\Core\EmailService;
 use BaseMgmt\Modules\Announcements\AnnouncementRepository;
 use BaseMgmt\Modules\Camps\CampRepository;
 use BaseMgmt\Modules\Camps\DailyCountRepository;
@@ -141,11 +142,17 @@ final class Scheduler {
 			__('[%s] Brak dziennego meldunku', 'basemgmt'),
 			get_bloginfo('name')
 		);
-		$body  = __("Następujące obozy nie wysłały meldunku dziennego:\n\n", 'basemgmt');
-		$body .= implode("\n", $missing);
-		$body .= "\n\n" . __('Zaloguj się do panelu, aby sprawdzić szczegóły.', 'basemgmt');
 
-		wp_mail($to, $subject, $body);
+		EmailService::send_many(
+			array_filter(array_map('sanitize_email', explode(',', (string) $to))),
+			$subject,
+			'missing_report_notification',
+			[
+				'report_date'        => date_i18n('d.m.Y', strtotime(gmdate('Y-m-d'))),
+				'missing_count'      => count($missing),
+				'missing_camps_html' => '<ul><li>' . implode('</li><li>', array_map('esc_html', $missing)) . '</li></ul>',
+			]
+		);
 
 		/** @param string[] $missing Camp names that haven't submitted. */
 		do_action('bm_daily_reminders_sent', $missing);
@@ -247,20 +254,26 @@ final class Scheduler {
 			date_i18n('d.m.Y', strtotime($today)),
 			$time
 		);
-
-		$body  = "Raport stanów osobowych bazy obozowej\n";
-		$body .= sprintf("Data: %s, godzina: %s\n\n", date_i18n('d.m.Y', strtotime($today)), $time);
-		$body .= implode("\n", $lines) . "\n\n";
-		$body .= sprintf(
-			"Suma: %d uczestników, %d kadra, %d pracownicy",
-			$totals['participants'],
-			$totals['staff'],
-			$totals['workers']
-		);
-
-		foreach ( $emails as $email ) {
-			wp_mail($email, $subject, $body);
+		$lines_html = '<table class="meta-table"><thead><tr><th>' . esc_html__('Obóz', 'basemgmt') . '</th><th>' . esc_html__('Stan', 'basemgmt') . '</th></tr></thead><tbody>';
+		foreach ( $lines as $line ) {
+			[$camp_name, $camp_status] = array_pad(explode(': ', $line, 2), 2, '');
+			$lines_html .= '<tr><td>' . esc_html(trim($camp_name)) . '</td><td>' . esc_html(trim($camp_status)) . '</td></tr>';
 		}
+		$lines_html .= '</tbody></table>';
+
+		EmailService::send_many(
+			$emails,
+			$subject,
+			'periodic_staff_report',
+			[
+				'report_date'        => date_i18n('d.m.Y', strtotime($today)),
+				'report_time'        => $time,
+				'report_lines_html'  => $lines_html,
+				'total_participants' => $totals['participants'],
+				'total_staff'        => $totals['staff'],
+				'total_workers'      => $totals['workers'],
+			]
+		);
 
 		do_action('bm_periodic_staff_report_sent', $totals, $camps);
 	}

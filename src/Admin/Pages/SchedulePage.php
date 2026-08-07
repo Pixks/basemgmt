@@ -7,6 +7,7 @@ namespace BaseMgmt\Admin\Pages;
 use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Modules\Camps\CampRepository;
+use BaseMgmt\Modules\Schedule\PlanTemplateRepository;
 use BaseMgmt\Modules\Schedule\ScheduleRepository;
 
 defined('ABSPATH') || exit;
@@ -35,6 +36,7 @@ final class SchedulePage {
 		$headers     = ScheduleRepository::get_all_headers(
 			$filter_date ? ['date' => $filter_date] : []
 		);
+		$templates   = PlanTemplateRepository::get_all();
 
 		include BASEMGMT_DIR . 'templates/admin/schedule/list.php';
 	}
@@ -174,17 +176,21 @@ final class SchedulePage {
 	}
 
 	/**
-	 * Bulk-create empty plan headers for every day in a date range.
+	 * Bulk-create plans for every day in a date range, optionally from a template or another day.
 	 */
 	public function handle_bulk_create(): void {
 		Capabilities::require_admin();
 		check_admin_referer('bm_bulk_create_plans');
 
-		$date_from = sanitize_text_field($_POST['bulk_date_from'] ?? '');
-		$date_to   = sanitize_text_field($_POST['bulk_date_to']   ?? '');
-		$title_tpl = sanitize_text_field($_POST['bulk_title']     ?? '');
-		$is_global = (int) ($_POST['bulk_is_global'] ?? 1);
-		$user_id   = get_current_user_id();
+		$date_from     = sanitize_text_field($_POST['bulk_date_from'] ?? '');
+		$date_to       = sanitize_text_field($_POST['bulk_date_to']   ?? '');
+		$title_tpl     = sanitize_text_field($_POST['bulk_title']     ?? '');
+		$is_global     = (int) ($_POST['bulk_is_global'] ?? 1);
+		$source_mode   = sanitize_key($_POST['bulk_source_mode'] ?? 'empty');
+		$template_id   = (int) ($_POST['bulk_template_id'] ?? 0);
+		$source_date   = sanitize_text_field($_POST['bulk_source_date'] ?? '');
+		$existing_mode = sanitize_key($_POST['bulk_existing_mode'] ?? 'skip');
+		$user_id       = get_current_user_id();
 
 		if ( ! $date_from || ! $date_to ) {
 			AdminMenu::set_notice(__('Podaj zakres dat.', 'basemgmt'), 'error');
@@ -213,15 +219,37 @@ final class SchedulePage {
 			exit;
 		}
 
+		$source_plan = null;
+		if ( $source_mode === 'template' && ! $template_id ) {
+			AdminMenu::set_notice(__('Wybierz szablon planu.', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-schedule'));
+			exit;
+		}
+
+		if ( $source_mode === 'date' ) {
+			if ( ! $source_date ) {
+				AdminMenu::set_notice(__('Wskaż dzień źródłowy.', 'basemgmt'), 'error');
+				wp_safe_redirect(admin_url('admin.php?page=basemgmt-schedule'));
+				exit;
+			}
+
+			$source_plan = ScheduleRepository::get_header_for_date($source_date);
+			if ( ! $source_plan ) {
+				AdminMenu::set_notice(__('Nie znaleziono planu dla wskazanego dnia źródłowego.', 'basemgmt'), 'error');
+				wp_safe_redirect(admin_url('admin.php?page=basemgmt-schedule'));
+				exit;
+			}
+		}
+
 		$created = 0;
 		$skipped = 0;
+		$updated = 0;
+		$added_items = 0;
 
 		for ( $ts = $ts_from; $ts <= $ts_to; $ts += DAY_IN_SECONDS ) {
 			$date = gmdate('Y-m-d', $ts);
 
-			// Skip if a plan already exists for this date.
-			$existing = ScheduleRepository::get_all_headers(['date' => $date]);
-			if ( ! empty($existing) ) {
+			if ( $source_mode === 'date' && $source_plan && $date === $source_date ) {
 				$skipped++;
 				continue;
 			}
@@ -230,20 +258,85 @@ final class SchedulePage {
 				? sprintf('%s %s', $title_tpl, date_i18n('d.m.Y', $ts))
 				: sprintf(__('Plan dnia %s', 'basemgmt'), date_i18n('d.m.Y', $ts));
 
-			ScheduleRepository::create_header([
-				'plan_date'  => $date,
-				'title'      => $title,
-				'is_global'  => $is_global,
-				'status'     => ScheduleRepository::PLAN_ACTIVE,
-				'created_by' => $user_id,
-			]);
-			$created++;
+			$existing = ScheduleRepository::get_header_for_date($date);
+			if ( $existing && $existing_mode === 'skip' ) {
+				$skipped++;
+				continue;
+			}
+
+			$target_id = $existing
+				? (int) $existing->id
+				: ScheduleRepository::create_header([
+					'plan_date'  => $date,
+					'title'      => $source_mode === 'date' && $source_plan && ! $title_tpl ? (string) $source_plan->title : $title,
+					'is_global'  => $source_mode === 'date' && $source_plan ? (int) $source_plan->is_global : $is_global,
+					'status'     => ScheduleRepository::PLAN_ACTIVE,
+					'created_by' => $user_id,
+				]);
+
+			if ( ! $target_id ) {
+				continue;
+			}
+
+			if ( ! $existing ) {
+				$created++;
+			} else {
+				$updated++;
+			}
+
+			if ( $source_mode === 'empty' ) {
+				if ( $existing_mode === 'replace' ) {
+					ScheduleRepository::update_header($target_id, [
+						'title'     => $title,
+						'is_global' => $is_global,
+						'status'    => ScheduleRepository::PLAN_ACTIVE,
+					]);
+					ScheduleRepository::assign_camps($target_id, []);
+					ScheduleRepository::delete_items_for_plan($target_id);
+				}
+				continue;
+			}
+
+			if ( $source_mode === 'template' ) {
+				$added_items += PlanTemplateRepository::apply_to_plan(
+					$template_id,
+					$target_id,
+					$existing_mode === 'replace',
+					$existing_mode === 'missing'
+				);
+				continue;
+			}
+
+			if ( ! $source_plan ) {
+				continue;
+			}
+
+			if ( $existing_mode === 'replace' || ! $existing ) {
+				ScheduleRepository::update_header($target_id, [
+					'title'     => $source_plan->title,
+					'is_global' => (int) $source_plan->is_global,
+					'status'    => ScheduleRepository::PLAN_ACTIVE,
+				]);
+				ScheduleRepository::assign_camps(
+					$target_id,
+					$source_plan->is_global ? [] : ScheduleRepository::get_assigned_camps((int) $source_plan->id)
+				);
+			}
+
+			$added_items += ScheduleRepository::copy_items_from_plan(
+				(int) $source_plan->id,
+				$target_id,
+				$existing_mode === 'replace',
+				$existing_mode === 'missing'
+			);
 		}
 
 		AdminMenu::set_notice(
 			sprintf(
-				__('Utworzono %d planów. Pominięto %d (już istniały).', 'basemgmt'),
+				__('Utworzono %d planów, zaktualizowano %d, dodano %d pozycji i pominięto %d dni.', 'basemgmt'),
 				$created,
+				$updated,
+				$added_items,
 				$skipped
 			)
 		);

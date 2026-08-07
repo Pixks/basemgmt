@@ -66,6 +66,18 @@ final class EmailTemplateRepository {
 				]),
 				'default_html'    => self::default_reservation_cancelled(),
 			],
+			'missing_report_notification' => [
+				'label'           => __('Meldunki – brak raportu dziennego', 'basemgmt'),
+				'default_subject' => __('Brak dziennego meldunku – {{raport_data}}', 'basemgmt'),
+				'variables'       => self::missing_report_vars(),
+				'default_html'    => self::default_missing_report_notification(),
+			],
+			'periodic_staff_report' => [
+				'label'           => __('Meldunki – cykliczny raport stanów', 'basemgmt'),
+				'default_subject' => __('Raport stanów osobowych – {{raport_data}} {{raport_godzina}}', 'basemgmt'),
+				'variables'       => self::periodic_staff_report_vars(),
+				'default_html'    => self::default_periodic_staff_report(),
+			],
 		];
 	}
 
@@ -164,6 +176,14 @@ final class EmailTemplateRepository {
 			'{{cel}}'              => esc_html((string) ($res['purpose']    ?? '')),
 			'{{komentarz}}'        => esc_html((string) ($data['admin_comment'] ?? $res['admin_comment'] ?? '')),
 			'{{link_panelu_admin}}' => esc_url(admin_url('admin.php?page=basemgmt-reservations&filter_status=pending')),
+			'{{raport_data}}'      => esc_html((string) ($data['report_date'] ?? '')),
+			'{{raport_godzina}}'   => esc_html((string) ($data['report_time'] ?? '')),
+			'{{liczba_obozow}}'    => esc_html((string) ($data['missing_count'] ?? '')),
+			'{{lista_obozow_html}}' => (string) ($data['missing_camps_html'] ?? ''),
+			'{{lista_stanow_html}}' => (string) ($data['report_lines_html'] ?? ''),
+			'{{suma_uczestnikow}}'  => esc_html((string) ($data['total_participants'] ?? '0')),
+			'{{suma_kadra}}'        => esc_html((string) ($data['total_staff'] ?? '0')),
+			'{{suma_pracownikow}}'  => esc_html((string) ($data['total_workers'] ?? '0')),
 		];
 
 		return $vars;
@@ -181,6 +201,29 @@ final class EmailTemplateRepository {
 			'{{godzina_do}}'    => __('Godzina zakończenia', 'basemgmt'),
 			'{{cel}}'           => __('Cel rezerwacji', 'basemgmt'),
 			'{{nazwa_systemu}}' => __('Nazwa strony / systemu', 'basemgmt'),
+		];
+	}
+
+	/** @return array<string, string> */
+	private static function missing_report_vars(): array {
+		return [
+			'{{nazwa_systemu}}'   => __('Nazwa strony / systemu', 'basemgmt'),
+			'{{raport_data}}'     => __('Data sprawdzenia raportów', 'basemgmt'),
+			'{{liczba_obozow}}'   => __('Liczba obozów bez raportu', 'basemgmt'),
+			'{{lista_obozow_html}}' => __('Lista obozów bez raportu (HTML)', 'basemgmt'),
+		];
+	}
+
+	/** @return array<string, string> */
+	private static function periodic_staff_report_vars(): array {
+		return [
+			'{{nazwa_systemu}}'     => __('Nazwa strony / systemu', 'basemgmt'),
+			'{{raport_data}}'       => __('Data raportu', 'basemgmt'),
+			'{{raport_godzina}}'    => __('Godzina raportu', 'basemgmt'),
+			'{{lista_stanow_html}}' => __('Zestawienie obozów (HTML)', 'basemgmt'),
+			'{{suma_uczestnikow}}'  => __('Łączna liczba uczestników', 'basemgmt'),
+			'{{suma_kadra}}'        => __('Łączna liczba kadry', 'basemgmt'),
+			'{{suma_pracownikow}}'  => __('Łączna liczba pracowników', 'basemgmt'),
 		];
 	}
 
@@ -295,5 +338,20 @@ final class EmailTemplateRepository {
   </tr>
 </table>
 <p style="margin-top:16px;"><strong>' . esc_html__('Komentarz:', 'basemgmt') . '</strong><br>{{komentarz}}</p>';
+	}
+
+	private static function default_missing_report_notification(): string {
+		return '<h2>' . esc_html__('Brak dziennych meldunków', 'basemgmt') . '</h2>
+<p>' . esc_html__('Dla części obozów nadal brakuje meldunku dziennego.', 'basemgmt') . '</p>
+<p><strong>' . esc_html__('Data sprawdzenia:', 'basemgmt') . '</strong> {{raport_data}}</p>
+<p><strong>' . esc_html__('Liczba brakujących meldunków:', 'basemgmt') . '</strong> {{liczba_obozow}}</p>
+{{lista_obozow_html}}';
+	}
+
+	private static function default_periodic_staff_report(): string {
+		return '<h2>' . esc_html__('Raport stanów osobowych', 'basemgmt') . '</h2>
+<p><strong>' . esc_html__('Data:', 'basemgmt') . '</strong> {{raport_data}}<br><strong>' . esc_html__('Godzina:', 'basemgmt') . '</strong> {{raport_godzina}}</p>
+{{lista_stanow_html}}
+<p style="margin-top:16px;"><strong>' . esc_html__('Suma:', 'basemgmt') . '</strong> {{suma_uczestnikow}} / {{suma_kadra}} / {{suma_pracownikow}}</p>';
 	}
 }

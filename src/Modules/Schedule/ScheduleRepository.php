@@ -120,11 +120,7 @@ final class ScheduleRepository {
 	public static function delete_header(int $id): void {
 		global $wpdb;
 		// Delete items + revisions first.
-		$items = self::get_items($id);
-		foreach ( $items as $item ) {
-			self::delete_item_revisions((int) $item->id);
-		}
-		$wpdb->delete(Schema::table('plan_items'), ['plan_id' => $id]);
+		self::delete_items_for_plan($id);
 		$wpdb->delete(Schema::table('plan_camps'), ['plan_id' => $id]);
 		$wpdb->delete(Schema::table('plan_headers'), ['id' => $id]);
 	}
@@ -211,6 +207,15 @@ final class ScheduleRepository {
 		$wpdb->delete(Schema::table('plan_items'), ['id' => $id]);
 	}
 
+	public static function delete_items_for_plan(int $plan_id): void {
+		global $wpdb;
+		$items = self::get_items($plan_id);
+		foreach ( $items as $item ) {
+			self::delete_item_revisions((int) $item->id);
+		}
+		$wpdb->delete(Schema::table('plan_items'), ['plan_id' => $plan_id]);
+	}
+
 	public static function reorder_items(int $plan_id, array $order): void {
 		global $wpdb;
 		$t = Schema::table('plan_items');
@@ -224,6 +229,60 @@ final class ScheduleRepository {
 		$t = Schema::table('plan_items');
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->query($wpdb->prepare("UPDATE $t SET is_new_today = 0, is_updated_today = 0 WHERE plan_id = %d", $plan_id));
+	}
+
+	public static function has_matching_item(int $plan_id, array $data): bool {
+		global $wpdb;
+		$t = Schema::table('plan_items');
+
+		$time_from = sanitize_text_field($data['time_from'] ?? '');
+		$time_to   = sanitize_text_field($data['time_to'] ?? '');
+		$title     = sanitize_text_field($data['title'] ?? '');
+		$category  = sanitize_key($data['category'] ?? self::CAT_INNE);
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$existing_id = $wpdb->get_var($wpdb->prepare(
+			"SELECT id FROM $t WHERE plan_id = %d AND time_from = %s AND time_to = %s AND title = %s AND category = %s LIMIT 1",
+			$plan_id,
+			$time_from,
+			$time_to,
+			$title,
+			$category
+		));
+
+		return ! empty($existing_id);
+	}
+
+	public static function copy_items_from_plan(int $source_plan_id, int $target_plan_id, bool $replace = false, bool $skip_duplicates = false): int {
+		if ( $replace ) {
+			self::delete_items_for_plan($target_plan_id);
+		}
+
+		$added = 0;
+		foreach ( self::get_items($source_plan_id) as $item ) {
+			$payload = [
+				'plan_id'          => $target_plan_id,
+				'time_from'        => $item->time_from,
+				'time_to'          => $item->time_to,
+				'title'            => $item->title,
+				'description'      => $item->description,
+				'category'         => $item->category,
+				'item_status'      => self::ITEM_ACTIVE,
+				'is_mandatory'     => $item->is_mandatory,
+				'sort_order'       => $item->sort_order,
+				'is_new_today'     => 0,
+				'is_updated_today' => 0,
+			];
+
+			if ( $skip_duplicates && self::has_matching_item($target_plan_id, $payload) ) {
+				continue;
+			}
+
+			self::create_item($payload);
+			$added++;
+		}
+
+		return $added;
 	}
 
 	// ── Copy plan from previous day ───────────────────────────────────────────
