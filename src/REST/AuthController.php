@@ -28,7 +28,7 @@ final class AuthController extends BaseController {
 				'camp_id'       => ['required' => true,  'sanitize_callback' => 'absint'],
 				'staff_id'      => ['required' => true,  'sanitize_callback' => 'absint'],
 				'security_code' => ['required' => true,  'sanitize_callback' => 'sanitize_text_field'],
-				'nonce'         => ['required' => false, 'sanitize_callback' => 'sanitize_text_field'],
+				'nonce'         => ['required' => true,  'sanitize_callback' => 'sanitize_text_field'],
 			],
 		]);
 
