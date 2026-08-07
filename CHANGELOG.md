@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.1] – 2026-08-07
+
+### Usprawnienia i poprawki
+
+- **Wzmocniona blokada kont kadry** — limit błędnych prób logowania zmieniony na 3 (`BASEMGMT_MAX_ATTEMPTS = 3`), z zachowaniem blokady trwałej po kolejnym błędzie po odblokowaniu czasowym.
+- **Szablony jadłospisów** — nowy panel CRUD (`Jadłospis → Szablony`) z możliwością tworzenia szablonów i pozycji oraz szybkim zastosowaniem do wybranego dnia jadłospisu.
+- **Masowe tworzenie planów dnia** — nowy formularz w liście planów do generowania pustych planów na zakres dat (do 90 dni), z pomijaniem dat, które już mają plan.
+- **Porządek w menu administratora** — przegrupowane pozycje menu CampLink, dodane skróty podrzędne dla planów i jadłospisu; logi operacji ukryte z głównego menu i dostępne z poziomu ustawień.
+- **Rozszerzenie modelu danych jadłospisu** — dodane tabele `bm_meal_templates` i `bm_meal_template_items` do trwałego przechowywania szablonów i ich pozycji.
+
 ## [1.1.0] – 2026-08-07
 
 Renamed plugin to **CampLink**.

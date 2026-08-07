@@ -105,7 +105,7 @@ RateLimiter::lockout_remaining(object $staff): int // sekundy do odblokowania
 
 | Stała | Wartość | Opis |
 |-------|---------|------|
-| `BASEMGMT_MAX_ATTEMPTS` | `5` | Próby przed blokadą czasową |
+| `BASEMGMT_MAX_ATTEMPTS` | `3` | Próby przed blokadą czasową |
 | `BASEMGMT_LOCKOUT_TTL` | `900 s` (15 min) | Bazowa wartość w kodzie |
 | `bm_lockout_minutes` | `15` | Faktyczny czas blokady konfigurowany w ustawieniach |
 

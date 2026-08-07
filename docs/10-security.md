@@ -5,7 +5,7 @@
 | Mechanizm | Gdzie | Opis |
 |-----------|-------|------|
 | Haszowanie kodów | `StaffRepository`, `wp_hash_password()` | 6-cyfrowy PIN jest przechowywany wyłącznie jako hash |
-| Rate limiting | `RateLimiter` | 5 prób → blokada czasowa; kolejna nieudana próba po jej wygaśnięciu → blokada trwała |
+| Rate limiting | `RateLimiter` | 3 próby → blokada czasowa; kolejna nieudana próba po jej wygaśnięciu → blokada trwała |
 | Neutralne komunikaty logowania | `FrontendAuth` | Brak ujawniania, czy błąd dotyczy obozu, osoby czy PIN-u |
 | Ochrona przed timing attacks | `FrontendAuth` | Symulacja haszowania przy błędach logowania |
 | Sesje frontendowe | `SessionManager` | Losowy token 32 B, cookie `HttpOnly`, `SameSite=Strict`, opcjonalnie `Secure` |
@@ -53,15 +53,15 @@ Blokada jest zapisywana bezpośrednio w `bm_staff`:
 ### Logika `RateLimiter`
 
 ```text
-Próby 1–4  → komunikat neutralny
-Próba 5    → ustawienie locked_until = teraz + N minut
+Próby 1–2  → komunikat neutralny
+Próba 3    → ustawienie locked_until = teraz + N minut
 Po wygaśnięciu blokady:
   1 kolejna nieudana próba → permanent_lock = 1
 ```
 
 ### Konfiguracja
 
-- limit prób: `BASEMGMT_MAX_ATTEMPTS = 5`
+- limit prób: `BASEMGMT_MAX_ATTEMPTS = 3`
 - czas blokady: opcja `bm_lockout_minutes` (domyślnie 15)
 
 ### Odblokowanie
