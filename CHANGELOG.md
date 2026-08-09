@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.0.0-PRE1] – 2026-08-09
+
+### Nowe funkcje
+
+- **Teczka sprawy obozu** — każdy obóz zyskuje pełną dokumentację procesową. Nowa tabela `bm_camp_cases` przechowuje etap procesu (`inquiry` → `closed`), poziom ryzyka (`low` / `medium` / `high` / `critical`), termin następnego działania, notatki procesowe i flagę pilnej reakcji.
+- **Historia zmian etapów** — tabela `bm_camp_case_history` rejestruje każdą zmianę etapu procesu ze starą i nową wartością, autorem oraz komentarzem.
+- **Dane organizatora** — tabela `bm_camp_organizers` z pełnymi danymi kontaktowymi, fakturowymi i rozliczeniowymi organizatora obozu.
+- **Checklista gotowości** — tabela `bm_camp_checklist_items` z konfigurowalnymi pozycjami (strona odpowiedzialna, status, termin, komentarz). Panel admina wyświetla wskaźnik gotowości (%) i oznacza pozycje po terminie.
+- **Dane przed przyjazdem** — tabela `bm_camp_prearrival` przechowuje godziny przyjazdu/wyjazdu, deklarowane liczebności, diety, alergeny, plan infrastruktury i kontakty upoważnione.
+- **Rozbudowane filtrowanie obozów** — nowe filtry: etap procesu, poziom gotowości, flaga pilnej reakcji, wyszukiwarka pełnotekstowa; paginacja uwzględnia wszystkie kryteria.
+- **Nowe klasy PHP**: `CampCaseRepository` z metodami `get_case`, `save_case`, `get_organizer`, `save_organizer`, `get_prearrival`, `save_prearrival`, `get_checklist`, `replace_checklist`, `get_history`, `get_readiness_summary`, `process_stages`, `risk_levels`.
+
+### Zmiany CSS
+
+- Nowe klasy badge: `.bm-badge--{stage}`, `.bm-badge--{risk}` — kolorowe oznaczenia etapów i ryzyk.
+- Nowe siatki układu: `.bm-filter-grid`, `.bm-form-grid`, `.bm-case-grid`, `.bm-case-card`, `.bm-form-section`.
+
+---
+
 ## [1.3.0] – 2026-08-07
 
 ### Zmiany

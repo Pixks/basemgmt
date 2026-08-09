@@ -171,7 +171,7 @@ Zdefiniowane w `basemgmt.php`:
 
 | Stała | Wartość domyślna | Opis |
 |-------|-----------------|------|
-| `BASEMGMT_VERSION` | `1.3.0` | Wersja pluginu |
+| `BASEMGMT_VERSION` | `2.0.0-PRE1` | Wersja pluginu |
 | `BASEMGMT_FILE` | `__FILE__` | Ścieżka do głównego pliku |
 | `BASEMGMT_DIR` | `plugin_dir_path(...)` | Ścieżka katalogu |
 | `BASEMGMT_URL` | `plugin_dir_url(...)` | URL katalogu |
@@ -182,10 +182,15 @@ Zdefiniowane w `basemgmt.php`:
 
 ---
 
-## Najważniejsze nowości w CampLink 1.3.0
+## Najważniejsze nowości w CampLink 2.0.0-PRE1
 
-- **Zmiana nazwy w menu WordPress**: pozycja w panelu administracyjnym zmieniona z „Baza Obozowa" na „CampLink".
-- **Zaktualizowana dokumentacja**: README i docs odzwierciedlają aktualną wersję i nazwę produktu.
+- **Teczka sprawy obozu** — każdy obóz zyskuje pełną dokumentację procesową: etap procesu handlowo-formalnego (od zapytania do zamknięcia), poziom ryzyka, termin następnego działania, notatki procesowe i flaga pilnej reakcji.
+- **Dane organizatora** — nowa zakładka z pełnymi danymi kontaktowymi i fakturowymi organizatora obozu.
+- **Checklista gotowości** — konfigurowalna lista kontrolna (strona odpowiedzialna, status, termin, komentarz) z wskaźnikiem gotowości i automatycznym wykrywaniem pozycji po terminie.
+- **Dane przed przyjazdem** — sekcja operacyjna z godzinami przyjazdu/wyjazdu, deklarowanymi liczebnościami, dietami, alergenami, planem infrastruktury i kontaktami upoważnionymi.
+- **Historia zmian etapów** — pełen audit trail zmian etapu procesu dla każdego obozu.
+- **Rozbudowane filtrowanie obozów** — filtrowanie po statusie pobytu, etapie procesu, poziomie gotowości i fladze pilnej reakcji; wyszukiwarka pełnotekstowa.
+- **Nowe tabele bazy danych**: `bm_camp_cases`, `bm_camp_case_history`, `bm_camp_organizers`, `bm_camp_checklist_items`, `bm_camp_prearrival`.
 
 ---
 
