@@ -92,3 +92,69 @@
 .bm-badge--expired  { background: #fee2e2; color: #991b1b; }
 .bm-badge--draft    { background: #f3f4f6; color: #6b7280; }
 .bm-badge--inactive { background: #fee2e2; color: #991b1b; }
+.bm-badge--inquiry,
+.bm-badge--offer,
+.bm-badge--negotiation,
+.bm-badge--tentative_booking,
+.bm-badge--contract_draft,
+.bm-badge--contract_signed,
+.bm-badge--awaiting_payment,
+.bm-badge--ready_for_arrival,
+.bm-badge--on_site,
+.bm-badge--settlement,
+.bm-badge--closed,
+.bm-badge--cancelled { background: #e0f2fe; color: #075985; }
+.bm-badge--low      { background: #dcfce7; color: #166534; }
+.bm-badge--medium   { background: #fef3c7; color: #92400e; }
+.bm-badge--high     { background: #fed7aa; color: #9a3412; }
+.bm-badge--critical,
+.bm-badge--urgent   { background: #fee2e2; color: #991b1b; }
+
+.bm-filter-grid,
+.bm-form-grid,
+.bm-case-grid {
+	display: grid;
+	gap: 16px;
+}
+
+.bm-filter-grid {
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	align-items: end;
+}
+
+.bm-form-grid {
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.bm-case-grid {
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	margin: 16px 0 24px;
+}
+
+.bm-case-grid--metrics {
+	margin-top: 8px;
+}
+
+.bm-case-card,
+.bm-form-section {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 16px;
+}
+
+.bm-form-section {
+	margin-bottom: 20px;
+}
+
+.bm-inline-check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.bm-muted {
+	color: #646970;
+	font-size: 13px;
+	font-weight: 400;
+}

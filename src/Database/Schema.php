@@ -17,6 +17,24 @@ final class Schema {
 		global $wpdb;
 		return [
 			'camps'                  => $wpdb->prefix . 'bm_camps',
+			'camp_cases'             => $wpdb->prefix . 'bm_camp_cases',
+			'camp_case_history'      => $wpdb->prefix . 'bm_camp_case_history',
+			'camp_organizers'        => $wpdb->prefix . 'bm_camp_organizers',
+			'camp_checklist_items'   => $wpdb->prefix . 'bm_camp_checklist_items',
+			'camp_prearrival'        => $wpdb->prefix . 'bm_camp_prearrival',
+			'camp_documents'         => $wpdb->prefix . 'bm_camp_documents',
+			'camp_document_versions' => $wpdb->prefix . 'bm_camp_document_versions',
+			'camp_payment_schedules' => $wpdb->prefix . 'bm_camp_payment_schedules',
+			'camp_payments'          => $wpdb->prefix . 'bm_camp_payments',
+			'camp_actual_stays'      => $wpdb->prefix . 'bm_camp_actual_stays',
+			'camp_actual_meals'      => $wpdb->prefix . 'bm_camp_actual_meals',
+			'camp_service_usages'    => $wpdb->prefix . 'bm_camp_service_usages',
+			'camp_pricing_tables'    => $wpdb->prefix . 'bm_camp_pricing_tables',
+			'camp_pricing_rules'     => $wpdb->prefix . 'bm_camp_pricing_rules',
+			'camp_settlements'       => $wpdb->prefix . 'bm_camp_settlements',
+			'camp_settlement_lines'  => $wpdb->prefix . 'bm_camp_settlement_lines',
+			'camp_settlement_issues' => $wpdb->prefix . 'bm_camp_settlement_issues',
+			'camp_closures'          => $wpdb->prefix . 'bm_camp_closures',
 			'staff'                  => $wpdb->prefix . 'bm_staff',
 			'daily_counts'           => $wpdb->prefix . 'bm_daily_counts',
 			'announcements'          => $wpdb->prefix . 'bm_announcements',
@@ -87,6 +105,317 @@ final class Schema {
 			PRIMARY KEY (id),
 			KEY idx_status (status),
 			KEY idx_dates  (start_date, end_date)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_cases (
+			id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id              BIGINT UNSIGNED NOT NULL,
+			process_stage        VARCHAR(40)     NOT NULL DEFAULT 'inquiry',
+			needs_attention      TINYINT(1)      NOT NULL DEFAULT 0,
+			risk_level           VARCHAR(20)     NOT NULL DEFAULT 'low',
+			owner_user_id        BIGINT UNSIGNED DEFAULT NULL,
+			next_action_due_date DATE            DEFAULT NULL,
+			notes                TEXT            DEFAULT NULL,
+			readiness_notes      TEXT            DEFAULT NULL,
+			created_at           DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at           DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY uniq_camp (camp_id),
+			KEY idx_stage (process_stage),
+			KEY idx_attention (needs_attention),
+			KEY idx_risk (risk_level)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_case_history (
+			id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id     BIGINT UNSIGNED NOT NULL,
+			old_stage   VARCHAR(40)     NOT NULL DEFAULT '',
+			new_stage   VARCHAR(40)     NOT NULL,
+			changed_by  BIGINT UNSIGNED DEFAULT NULL,
+			change_note TEXT            DEFAULT NULL,
+			created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_stage (new_stage)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_organizers (
+			id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id                  BIGINT UNSIGNED NOT NULL,
+			organization_name        VARCHAR(255)    NOT NULL DEFAULT '',
+			contact_person           VARCHAR(255)    NOT NULL DEFAULT '',
+			contact_email            VARCHAR(255)    NOT NULL DEFAULT '',
+			contact_phone            VARCHAR(50)     NOT NULL DEFAULT '',
+			billing_name             VARCHAR(255)    NOT NULL DEFAULT '',
+			billing_tax_id           VARCHAR(50)     NOT NULL DEFAULT '',
+			billing_address          TEXT            DEFAULT NULL,
+			settlement_contact_name  VARCHAR(255)    NOT NULL DEFAULT '',
+			settlement_contact_email VARCHAR(255)    NOT NULL DEFAULT '',
+			settlement_contact_phone VARCHAR(50)     NOT NULL DEFAULT '',
+			notes                    TEXT            DEFAULT NULL,
+			created_at               DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at               DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY uniq_camp (camp_id),
+			KEY idx_org_name (organization_name)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_checklist_items (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id      BIGINT UNSIGNED NOT NULL,
+			party        VARCHAR(20)     NOT NULL DEFAULT 'shared',
+			label        VARCHAR(255)    NOT NULL,
+			status       VARCHAR(20)     NOT NULL DEFAULT 'pending',
+			assigned_to  VARCHAR(255)    NOT NULL DEFAULT '',
+			due_date     DATE            DEFAULT NULL,
+			comment      TEXT            DEFAULT NULL,
+			sort_order   INT             NOT NULL DEFAULT 0,
+			completed_at DATETIME        DEFAULT NULL,
+			completed_by BIGINT UNSIGNED DEFAULT NULL,
+			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_status (status),
+			KEY idx_due_date (due_date)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_prearrival (
+			id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id               BIGINT UNSIGNED NOT NULL,
+			arrival_date          DATE            DEFAULT NULL,
+			arrival_time          VARCHAR(5)      DEFAULT NULL,
+			departure_date        DATE            DEFAULT NULL,
+			departure_time        VARCHAR(5)      DEFAULT NULL,
+			declared_participants INT UNSIGNED    NOT NULL DEFAULT 0,
+			declared_staff        INT UNSIGNED    NOT NULL DEFAULT 0,
+			declared_support      INT UNSIGNED    NOT NULL DEFAULT 0,
+			dietary_requirements  TEXT            DEFAULT NULL,
+			allergens             TEXT            DEFAULT NULL,
+			infrastructure_plan   TEXT            DEFAULT NULL,
+			additional_needs      TEXT            DEFAULT NULL,
+			invoice_details       TEXT            DEFAULT NULL,
+			authorized_contacts   TEXT            DEFAULT NULL,
+			created_at            DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at            DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY uniq_camp (camp_id)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_documents (
+			id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id         BIGINT UNSIGNED NOT NULL,
+			document_type   VARCHAR(40)     NOT NULL DEFAULT 'contract',
+			title           VARCHAR(255)    NOT NULL,
+			status          VARCHAR(20)     NOT NULL DEFAULT 'draft',
+			responsible_user BIGINT UNSIGNED DEFAULT NULL,
+			due_date        DATE            DEFAULT NULL,
+			current_version INT UNSIGNED    NOT NULL DEFAULT 1,
+			created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_status (status)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_document_versions (
+			id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			document_id    BIGINT UNSIGNED NOT NULL,
+			camp_id        BIGINT UNSIGNED NOT NULL,
+			version_number INT UNSIGNED    NOT NULL DEFAULT 1,
+			file_url       VARCHAR(500)    NOT NULL DEFAULT '',
+			change_summary TEXT            DEFAULT NULL,
+			created_by     BIGINT UNSIGNED DEFAULT NULL,
+			created_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_document (document_id),
+			KEY idx_camp (camp_id)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_payment_schedules (
+			id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id         BIGINT UNSIGNED NOT NULL,
+			payment_type    VARCHAR(30)     NOT NULL DEFAULT 'deposit',
+			label           VARCHAR(255)    NOT NULL,
+			amount          DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			due_date        DATE            DEFAULT NULL,
+			status          VARCHAR(20)     NOT NULL DEFAULT 'expected',
+			description     TEXT            DEFAULT NULL,
+			created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_status (status),
+			KEY idx_due_date (due_date)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_payments (
+			id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id         BIGINT UNSIGNED NOT NULL,
+			schedule_id     BIGINT UNSIGNED DEFAULT NULL,
+			payment_date    DATE            DEFAULT NULL,
+			amount          DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			method          VARCHAR(30)     NOT NULL DEFAULT 'transfer',
+			reference       VARCHAR(255)    NOT NULL DEFAULT '',
+			notes           TEXT            DEFAULT NULL,
+			created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_schedule (schedule_id)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_actual_stays (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id       BIGINT UNSIGNED NOT NULL,
+			stay_date     DATE            NOT NULL,
+			participants  INT UNSIGNED    NOT NULL DEFAULT 0,
+			staff         INT UNSIGNED    NOT NULL DEFAULT 0,
+			other_groups  INT UNSIGNED    NOT NULL DEFAULT 0,
+			person_nights INT UNSIGNED    NOT NULL DEFAULT 0,
+			notes         TEXT            DEFAULT NULL,
+			created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY uniq_camp_date (camp_id, stay_date),
+			KEY idx_camp (camp_id)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_actual_meals (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id      BIGINT UNSIGNED NOT NULL,
+			meal_date    DATE            NOT NULL,
+			meal_type    VARCHAR(30)     NOT NULL DEFAULT 'other',
+			quantity     INT UNSIGNED    NOT NULL DEFAULT 0,
+			diet_type    VARCHAR(60)     NOT NULL DEFAULT '',
+			notes        TEXT            DEFAULT NULL,
+			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_meal_date (meal_date)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_service_usages (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id       BIGINT UNSIGNED NOT NULL,
+			service_type  VARCHAR(40)     NOT NULL DEFAULT 'resource',
+			resource_name VARCHAR(255)    NOT NULL DEFAULT '',
+			usage_date    DATE            DEFAULT NULL,
+			quantity      DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			unit          VARCHAR(30)     NOT NULL DEFAULT 'unit',
+			notes         TEXT            DEFAULT NULL,
+			created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_usage_date (usage_date)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_pricing_tables (
+			id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name        VARCHAR(255)    NOT NULL,
+			status      VARCHAR(20)     NOT NULL DEFAULT 'active',
+			valid_from  DATE            DEFAULT NULL,
+			valid_to    DATE            DEFAULT NULL,
+			created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_status (status)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_pricing_rules (
+			id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id            BIGINT UNSIGNED NOT NULL,
+			pricing_table_id   BIGINT UNSIGNED DEFAULT NULL,
+			rule_type          VARCHAR(40)     NOT NULL DEFAULT 'person_night',
+			participant_group  VARCHAR(40)     NOT NULL DEFAULT '',
+			season_name        VARCHAR(60)     NOT NULL DEFAULT '',
+			weekday_mask       VARCHAR(20)     NOT NULL DEFAULT '',
+			diet_type          VARCHAR(60)     NOT NULL DEFAULT '',
+			resource_name      VARCHAR(255)    NOT NULL DEFAULT '',
+			rate               DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			adjustment_reason  TEXT            DEFAULT NULL,
+			created_by         BIGINT UNSIGNED DEFAULT NULL,
+			created_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_table (pricing_table_id),
+			KEY idx_rule_type (rule_type)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_settlements (
+			id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id            BIGINT UNSIGNED NOT NULL,
+			status             VARCHAR(20)     NOT NULL DEFAULT 'draft',
+			period_start       DATE            DEFAULT NULL,
+			period_end         DATE            DEFAULT NULL,
+			total_net          DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			total_vat          DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			total_gross        DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			outstanding_amount DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			notes              TEXT            DEFAULT NULL,
+			created_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at         DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_status (status)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_settlement_lines (
+			id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			settlement_id     BIGINT UNSIGNED NOT NULL,
+			camp_id           BIGINT UNSIGNED NOT NULL,
+			line_type         VARCHAR(40)     NOT NULL DEFAULT 'service',
+			description       VARCHAR(255)    NOT NULL,
+			quantity          DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			unit_price        DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			total_amount      DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			manual_adjustment TINYINT(1)      NOT NULL DEFAULT 0,
+			adjustment_reason TEXT            DEFAULT NULL,
+			created_by        BIGINT UNSIGNED DEFAULT NULL,
+			created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_settlement (settlement_id),
+			KEY idx_camp (camp_id)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_settlement_issues (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id       BIGINT UNSIGNED NOT NULL,
+			settlement_id BIGINT UNSIGNED DEFAULT NULL,
+			line_id       BIGINT UNSIGNED DEFAULT NULL,
+			status        VARCHAR(20)     NOT NULL DEFAULT 'new',
+			title         VARCHAR(255)    NOT NULL,
+			description   TEXT            DEFAULT NULL,
+			attachments   LONGTEXT        DEFAULT NULL,
+			resolved_note TEXT            DEFAULT NULL,
+			created_by    BIGINT UNSIGNED DEFAULT NULL,
+			created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id),
+			KEY idx_status (status)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_closures (
+			id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id             BIGINT UNSIGNED NOT NULL,
+			status              VARCHAR(20)     NOT NULL DEFAULT 'draft',
+			satisfaction_score  TINYINT UNSIGNED NOT NULL DEFAULT 0,
+			nps_score           TINYINT NOT NULL DEFAULT 0,
+			handover_protocol   TEXT            DEFAULT NULL,
+			damage_register     TEXT            DEFAULT NULL,
+			follow_up_actions   TEXT            DEFAULT NULL,
+			closed_by           BIGINT UNSIGNED DEFAULT NULL,
+			closed_at           DATETIME        DEFAULT NULL,
+			created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY uniq_camp (camp_id),
+			KEY idx_status (status)
 		) $charset;";
 
 		// ── Staff (Kadra) ─────────────────────────────────────────────────────

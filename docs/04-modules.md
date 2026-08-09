@@ -4,7 +4,7 @@
 
 | Moduł | Namespace | Tabele | Admin | Frontend |
 |-------|-----------|--------|-------|---------|
-| Obozy | `Modules\Camps` | `bm_camps` | ✅ | tylko odczyt |
+| Obozy | `Modules\Camps` | `bm_camps`, `bm_camp_cases`, `bm_camp_case_history`, `bm_camp_organizers`, `bm_camp_checklist_items`, `bm_camp_prearrival` | ✅ | tylko odczyt |
 | Kadra | `Modules\Camps` | `bm_staff`, `bm_sessions` | ✅ | logowanie |
 | Ogłoszenia | `Modules\Announcements` | `bm_announcements`, `bm_announcement_camps` | ✅ | ✅ |
 | Meldunki | `Modules\Camps` + `REST\ReportsController` | `bm_daily_counts` | ✅ | ✅ |
@@ -33,27 +33,43 @@
 | `name` | VARCHAR(255) | Nazwa obozu |
 | `start_date` | DATE | Data rozpoczęcia |
 | `end_date` | DATE | Data zakończenia |
-| `status` | VARCHAR(20) | `active` \| `inactive` \| `archived` |
+| `status` | VARCHAR(20) | Operacyjny status pobytu: `active` \| `ended` \| `archived` |
 | `created_at` | DATETIME | Automatycznie |
 | `updated_at` | DATETIME | Automatycznie |
+
+### Rozszerzenie „teczki sprawy”
+
+Nowy model obozu wykorzystuje dodatkowe tabele:
+
+- `bm_camp_cases` – etap procesu, ryzyko, termin następnego działania, notatki,
+- `bm_camp_case_history` – historia zmian etapów,
+- `bm_camp_organizers` – dane organizatora i rozliczeń,
+- `bm_camp_checklist_items` – checklista gotowości,
+- `bm_camp_prearrival` – dane operacyjne przed przyjazdem.
 
 ### Główne metody
 
 ```php
 CampRepository::get(int $id): ?object
 CampRepository::get_all(array $filters = []): array
-// Filtry: status, search, date_from, date_to
+// Filtry: status, process_stage, search, readiness, needs_attention
 
 CampRepository::create(array $data): int  // zwraca nowe ID
 CampRepository::update(int $id, array $data): bool
 CampRepository::delete(int $id): bool
+
+CampCaseRepository::get_case(int $camp_id): ?object
+CampCaseRepository::save_case(int $camp_id, array $data): void
+CampCaseRepository::save_organizer(int $camp_id, array $data): void
+CampCaseRepository::save_prearrival(int $camp_id, array $data): void
+CampCaseRepository::replace_checklist(int $camp_id, array $items): void
 ```
 
 ### Panel admina
 
-- Lista obozów z filtrowaniem po statusie i dacie
-- Formularz tworzenia/edycji obozu
-- Dezaktywacja (zmiana statusu bez usuwania)
+- Lista obozów z filtrowaniem po statusie pobytu, etapie procesu, gotowości i ryzykach
+- „Teczka sprawy” z zakładkami procesu, organizatora, checklisty i danych przed przyjazdem
+- Historia zmian etapów oraz wskaźnik gotowości
 
 ---
 
