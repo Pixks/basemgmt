@@ -17,16 +17,59 @@ final class CampRepository {
 	public static function get_all(array $args = []): array {
 		global $wpdb;
 
-		$table  = Schema::table('camps');
-		$where  = '1=1';
-		$params = [];
+		$table     = Schema::table('camps');
+		$cases_t   = Schema::table('camp_cases');
+		$org_t     = Schema::table('camp_organizers');
+		$check_t   = Schema::table('camp_checklist_items');
+
+		if ( ! self::extended_tables_ready() ) {
+			return self::get_all_legacy($args);
+		}
+
+		$where     = ['1=1'];
+		$params    = [];
+		$joins     = [
+			"LEFT JOIN {$cases_t} cc ON cc.camp_id = c.id",
+			"LEFT JOIN {$org_t} co ON co.camp_id = c.id",
+			self::readiness_join($check_t),
+		];
 
 		if ( isset($args['status']) && $args['status'] !== '' ) {
-			$where   .= ' AND status = %s';
+			$where[]  = 'c.status = %s';
 			$params[] = sanitize_key($args['status']);
 		}
 
-		$order  = 'ORDER BY start_date DESC';
+		if ( ! empty($args['process_stage']) ) {
+			$where[]  = 'cc.process_stage = %s';
+			$params[] = sanitize_key($args['process_stage']);
+		}
+
+		if ( ! empty($args['search']) ) {
+			$like     = '%' . $wpdb->esc_like(sanitize_text_field($args['search'])) . '%';
+			$where[]  = '(c.name LIKE %s OR co.organization_name LIKE %s OR co.contact_person LIKE %s)';
+			$params[] = $like;
+			$params[] = $like;
+			$params[] = $like;
+		}
+
+		if ( ! empty($args['needs_attention']) ) {
+			$where[] = 'COALESCE(cc.needs_attention, 0) = 1';
+		}
+
+		if ( ! empty($args['readiness']) ) {
+			$readiness = sanitize_key($args['readiness']);
+			if ( $readiness === 'ready' ) {
+				$where[] = 'COALESCE(readiness.readiness_total, 0) > 0 AND COALESCE(readiness.readiness_done, 0) = COALESCE(readiness.readiness_total, 0)';
+			} elseif ( $readiness === 'overdue' ) {
+				$where[] = 'COALESCE(readiness.readiness_overdue, 0) > 0';
+			} elseif ( $readiness === 'in_progress' ) {
+				$where[] = 'COALESCE(readiness.readiness_done, 0) > 0 AND COALESCE(readiness.readiness_done, 0) < COALESCE(readiness.readiness_total, 0)';
+			} elseif ( $readiness === 'not_started' ) {
+				$where[] = 'COALESCE(readiness.readiness_done, 0) = 0';
+			}
+		}
+
+		$order  = 'ORDER BY COALESCE(cc.needs_attention, 0) DESC, c.start_date DESC';
 		$limit  = '';
 
 		if ( ! empty($args['per_page']) ) {
@@ -35,7 +78,20 @@ final class CampRepository {
 			$limit   = $wpdb->prepare('LIMIT %d OFFSET %d', (int) $args['per_page'], $offset);
 		}
 
-		$sql = "SELECT * FROM `$table` WHERE $where $order $limit";
+		$sql = "SELECT
+				c.*,
+				COALESCE(cc.process_stage, 'inquiry') AS process_stage,
+				COALESCE(cc.needs_attention, 0) AS needs_attention,
+				COALESCE(cc.risk_level, 'low') AS risk_level,
+				cc.next_action_due_date,
+				co.organization_name,
+				co.contact_person,
+				COALESCE(readiness.readiness_total, 0) AS readiness_total,
+				COALESCE(readiness.readiness_done, 0) AS readiness_done,
+				COALESCE(readiness.readiness_overdue, 0) AS readiness_overdue
+			FROM {$table} c
+			" . implode(' ', $joins) . '
+			WHERE ' . implode(' AND ', $where) . " {$order} {$limit}";
 
 		if ( $params ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -48,16 +104,60 @@ final class CampRepository {
 
 	public static function count(array $args = []): int {
 		global $wpdb;
-		$table  = Schema::table('camps');
-		$where  = '1=1';
-		$params = [];
+		$table   = Schema::table('camps');
+		$cases_t = Schema::table('camp_cases');
+		$org_t   = Schema::table('camp_organizers');
+		$check_t = Schema::table('camp_checklist_items');
+
+		if ( ! self::extended_tables_ready() ) {
+			return self::count_legacy($args);
+		}
+
+		$where   = ['1=1'];
+		$params  = [];
+		$readiness_join = '';
 
 		if ( isset($args['status']) && $args['status'] !== '' ) {
-			$where   .= ' AND status = %s';
+			$where[]  = 'c.status = %s';
 			$params[] = sanitize_key($args['status']);
 		}
 
-		$sql = "SELECT COUNT(*) FROM `$table` WHERE $where";
+		if ( ! empty($args['process_stage']) ) {
+			$where[]  = 'cc.process_stage = %s';
+			$params[] = sanitize_key($args['process_stage']);
+		}
+
+		if ( ! empty($args['search']) ) {
+			$like     = '%' . $wpdb->esc_like(sanitize_text_field($args['search'])) . '%';
+			$where[]  = '(c.name LIKE %s OR co.organization_name LIKE %s OR co.contact_person LIKE %s)';
+			$params[] = $like;
+			$params[] = $like;
+			$params[] = $like;
+		}
+
+		if ( ! empty($args['needs_attention']) ) {
+			$where[] = 'COALESCE(cc.needs_attention, 0) = 1';
+		}
+
+		if ( ! empty($args['readiness']) ) {
+			$readiness_join = self::readiness_join($check_t);
+			$readiness = sanitize_key($args['readiness']);
+			if ( $readiness === 'ready' ) {
+				$where[] = 'COALESCE(readiness.readiness_total, 0) > 0 AND COALESCE(readiness.readiness_done, 0) = COALESCE(readiness.readiness_total, 0)';
+			} elseif ( $readiness === 'overdue' ) {
+				$where[] = 'COALESCE(readiness.readiness_overdue, 0) > 0';
+			} elseif ( $readiness === 'in_progress' ) {
+				$where[] = 'COALESCE(readiness.readiness_done, 0) > 0 AND COALESCE(readiness.readiness_done, 0) < COALESCE(readiness.readiness_total, 0)';
+			} elseif ( $readiness === 'not_started' ) {
+				$where[] = 'COALESCE(readiness.readiness_done, 0) = 0';
+			}
+		}
+
+		$sql = "SELECT COUNT(*) FROM {$table} c
+			LEFT JOIN {$cases_t} cc ON cc.camp_id = c.id
+			LEFT JOIN {$org_t} co ON co.camp_id = c.id
+			{$readiness_join}
+			WHERE " . implode(' AND ', $where);
 
 		if ( $params ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -148,5 +248,86 @@ final class CampRepository {
 
 	private static function formats(): array {
 		return ['%s', '%s', '%s', '%s'];
+	}
+
+	private static function extended_tables_ready(): bool {
+		return CampCaseRepository::tables_ready();
+	}
+
+	private static function get_all_legacy(array $args = []): array {
+		global $wpdb;
+
+		$table  = Schema::table('camps');
+		$where  = '1=1';
+		$params = [];
+
+		if ( isset($args['status']) && $args['status'] !== '' ) {
+			$where   .= ' AND status = %s';
+			$params[] = sanitize_key($args['status']);
+		}
+
+		$order = 'ORDER BY start_date DESC';
+		$limit = '';
+
+		if ( ! empty($args['per_page']) ) {
+			$page   = max(1, (int) ($args['page'] ?? 1));
+			$offset = ($page - 1) * (int) $args['per_page'];
+			$limit  = $wpdb->prepare('LIMIT %d OFFSET %d', (int) $args['per_page'], $offset);
+		}
+
+		$sql = "SELECT
+				*,
+				'inquiry' AS process_stage,
+				0 AS needs_attention,
+				'low' AS risk_level,
+				NULL AS next_action_due_date,
+				'' AS organization_name,
+				'' AS contact_person,
+				0 AS readiness_total,
+				0 AS readiness_done,
+				0 AS readiness_overdue
+			FROM `{$table}` WHERE {$where} {$order} {$limit}";
+
+		if ( $params ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			return $wpdb->get_results($wpdb->prepare($sql, ...$params)) ?: [];
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->get_results($sql) ?: [];
+	}
+
+	private static function count_legacy(array $args = []): int {
+		global $wpdb;
+		$table  = Schema::table('camps');
+		$where  = '1=1';
+		$params = [];
+
+		if ( isset($args['status']) && $args['status'] !== '' ) {
+			$where   .= ' AND status = %s';
+			$params[] = sanitize_key($args['status']);
+		}
+
+		$sql = "SELECT COUNT(*) FROM `{$table}` WHERE {$where}";
+
+		if ( $params ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var($sql);
+	}
+
+	private static function readiness_join(string $check_table): string {
+		return "LEFT JOIN (
+			SELECT
+				camp_id,
+				COUNT(*) AS readiness_total,
+				COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS readiness_done,
+				COALESCE(SUM(CASE WHEN status <> 'done' AND due_date IS NOT NULL AND due_date < CURDATE() THEN 1 ELSE 0 END), 0) AS readiness_overdue
+			FROM {$check_table}
+			GROUP BY camp_id
+		) readiness ON readiness.camp_id = c.id";
 	}
 }

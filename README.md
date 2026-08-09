@@ -19,7 +19,7 @@
 
 | Moduł | Opis |
 |-------|------|
-| 🏕️ **Obozy** | Ewidencja, daty, statusy |
+| 🏕️ **Obozy** | Ewidencja pobytów + teczka sprawy: proces, organizator, checklista i dane przed przyjazdem |
 | 👥 **Kadra** | Przypisanie do obozów, bezpieczne kody dostępu (bcrypt), rate limiting, blokada kont |
 | 📢 **Ogłoszenia** | Globalne i skierowane do wybranych obozów, workflow zatwierdzania |
 | 📊 **Meldunki dzienne** | Liczniki uczestników, kadry i pracowników; raport zbiorczy |

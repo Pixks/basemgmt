@@ -11,6 +11,24 @@ Wszystkie tabele używają prefiksu `{wp_prefix}bm_`. Domyślnie np. `wp_bm_camp
 ```
 bm_camps
     │
+    ├─── bm_camp_cases
+    │       └──< bm_camp_case_history
+    ├─── bm_camp_organizers
+    ├──< bm_camp_checklist_items
+    ├─── bm_camp_prearrival
+    ├──< bm_camp_documents
+    │       └──< bm_camp_document_versions
+    ├──< bm_camp_payment_schedules
+    ├──< bm_camp_payments
+    ├──< bm_camp_actual_stays
+    ├──< bm_camp_actual_meals
+    ├──< bm_camp_service_usages
+    ├──< bm_camp_pricing_rules
+    ├──< bm_camp_settlements
+    │       └──< bm_camp_settlement_lines
+    ├──< bm_camp_settlement_issues
+    ├─── bm_camp_closures
+    │
     ├──< bm_staff              (kadra przypisana do obozu)
     │       └──< bm_sessions   (sesje frontendowe)
     │
@@ -63,6 +81,47 @@ bm_operation_logs  (centralny dziennik operacji)
 | `updated_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP | Auto-update |
 
 **Indeksy**: `idx_status(status)`, `idx_dates(start_date, end_date)`
+
+---
+
+### bm_camp_cases
+
+| Kolumna | Typ | Null | Domyślnie | Opis |
+|---------|-----|------|-----------|------|
+| `camp_id` | BIGINT UNSIGNED | NOT NULL | – | UNIQUE FK logiczny → bm_camps.id |
+| `process_stage` | VARCHAR(40) | NOT NULL | `inquiry` | Etap procesu handlowo-formalnego |
+| `needs_attention` | TINYINT(1) | NOT NULL | 0 | Flaga pilnej reakcji |
+| `risk_level` | VARCHAR(20) | NOT NULL | `low` | Niskie / średnie / wysokie / krytyczne |
+| `owner_user_id` | BIGINT UNSIGNED | YES | NULL | Odpowiedzialny użytkownik WP |
+| `next_action_due_date` | DATE | YES | NULL | Termin kolejnego działania |
+| `notes` | TEXT | YES | NULL | Notatki procesowe |
+| `readiness_notes` | TEXT | YES | NULL | Uwagi do gotowości |
+
+**Indeksy**: `uniq_camp(camp_id)`, `idx_stage`, `idx_attention`, `idx_risk`
+
+---
+
+### bm_camp_case_history
+
+Historia zmian etapów procesu dla obozu: `old_stage`, `new_stage`, `changed_by`, `change_note`, `created_at`.
+
+---
+
+### bm_camp_organizers
+
+Dane organizatora i rozliczeń: nazwa organizatora, osoba kontaktowa, kanały kontaktu, dane fakturowe, kontakty do rozliczeń i notatki.
+
+---
+
+### bm_camp_checklist_items
+
+Checklista gotowości obozu: strona odpowiedzialna (`organizer` / `center` / `shared`), status, termin, komentarz i ślad ukończenia.
+
+---
+
+### bm_camp_prearrival
+
+Dane operacyjne przed przyjazdem: termin i godziny przyjazdu/wyjazdu, deklarowane liczebności, diety, alergeny, plan infrastruktury, potrzeby dodatkowe oraz kontakty upoważnione.
 
 ---
 

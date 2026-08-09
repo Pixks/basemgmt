@@ -25,6 +25,8 @@ final class OperationLogger {
 	public const ACTION_CAMP_CREATED   = 'camp_created';
 	public const ACTION_CAMP_UPDATED   = 'camp_updated';
 	public const ACTION_CAMP_DELETED   = 'camp_deleted';
+	public const ACTION_CAMP_CASE_UPDATED = 'camp_case_updated';
+	public const ACTION_CAMP_CHECKLIST_UPDATED = 'camp_checklist_updated';
 
 	public const ACTION_STAFF_CREATED  = 'staff_created';
 	public const ACTION_STAFF_UPDATED  = 'staff_updated';
