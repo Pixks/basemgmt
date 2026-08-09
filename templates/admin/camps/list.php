@@ -30,7 +30,7 @@
 			<?php endforeach; ?>
 		</select>
 
-		<select name="filter_readiness">
+		<select name="filter_readiness" aria-label="<?php esc_attr_e('Filtr gotowości', 'basemgmt'); ?>">
 			<?php foreach ( $readiness_map as $readiness_value => $readiness_label ) : ?>
 				<option value="<?php echo esc_attr($readiness_value); ?>" <?php selected($readiness, $readiness_value); ?>>
 					<?php echo esc_html($readiness_label); ?>

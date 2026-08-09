@@ -13,6 +13,8 @@ defined('ABSPATH') || exit;
  */
 final class CampCaseRepository {
 
+	private static ?bool $tables_ready_cache = null;
+
 	public const STAGE_INQUIRY         = 'inquiry';
 	public const STAGE_OFFER           = 'offer';
 	public const STAGE_NEGOTIATION     = 'negotiation';
@@ -26,66 +28,76 @@ final class CampCaseRepository {
 	public const STAGE_CLOSED          = 'closed';
 	public const STAGE_CANCELLED       = 'cancelled';
 
-	public const PROCESS_STAGES = [
-		self::STAGE_INQUIRY          => 'Nowe zapytanie',
-		self::STAGE_OFFER            => 'Oferta przygotowana',
-		self::STAGE_NEGOTIATION      => 'Negocjacje',
-		self::STAGE_TENTATIVE        => 'Rezerwacja wstępna',
-		self::STAGE_CONTRACT_DRAFT   => 'Umowa do podpisu',
-		self::STAGE_CONTRACT_SIGNED  => 'Umowa podpisana',
-		self::STAGE_AWAITING_PAYMENT => 'Oczekiwanie na płatność',
-		self::STAGE_READY            => 'Gotowe do przyjazdu',
-		self::STAGE_ON_SITE          => 'Pobyt',
-		self::STAGE_SETTLEMENT       => 'Rozliczenie',
-		self::STAGE_CLOSED           => 'Zamknięte',
-		self::STAGE_CANCELLED        => 'Anulowane',
-	];
-
 	public const RISK_LOW      = 'low';
 	public const RISK_MEDIUM   = 'medium';
 	public const RISK_HIGH     = 'high';
 	public const RISK_CRITICAL = 'critical';
 
-	public const RISK_LEVELS = [
-		self::RISK_LOW      => 'Niskie',
-		self::RISK_MEDIUM   => 'Średnie',
-		self::RISK_HIGH     => 'Wysokie',
-		self::RISK_CRITICAL => 'Krytyczne',
-	];
-
 	public const CHECKLIST_PARTY_ORGANIZER = 'organizer';
 	public const CHECKLIST_PARTY_CENTER    = 'center';
 	public const CHECKLIST_PARTY_SHARED    = 'shared';
-
-	public const CHECKLIST_PARTIES = [
-		self::CHECKLIST_PARTY_ORGANIZER => 'Organizator',
-		self::CHECKLIST_PARTY_CENTER    => 'Ośrodek',
-		self::CHECKLIST_PARTY_SHARED    => 'Wspólne',
-	];
 
 	public const CHECKLIST_STATUS_PENDING     = 'pending';
 	public const CHECKLIST_STATUS_IN_PROGRESS = 'in_progress';
 	public const CHECKLIST_STATUS_DONE        = 'done';
 	public const CHECKLIST_STATUS_BLOCKED     = 'blocked';
 
-	public const CHECKLIST_STATUSES = [
-		self::CHECKLIST_STATUS_PENDING     => 'Oczekuje',
-		self::CHECKLIST_STATUS_IN_PROGRESS => 'W toku',
-		self::CHECKLIST_STATUS_DONE        => 'Gotowe',
-		self::CHECKLIST_STATUS_BLOCKED     => 'Zablokowane',
-	];
+	public static function process_stages(): array {
+		return [
+			self::STAGE_INQUIRY          => __('Nowe zapytanie', 'basemgmt'),
+			self::STAGE_OFFER            => __('Oferta przygotowana', 'basemgmt'),
+			self::STAGE_NEGOTIATION      => __('Negocjacje', 'basemgmt'),
+			self::STAGE_TENTATIVE        => __('Rezerwacja wstępna', 'basemgmt'),
+			self::STAGE_CONTRACT_DRAFT   => __('Umowa do podpisu', 'basemgmt'),
+			self::STAGE_CONTRACT_SIGNED  => __('Umowa podpisana', 'basemgmt'),
+			self::STAGE_AWAITING_PAYMENT => __('Oczekiwanie na płatność', 'basemgmt'),
+			self::STAGE_READY            => __('Gotowe do przyjazdu', 'basemgmt'),
+			self::STAGE_ON_SITE          => __('Pobyt', 'basemgmt'),
+			self::STAGE_SETTLEMENT       => __('Rozliczenie', 'basemgmt'),
+			self::STAGE_CLOSED           => __('Zamknięte', 'basemgmt'),
+			self::STAGE_CANCELLED        => __('Anulowane', 'basemgmt'),
+		];
+	}
 
-	public const DEFAULT_CHECKLIST = [
-		['label' => 'Podpisana umowa', 'party' => self::CHECKLIST_PARTY_ORGANIZER],
-		['label' => 'Zaksięgowana zaliczka', 'party' => self::CHECKLIST_PARTY_ORGANIZER],
-		['label' => 'Lista uczestników i kadry', 'party' => self::CHECKLIST_PARTY_ORGANIZER],
-		['label' => 'Dane kontaktowe osób odpowiedzialnych', 'party' => self::CHECKLIST_PARTY_ORGANIZER],
-		['label' => 'Potwierdzone ubezpieczenie', 'party' => self::CHECKLIST_PARTY_ORGANIZER],
-		['label' => 'Informacje o dietach i potrzebach szczególnych', 'party' => self::CHECKLIST_PARTY_SHARED],
-		['label' => 'Zatwierdzony plan infrastruktury', 'party' => self::CHECKLIST_PARTY_SHARED],
-		['label' => 'Przygotowane zakwaterowanie i klucze', 'party' => self::CHECKLIST_PARTY_CENTER],
-		['label' => 'Zapotrzebowanie techniczne lub transportowe', 'party' => self::CHECKLIST_PARTY_SHARED],
-	];
+	public static function risk_levels(): array {
+		return [
+			self::RISK_LOW      => __('Niskie', 'basemgmt'),
+			self::RISK_MEDIUM   => __('Średnie', 'basemgmt'),
+			self::RISK_HIGH     => __('Wysokie', 'basemgmt'),
+			self::RISK_CRITICAL => __('Krytyczne', 'basemgmt'),
+		];
+	}
+
+	public static function checklist_parties(): array {
+		return [
+			self::CHECKLIST_PARTY_ORGANIZER => __('Organizator', 'basemgmt'),
+			self::CHECKLIST_PARTY_CENTER    => __('Ośrodek', 'basemgmt'),
+			self::CHECKLIST_PARTY_SHARED    => __('Wspólne', 'basemgmt'),
+		];
+	}
+
+	public static function checklist_statuses(): array {
+		return [
+			self::CHECKLIST_STATUS_PENDING     => __('Oczekuje', 'basemgmt'),
+			self::CHECKLIST_STATUS_IN_PROGRESS => __('W toku', 'basemgmt'),
+			self::CHECKLIST_STATUS_DONE        => __('Gotowe', 'basemgmt'),
+			self::CHECKLIST_STATUS_BLOCKED     => __('Zablokowane', 'basemgmt'),
+		];
+	}
+
+	public static function default_checklist_template(): array {
+		return [
+			['label' => __('Podpisana umowa', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
+			['label' => __('Zaksięgowana zaliczka', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
+			['label' => __('Lista uczestników i kadry', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
+			['label' => __('Dane kontaktowe osób odpowiedzialnych', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
+			['label' => __('Potwierdzone ubezpieczenie', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
+			['label' => __('Informacje o dietach i potrzebach szczególnych', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_SHARED],
+			['label' => __('Zatwierdzony plan infrastruktury', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_SHARED],
+			['label' => __('Przygotowane zakwaterowanie i klucze', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_CENTER],
+			['label' => __('Zapotrzebowanie techniczne lub transportowe', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_SHARED],
+		];
+	}
 
 	public static function get_case(int $camp_id): ?object {
 		global $wpdb;
@@ -226,8 +238,29 @@ final class CampCaseRepository {
 	public static function replace_checklist(int $camp_id, array $items): void {
 		global $wpdb;
 		$table = Schema::table('camp_checklist_items');
+		$existing_items = self::get_checklist($camp_id);
+		$preserved_done = [];
 
-		$wpdb->delete($table, ['camp_id' => $camp_id]);
+		foreach ( $existing_items as $existing_item ) {
+			if ( $existing_item->status !== self::CHECKLIST_STATUS_DONE ) {
+				continue;
+			}
+
+			$key = self::checklist_item_key((string) $existing_item->label, (string) $existing_item->party);
+			$preserved_done[$key] = [
+				'id'           => (int) $existing_item->id,
+				'completed_at' => $existing_item->completed_at,
+				'completed_by' => $existing_item->completed_by,
+			];
+			$preserved_done['id:' . (int) $existing_item->id] = $preserved_done[$key];
+		}
+
+		$wpdb->query('START TRANSACTION');
+		$deleted = $wpdb->delete($table, ['camp_id' => $camp_id]);
+		if ( $deleted === false ) {
+			$wpdb->query('ROLLBACK');
+			return;
+		}
 
 		$sort = 0;
 		foreach ( $items as $item ) {
@@ -236,19 +269,31 @@ final class CampCaseRepository {
 				continue;
 			}
 
-			$wpdb->insert($table, [
+			$party  = self::sanitize_checklist_party($item['party'] ?? self::CHECKLIST_PARTY_SHARED);
+			$status = self::sanitize_checklist_status($item['status'] ?? self::CHECKLIST_STATUS_PENDING);
+			$key    = self::checklist_item_key($label, $party);
+			$item_id = (int) ($item['id'] ?? 0);
+			$done   = $item_id > 0 ? ($preserved_done['id:' . $item_id] ?? null) : ($preserved_done[$key] ?? null);
+
+			$inserted = $wpdb->insert($table, [
 				'camp_id'       => $camp_id,
-				'party'         => self::sanitize_checklist_party($item['party'] ?? self::CHECKLIST_PARTY_SHARED),
+				'party'         => $party,
 				'label'         => $label,
-				'status'        => self::sanitize_checklist_status($item['status'] ?? self::CHECKLIST_STATUS_PENDING),
+				'status'        => $status,
 				'assigned_to'   => sanitize_text_field($item['assigned_to'] ?? ''),
 				'due_date'      => self::sanitize_date_or_null($item['due_date'] ?? ''),
 				'comment'       => sanitize_textarea_field($item['comment'] ?? ''),
 				'sort_order'    => $sort++,
-				'completed_at'  => ($item['status'] ?? '') === self::CHECKLIST_STATUS_DONE ? current_time('mysql') : null,
-				'completed_by'  => ($item['status'] ?? '') === self::CHECKLIST_STATUS_DONE ? (int) get_current_user_id() : null,
+				'completed_at'  => $status === self::CHECKLIST_STATUS_DONE ? ($done['completed_at'] ?? current_time('mysql')) : null,
+				'completed_by'  => $status === self::CHECKLIST_STATUS_DONE ? ($done['completed_by'] ?? (int) get_current_user_id()) : null,
 			]);
+			if ( $inserted === false ) {
+				$wpdb->query('ROLLBACK');
+				return;
+			}
 		}
+
+		$wpdb->query('COMMIT');
 	}
 
 	/**
@@ -302,9 +347,10 @@ final class CampCaseRepository {
 	 */
 	public static function default_checklist_rows(int $minimum_rows = 10): array {
 		$rows = [];
-		foreach ( self::DEFAULT_CHECKLIST as $item ) {
+		foreach ( self::default_checklist_template() as $item ) {
 			$rows[] = [
 				'label'       => $item['label'],
+				'id'          => '',
 				'party'       => $item['party'],
 				'status'      => self::CHECKLIST_STATUS_PENDING,
 				'assigned_to' => '',
@@ -316,6 +362,7 @@ final class CampCaseRepository {
 		while ( count($rows) < $minimum_rows ) {
 			$rows[] = [
 				'label'       => '',
+				'id'          => '',
 				'party'       => self::CHECKLIST_PARTY_SHARED,
 				'status'      => self::CHECKLIST_STATUS_PENDING,
 				'assigned_to' => '',
@@ -327,9 +374,68 @@ final class CampCaseRepository {
 		return $rows;
 	}
 
+	public static function pad_checklist_rows(array $items, int $minimum_rows = 10): array {
+		$rows = array_map(
+			static function (array $item): array {
+				return [
+					'label'       => (string) ($item['label'] ?? ''),
+					'id'          => (string) ($item['id'] ?? ''),
+					'party'       => (string) ($item['party'] ?? self::CHECKLIST_PARTY_SHARED),
+					'status'      => (string) ($item['status'] ?? self::CHECKLIST_STATUS_PENDING),
+					'assigned_to' => (string) ($item['assigned_to'] ?? ''),
+					'due_date'    => (string) ($item['due_date'] ?? ''),
+					'comment'     => (string) ($item['comment'] ?? ''),
+				];
+			},
+			$items
+		);
+
+		while ( count($rows) < $minimum_rows ) {
+			$rows[] = [
+				'label'       => '',
+				'id'          => '',
+				'party'       => self::CHECKLIST_PARTY_SHARED,
+				'status'      => self::CHECKLIST_STATUS_PENDING,
+				'assigned_to' => '',
+				'due_date'    => '',
+				'comment'     => '',
+			];
+		}
+
+		return $rows;
+	}
+
+	public static function tables_ready(): bool {
+		global $wpdb;
+
+		if ( self::$tables_ready_cache !== null ) {
+			return self::$tables_ready_cache;
+		}
+
+		foreach (['camp_cases', 'camp_organizers', 'camp_checklist_items', 'camp_prearrival'] as $key) {
+			$table = Schema::table($key);
+			if ( ! self::table_exists($table) ) {
+				self::$tables_ready_cache = false;
+				return false;
+			}
+		}
+
+		self::$tables_ready_cache = true;
+		return true;
+	}
+
+	public static function invalidate_tables_ready_cache(): void {
+		self::$tables_ready_cache = null;
+	}
+
 	private static function count_rows(string $table_key, int $camp_id): int {
 		global $wpdb;
 		$table = Schema::table($table_key);
+
+		if ( ! self::table_exists($table) ) {
+			return 0;
+		}
+
 		return (int) $wpdb->get_var(
 			$wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE camp_id = %d", $camp_id)
 		);
@@ -337,22 +443,22 @@ final class CampCaseRepository {
 
 	private static function sanitize_stage(string $value): string {
 		$value = sanitize_key($value);
-		return array_key_exists($value, self::PROCESS_STAGES) ? $value : self::STAGE_INQUIRY;
+		return array_key_exists($value, self::process_stages()) ? $value : self::STAGE_INQUIRY;
 	}
 
 	private static function sanitize_risk_level(string $value): string {
 		$value = sanitize_key($value);
-		return array_key_exists($value, self::RISK_LEVELS) ? $value : self::RISK_LOW;
+		return array_key_exists($value, self::risk_levels()) ? $value : self::RISK_LOW;
 	}
 
 	private static function sanitize_checklist_party(string $value): string {
 		$value = sanitize_key($value);
-		return array_key_exists($value, self::CHECKLIST_PARTIES) ? $value : self::CHECKLIST_PARTY_SHARED;
+		return array_key_exists($value, self::checklist_parties()) ? $value : self::CHECKLIST_PARTY_SHARED;
 	}
 
 	private static function sanitize_checklist_status(string $value): string {
 		$value = sanitize_key($value);
-		return array_key_exists($value, self::CHECKLIST_STATUSES) ? $value : self::CHECKLIST_STATUS_PENDING;
+		return array_key_exists($value, self::checklist_statuses()) ? $value : self::CHECKLIST_STATUS_PENDING;
 	}
 
 	private static function sanitize_date_or_null(string $value): ?string {
@@ -363,5 +469,14 @@ final class CampCaseRepository {
 	private static function sanitize_time_or_null(string $value): ?string {
 		$value = sanitize_text_field($value);
 		return preg_match('/^\d{2}:\d{2}$/', $value) ? $value : null;
+	}
+
+	private static function checklist_item_key(string $label, string $party): string {
+		return md5($party . '|' . $label);
+	}
+
+	private static function table_exists(string $table): bool {
+		global $wpdb;
+		return $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) === $table;
 	}
 }

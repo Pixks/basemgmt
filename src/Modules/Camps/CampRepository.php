@@ -31,15 +31,7 @@ final class CampRepository {
 		$joins     = [
 			"LEFT JOIN {$cases_t} cc ON cc.camp_id = c.id",
 			"LEFT JOIN {$org_t} co ON co.camp_id = c.id",
-			"LEFT JOIN (
-				SELECT
-					camp_id,
-					COUNT(*) AS readiness_total,
-					COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS readiness_done,
-					COALESCE(SUM(CASE WHEN status <> 'done' AND due_date IS NOT NULL AND due_date < CURDATE() THEN 1 ELSE 0 END), 0) AS readiness_overdue
-				FROM {$check_t}
-				GROUP BY camp_id
-			) readiness ON readiness.camp_id = c.id",
+			self::readiness_join($check_t),
 		];
 
 		if ( isset($args['status']) && $args['status'] !== '' ) {
@@ -123,6 +115,7 @@ final class CampRepository {
 
 		$where   = ['1=1'];
 		$params  = [];
+		$readiness_join = '';
 
 		if ( isset($args['status']) && $args['status'] !== '' ) {
 			$where[]  = 'c.status = %s';
@@ -147,6 +140,7 @@ final class CampRepository {
 		}
 
 		if ( ! empty($args['readiness']) ) {
+			$readiness_join = self::readiness_join($check_t);
 			$readiness = sanitize_key($args['readiness']);
 			if ( $readiness === 'ready' ) {
 				$where[] = 'COALESCE(readiness.readiness_total, 0) > 0 AND COALESCE(readiness.readiness_done, 0) = COALESCE(readiness.readiness_total, 0)';
@@ -162,15 +156,7 @@ final class CampRepository {
 		$sql = "SELECT COUNT(*) FROM {$table} c
 			LEFT JOIN {$cases_t} cc ON cc.camp_id = c.id
 			LEFT JOIN {$org_t} co ON co.camp_id = c.id
-			LEFT JOIN (
-				SELECT
-					camp_id,
-					COUNT(*) AS readiness_total,
-					COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS readiness_done,
-					COALESCE(SUM(CASE WHEN status <> 'done' AND due_date IS NOT NULL AND due_date < CURDATE() THEN 1 ELSE 0 END), 0) AS readiness_overdue
-				FROM {$check_t}
-				GROUP BY camp_id
-			) readiness ON readiness.camp_id = c.id
+			{$readiness_join}
 			WHERE " . implode(' AND ', $where);
 
 		if ( $params ) {
@@ -265,16 +251,7 @@ final class CampRepository {
 	}
 
 	private static function extended_tables_ready(): bool {
-		global $wpdb;
-
-		foreach (['camp_cases', 'camp_organizers', 'camp_checklist_items'] as $key) {
-			$table = Schema::table($key);
-			if ( $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table ) {
-				return false;
-			}
-		}
-
-		return true;
+		return CampCaseRepository::tables_ready();
 	}
 
 	private static function get_all_legacy(array $args = []): array {
@@ -340,5 +317,17 @@ final class CampRepository {
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		return (int) $wpdb->get_var($sql);
+	}
+
+	private static function readiness_join(string $check_table): string {
+		return "LEFT JOIN (
+			SELECT
+				camp_id,
+				COUNT(*) AS readiness_total,
+				COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS readiness_done,
+				COALESCE(SUM(CASE WHEN status <> 'done' AND due_date IS NOT NULL AND due_date < CURDATE() THEN 1 ELSE 0 END), 0) AS readiness_overdue
+			FROM {$check_table}
+			GROUP BY camp_id
+		) readiness ON readiness.camp_id = c.id";
 	}
 }

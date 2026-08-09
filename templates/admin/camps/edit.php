@@ -207,7 +207,10 @@ $readiness_percent  = (int) ($readiness['percent'] ?? 0);
 				<tbody>
 					<?php foreach ( $checklist as $index => $item ) : ?>
 						<tr>
-							<td><input type="text" name="checklist[label][]" value="<?php echo esc_attr($item['label']); ?>" class="widefat"></td>
+							<td>
+								<input type="hidden" name="checklist[id][]" value="<?php echo esc_attr($item['id'] ?? ''); ?>">
+								<input type="text" name="checklist[label][]" value="<?php echo esc_attr($item['label']); ?>" class="widefat">
+							</td>
 							<td>
 								<select name="checklist[party][]">
 									<?php foreach ( $checklist_parties as $value => $label ) : ?>
@@ -322,7 +325,7 @@ $readiness_percent  = (int) ($readiness['percent'] ?? 0);
 								<td>
 									<?php
 									echo esc_html($process_stages[$item->old_stage] ?? ($item->old_stage ?: '—'));
-									echo ' → ';
+									echo esc_html(' → ');
 									echo esc_html($process_stages[$item->new_stage] ?? $item->new_stage);
 									?>
 								</td>

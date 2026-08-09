@@ -27,7 +27,7 @@ bm_camps
     ├──< bm_camp_settlements
     │       └──< bm_camp_settlement_lines
     ├──< bm_camp_settlement_issues
-    └─── bm_camp_closures
+    ├─── bm_camp_closures
     │
     ├──< bm_staff              (kadra przypisana do obozu)
     │       └──< bm_sessions   (sesje frontendowe)

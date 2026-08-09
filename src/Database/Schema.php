@@ -400,6 +400,8 @@ final class Schema {
 			KEY idx_status (status)
 		) $charset;";
 
+		// satisfaction_score is intended for bounded positive scales (for example 0-10 or 0-100).
+		// nps_score remains signed on purpose because valid NPS values range from -100 to 100.
 		$sql[] = "CREATE TABLE {$p}bm_camp_closures (
 			id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			camp_id             BIGINT UNSIGNED NOT NULL,
