@@ -21,6 +21,11 @@ final class CampRepository {
 		$cases_t   = Schema::table('camp_cases');
 		$org_t     = Schema::table('camp_organizers');
 		$check_t   = Schema::table('camp_checklist_items');
+
+		if ( ! self::extended_tables_ready() ) {
+			return self::get_all_legacy($args);
+		}
+
 		$where     = ['1=1'];
 		$params    = [];
 		$joins     = [
@@ -111,6 +116,11 @@ final class CampRepository {
 		$cases_t = Schema::table('camp_cases');
 		$org_t   = Schema::table('camp_organizers');
 		$check_t = Schema::table('camp_checklist_items');
+
+		if ( ! self::extended_tables_ready() ) {
+			return self::count_legacy($args);
+		}
+
 		$where   = ['1=1'];
 		$params  = [];
 
@@ -252,5 +262,83 @@ final class CampRepository {
 
 	private static function formats(): array {
 		return ['%s', '%s', '%s', '%s'];
+	}
+
+	private static function extended_tables_ready(): bool {
+		global $wpdb;
+
+		foreach (['camp_cases', 'camp_organizers', 'camp_checklist_items'] as $key) {
+			$table = Schema::table($key);
+			if ( $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private static function get_all_legacy(array $args = []): array {
+		global $wpdb;
+
+		$table  = Schema::table('camps');
+		$where  = '1=1';
+		$params = [];
+
+		if ( isset($args['status']) && $args['status'] !== '' ) {
+			$where   .= ' AND status = %s';
+			$params[] = sanitize_key($args['status']);
+		}
+
+		$order = 'ORDER BY start_date DESC';
+		$limit = '';
+
+		if ( ! empty($args['per_page']) ) {
+			$page   = max(1, (int) ($args['page'] ?? 1));
+			$offset = ($page - 1) * (int) $args['per_page'];
+			$limit  = $wpdb->prepare('LIMIT %d OFFSET %d', (int) $args['per_page'], $offset);
+		}
+
+		$sql = "SELECT
+				*,
+				'inquiry' AS process_stage,
+				0 AS needs_attention,
+				'low' AS risk_level,
+				NULL AS next_action_due_date,
+				'' AS organization_name,
+				'' AS contact_person,
+				0 AS readiness_total,
+				0 AS readiness_done,
+				0 AS readiness_overdue
+			FROM `{$table}` WHERE {$where} {$order} {$limit}";
+
+		if ( $params ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			return $wpdb->get_results($wpdb->prepare($sql, ...$params)) ?: [];
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->get_results($sql) ?: [];
+	}
+
+	private static function count_legacy(array $args = []): int {
+		global $wpdb;
+		$table  = Schema::table('camps');
+		$where  = '1=1';
+		$params = [];
+
+		if ( isset($args['status']) && $args['status'] !== '' ) {
+			$where   .= ' AND status = %s';
+			$params[] = sanitize_key($args['status']);
+		}
+
+		$sql = "SELECT COUNT(*) FROM `{$table}` WHERE {$where}";
+
+		if ( $params ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var($sql);
 	}
 }

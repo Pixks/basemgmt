@@ -20,6 +20,7 @@ final class CampsPage {
 
 	public function render(): void {
 		Capabilities::require_admin();
+		Schema::create_tables();
 
 		if ( isset($_GET['bm_create_tables']) ) {
 			check_admin_referer('bm_create_tables');
@@ -141,6 +142,7 @@ final class CampsPage {
 	public function handle_save(): void {
 		Capabilities::require_admin();
 		check_admin_referer('bm_save_camp');
+		Schema::create_tables();
 
 		$id       = (int) ($_POST['camp_id'] ?? 0);
 		$campData = [
