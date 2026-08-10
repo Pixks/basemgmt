@@ -10,6 +10,7 @@ use BaseMgmt\Core\OperationLogger;
 use BaseMgmt\Database\Schema;
 use BaseMgmt\Modules\Camps\CampCaseRepository;
 use BaseMgmt\Modules\Camps\CampRepository;
+use BaseMgmt\Modules\Camps\CampWorkflowAutomationRepository;
 
 defined('ABSPATH') || exit;
 
@@ -85,11 +86,17 @@ final class CampsPage {
 	}
 
 	private function render_edit_form(?object $camp): void {
+		$workflow_view = sanitize_key($_GET['workflow_view'] ?? 'all');
 		$case          = null;
 		$organizer     = null;
 		$prearrival    = null;
 		$checklist     = CampCaseRepository::default_checklist_rows();
 		$history       = [];
+		$workflow_events = [];
+		$recent_workflow_events = [];
+		$open_tasks     = [];
+		$recent_activity = [];
+		$module_summary = [];
 		$readiness     = ['total' => 0, 'done' => 0, 'overdue' => 0, 'percent' => 0];
 		$future_counts = [
 			'documents' => 0,
@@ -102,13 +109,19 @@ final class CampsPage {
 		];
 
 		if ( $camp ) {
-			$case          = CampCaseRepository::get_case((int) $camp->id);
-			$organizer     = CampCaseRepository::get_organizer((int) $camp->id);
-			$prearrival    = CampCaseRepository::get_prearrival((int) $camp->id);
-			$history       = CampCaseRepository::get_history((int) $camp->id);
-			$readiness     = CampCaseRepository::get_readiness_summary((int) $camp->id);
-			$future_counts = CampCaseRepository::get_future_module_counts((int) $camp->id);
-			$checklist_db  = CampCaseRepository::get_checklist((int) $camp->id);
+			CampWorkflowAutomationRepository::evaluate_camp((int) $camp->id);
+			$case                 = CampCaseRepository::get_case((int) $camp->id);
+			$organizer            = CampCaseRepository::get_organizer((int) $camp->id);
+			$prearrival           = CampCaseRepository::get_prearrival((int) $camp->id);
+			$history              = CampCaseRepository::get_history((int) $camp->id);
+			$readiness            = CampCaseRepository::get_readiness_summary((int) $camp->id);
+			$future_counts        = CampCaseRepository::get_future_module_counts((int) $camp->id);
+			$module_summary       = CampCaseRepository::get_module_summary((int) $camp->id);
+			$workflow_events      = CampWorkflowAutomationRepository::get_open_events((int) $camp->id);
+			$recent_workflow_events = CampWorkflowAutomationRepository::get_recent_events((int) $camp->id);
+			$open_tasks           = CampCaseRepository::get_open_checklist_items((int) $camp->id);
+			$recent_activity      = CampCaseRepository::get_recent_activity((int) $camp->id);
+			$checklist_db         = CampCaseRepository::get_checklist((int) $camp->id);
 			if ( ! empty($checklist_db) ) {
 				$checklist = array_map(
 					static fn(object $item): array => [
@@ -116,6 +129,7 @@ final class CampsPage {
 						'id'          => (string) $item->id,
 						'party'       => (string) $item->party,
 						'status'      => (string) $item->status,
+						'priority'    => (string) ($item->priority ?? CampCaseRepository::CHECKLIST_PRIORITY_NORMAL),
 						'assigned_to' => (string) $item->assigned_to,
 						'due_date'    => (string) ($item->due_date ?? ''),
 						'comment'     => (string) ($item->comment ?? ''),
@@ -127,11 +141,14 @@ final class CampsPage {
 		}
 
 		$workflow = CampCaseRepository::build_workflow_snapshot($camp, $case, $organizer, $prearrival, $readiness, $future_counts);
+		$workspace = CampCaseRepository::stage_workspace((string) ($case->process_stage ?? CampCaseRepository::STAGE_INQUIRY));
 
 		$process_stages    = CampCaseRepository::process_stages();
 		$risk_levels       = CampCaseRepository::risk_levels();
 		$checklist_parties = CampCaseRepository::checklist_parties();
 		$checklist_statuses= CampCaseRepository::checklist_statuses();
+		$checklist_priorities = CampCaseRepository::checklist_priorities();
+		$allowed_transitions = CampCaseRepository::allowed_stage_transitions()[(string) ($case->process_stage ?? CampCaseRepository::STAGE_INQUIRY)] ?? [];
 		$users             = get_users(['fields' => ['ID', 'display_name']]);
 
 		include BASEMGMT_DIR . 'templates/admin/camps/edit.php';
@@ -158,6 +175,8 @@ final class CampsPage {
 			return;
 		}
 
+		CampWorkflowAutomationRepository::evaluate_camp($camp_id);
+
 		AdminMenu::set_notice(__('Podstawowe dane workflow obozu zostały zapisane.', 'basemgmt'));
 		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-overview");
 	}
@@ -168,11 +187,23 @@ final class CampsPage {
 		$this->ensure_tables_ready();
 
 		$camp_id   = $this->require_camp_id();
+		$existing  = CampCaseRepository::get_case($camp_id);
 		$caseData  = $this->collect_case_data();
 		$stage     = (string) ($caseData['process_stage'] ?? CampCaseRepository::STAGE_INQUIRY);
+		$old_stage = (string) ($existing->process_stage ?? CampCaseRepository::STAGE_INQUIRY);
+
+		if ( ! CampCaseRepository::can_transition($old_stage, $stage) ) {
+			AdminMenu::set_notice(__('Niedozwolona zmiana etapu workflow. Przejdź zgodnie z dozwolonymi przejściami.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-process");
+			return;
+		}
 
 		CampCaseRepository::save_case($camp_id, $caseData);
 		CampCaseRepository::sync_checklist_for_stage($camp_id, $stage);
+		if ( $old_stage !== $stage ) {
+			CampWorkflowAutomationRepository::handle_stage_change($camp_id, $old_stage, $stage);
+		}
+		CampWorkflowAutomationRepository::evaluate_camp($camp_id);
 
 		OperationLogger::log(
 			OperationLogger::ACTION_CAMP_CASE_UPDATED,
@@ -199,6 +230,7 @@ final class CampsPage {
 		$organizer_data = $this->collect_organizer_data();
 
 		CampCaseRepository::save_organizer($camp_id, $organizer_data);
+		CampWorkflowAutomationRepository::evaluate_camp($camp_id);
 		OperationLogger::log(
 			OperationLogger::ACTION_CAMP_UPDATED,
 			'camp',
@@ -226,6 +258,7 @@ final class CampsPage {
 			$stage = (string) ($case->process_stage ?? CampCaseRepository::STAGE_INQUIRY);
 			CampCaseRepository::sync_checklist_for_stage($camp_id, $stage);
 		}
+		CampWorkflowAutomationRepository::evaluate_camp($camp_id);
 
 		OperationLogger::log(
 			OperationLogger::ACTION_CAMP_CHECKLIST_UPDATED,
@@ -249,6 +282,7 @@ final class CampsPage {
 		$prearrival_data = $this->collect_prearrival_data();
 
 		CampCaseRepository::save_prearrival($camp_id, $prearrival_data);
+		CampWorkflowAutomationRepository::evaluate_camp($camp_id);
 		OperationLogger::log(
 			OperationLogger::ACTION_CAMP_UPDATED,
 			'camp',
@@ -284,15 +318,27 @@ final class CampsPage {
 			return;
 		}
 
+		$case_existing  = CampCaseRepository::get_case($camp_id);
+		$old_stage      = (string) ($case_existing->process_stage ?? CampCaseRepository::STAGE_INQUIRY);
 		$caseData       = $this->collect_case_data();
 		$organizerData  = $this->collect_organizer_data();
 		$prearrivalData = $this->collect_prearrival_data();
+
+		if ( ! CampCaseRepository::can_transition($old_stage, (string) ($caseData['process_stage'] ?? CampCaseRepository::STAGE_INQUIRY)) ) {
+			AdminMenu::set_notice(__('Niedozwolona zmiana etapu workflow. Przejdź zgodnie z dozwolonymi przejściami.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-process");
+			return;
+		}
 
 		CampCaseRepository::save_case($camp_id, $caseData);
 		CampCaseRepository::save_organizer($camp_id, $organizerData);
 		CampCaseRepository::save_prearrival($camp_id, $prearrivalData);
 		CampCaseRepository::replace_checklist($camp_id, $this->parse_checklist($_POST['checklist'] ?? []));
 		CampCaseRepository::sync_checklist_for_stage($camp_id, (string) ($caseData['process_stage'] ?? CampCaseRepository::STAGE_INQUIRY));
+		if ( $old_stage !== (string) ($caseData['process_stage'] ?? CampCaseRepository::STAGE_INQUIRY) ) {
+			CampWorkflowAutomationRepository::handle_stage_change($camp_id, $old_stage, (string) $caseData['process_stage']);
+		}
+		CampWorkflowAutomationRepository::evaluate_camp($camp_id);
 
 		OperationLogger::log(
 			OperationLogger::ACTION_CAMP_CASE_UPDATED,
@@ -335,11 +381,12 @@ final class CampsPage {
 		$labels      = array_values((array) ($raw['label'] ?? []));
 		$parties     = array_values((array) ($raw['party'] ?? []));
 		$statuses    = array_values((array) ($raw['status'] ?? []));
+		$priorities  = array_values((array) ($raw['priority'] ?? []));
 		$ids         = array_values((array) ($raw['id'] ?? []));
 		$assigned    = array_values((array) ($raw['assigned_to'] ?? []));
 		$due_dates   = array_values((array) ($raw['due_date'] ?? []));
 		$comments    = array_values((array) ($raw['comment'] ?? []));
-		$total_rows  = max(count($labels), count($parties), count($statuses), count($ids), count($assigned), count($due_dates), count($comments));
+		$total_rows  = max(count($labels), count($parties), count($statuses), count($priorities), count($ids), count($assigned), count($due_dates), count($comments));
 		$items       = [];
 
 		for ( $i = 0; $i < $total_rows; $i++ ) {
@@ -348,6 +395,7 @@ final class CampsPage {
 				'id'          => (string) (int) wp_unslash((string) ($ids[$i] ?? '0')),
 				'party'       => wp_unslash((string) ($parties[$i] ?? CampCaseRepository::CHECKLIST_PARTY_SHARED)),
 				'status'      => wp_unslash((string) ($statuses[$i] ?? CampCaseRepository::CHECKLIST_STATUS_PENDING)),
+				'priority'    => wp_unslash((string) ($priorities[$i] ?? CampCaseRepository::CHECKLIST_PRIORITY_NORMAL)),
 				'assigned_to' => wp_unslash((string) ($assigned[$i] ?? '')),
 				'due_date'    => wp_unslash((string) ($due_dates[$i] ?? '')),
 				'comment'     => wp_unslash((string) ($comments[$i] ?? '')),

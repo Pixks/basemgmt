@@ -181,6 +181,31 @@
 	gap: 8px;
 }
 
+.bm-view-switch {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin: 0 0 16px;
+}
+
+.bm-case-grid--workcenter {
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.bm-work-items {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.bm-work-items li + li {
+	margin-top: 10px;
+}
+
+.bm-work-details {
+	margin-top: 6px;
+}
+
 .bm-muted {
 	color: #646970;
 	font-size: 13px;

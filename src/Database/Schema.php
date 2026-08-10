@@ -21,6 +21,7 @@ final class Schema {
 			'camp_case_history'      => $wpdb->prefix . 'bm_camp_case_history',
 			'camp_organizers'        => $wpdb->prefix . 'bm_camp_organizers',
 			'camp_checklist_items'   => $wpdb->prefix . 'bm_camp_checklist_items',
+			'camp_workflow_events'   => $wpdb->prefix . 'bm_camp_workflow_events',
 			'camp_prearrival'        => $wpdb->prefix . 'bm_camp_prearrival',
 			'camp_documents'         => $wpdb->prefix . 'bm_camp_documents',
 			'camp_document_versions' => $wpdb->prefix . 'bm_camp_document_versions',
@@ -112,6 +113,7 @@ final class Schema {
 			camp_id              BIGINT UNSIGNED NOT NULL,
 			process_stage        VARCHAR(40)     NOT NULL DEFAULT 'inquiry',
 			needs_attention      TINYINT(1)      NOT NULL DEFAULT 0,
+			manual_attention     TINYINT(1)      NOT NULL DEFAULT 0,
 			risk_level           VARCHAR(20)     NOT NULL DEFAULT 'low',
 			owner_user_id        BIGINT UNSIGNED DEFAULT NULL,
 			next_action_due_date DATE            DEFAULT NULL,
@@ -166,6 +168,7 @@ final class Schema {
 			party        VARCHAR(20)     NOT NULL DEFAULT 'shared',
 			label        VARCHAR(255)    NOT NULL,
 			status       VARCHAR(20)     NOT NULL DEFAULT 'pending',
+			priority     VARCHAR(20)     NOT NULL DEFAULT 'normal',
 			assigned_to  VARCHAR(255)    NOT NULL DEFAULT '',
 			due_date     DATE            DEFAULT NULL,
 			comment      TEXT            DEFAULT NULL,
@@ -177,7 +180,33 @@ final class Schema {
 			PRIMARY KEY (id),
 			KEY idx_camp (camp_id),
 			KEY idx_status (status),
+			KEY idx_priority (priority),
 			KEY idx_due_date (due_date)
+		) $charset;";
+
+		$sql[] = "CREATE TABLE {$p}bm_camp_workflow_events (
+			id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id          BIGINT UNSIGNED NOT NULL,
+			event_key        VARCHAR(120)    NOT NULL,
+			event_type       VARCHAR(40)     NOT NULL,
+			severity         VARCHAR(20)     NOT NULL DEFAULT 'warning',
+			status           VARCHAR(20)     NOT NULL DEFAULT 'open',
+			title            VARCHAR(255)    NOT NULL,
+			description      TEXT            DEFAULT NULL,
+			suggested_action TEXT            DEFAULT NULL,
+			draft_message    TEXT            DEFAULT NULL,
+			reminder_date    DATE            DEFAULT NULL,
+			source_stage     VARCHAR(40)     NOT NULL DEFAULT '',
+			metadata_json    LONGTEXT        DEFAULT NULL,
+			resolved_at      DATETIME        DEFAULT NULL,
+			created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY uniq_camp_event (camp_id, event_key),
+			KEY idx_camp (camp_id),
+			KEY idx_status (status),
+			KEY idx_type (event_type),
+			KEY idx_reminder (reminder_date)
 		) $charset;";
 
 		$sql[] = "CREATE TABLE {$p}bm_camp_prearrival (

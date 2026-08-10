@@ -4,8 +4,24 @@ $id                = $is_edit ? (int) $camp->id : 0;
 $process_stage     = $case->process_stage ?? \BaseMgmt\Modules\Camps\CampCaseRepository::STAGE_INQUIRY;
 $risk_level        = $case->risk_level ?? \BaseMgmt\Modules\Camps\CampCaseRepository::RISK_LOW;
 $owner_user_id     = (int) ($case->owner_user_id ?? 0);
-$needs_attention   = ! empty($case->needs_attention);
+$needs_attention   = ! empty($case->manual_attention) || (! isset($case->manual_attention) && ! empty($case->needs_attention));
 $readiness_percent = (int) ($readiness['percent'] ?? 0);
+$section_visible   = static function (string $section) use ($workflow_view, $workspace, $is_edit): bool {
+	if ( ! $is_edit || $workflow_view === 'all' ) {
+		return true;
+	}
+
+	if ( $workflow_view === 'workcenter' ) {
+		return in_array($section, ['overview', 'workcenter'], true);
+	}
+
+	if ( $workflow_view === 'stage' ) {
+		return in_array($section, array_merge(['overview', 'workcenter'], $workspace['sections']), true);
+	}
+
+	return true;
+};
+$base_edit_url = $is_edit ? admin_url('admin.php?page=basemgmt-camps&action=edit&id=' . $id) : '';
 ?>
 <div class="wrap bm-admin-wrap">
 	<h1>
@@ -17,12 +33,24 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 
 	<nav class="nav-tab-wrapper" style="margin-bottom:20px;">
 		<a href="#bm-section-overview" class="nav-tab nav-tab-active"><?php esc_html_e('Overview', 'basemgmt'); ?></a>
+		<?php if ( $is_edit ) : ?>
+			<a href="#bm-section-workcenter" class="nav-tab"><?php esc_html_e('Centrum pracy', 'basemgmt'); ?></a>
+		<?php endif; ?>
 		<a href="#bm-section-process" class="nav-tab"><?php esc_html_e('Etap i owner', 'basemgmt'); ?></a>
 		<a href="#bm-section-organizer" class="nav-tab"><?php esc_html_e('Organizator', 'basemgmt'); ?></a>
 		<a href="#bm-section-checklist" class="nav-tab"><?php esc_html_e('Taski / checklista', 'basemgmt'); ?></a>
 		<a href="#bm-section-prearrival" class="nav-tab"><?php esc_html_e('Przygotowanie operacyjne', 'basemgmt'); ?></a>
 		<a href="#bm-section-settlement" class="nav-tab"><?php esc_html_e('Rozliczenie i historia', 'basemgmt'); ?></a>
 	</nav>
+
+	<?php if ( $is_edit ) : ?>
+		<p class="bm-view-switch">
+			<a class="button <?php echo $workflow_view === 'all' ? 'button-primary' : ''; ?>" href="<?php echo esc_url($base_edit_url); ?>"><?php esc_html_e('Pełny workflow', 'basemgmt'); ?></a>
+			<a class="button <?php echo $workflow_view === 'stage' ? 'button-primary' : ''; ?>" href="<?php echo esc_url(add_query_arg('workflow_view', 'stage', $base_edit_url)); ?>"><?php esc_html_e('Widok bieżącego etapu', 'basemgmt'); ?></a>
+			<a class="button <?php echo $workflow_view === 'workcenter' ? 'button-primary' : ''; ?>" href="<?php echo esc_url(add_query_arg('workflow_view', 'workcenter', $base_edit_url)); ?>"><?php esc_html_e('Centrum pracy', 'basemgmt'); ?></a>
+			<span class="bm-muted"><?php echo esc_html(sprintf(__('Bieżący focus: %s', 'basemgmt'), $workflow_view === 'stage' ? $workspace['label'] : ($workflow_view === 'workcenter' ? __('Centrum pracy', 'basemgmt') : __('Pełny workflow', 'basemgmt')))); ?></span>
+		</p>
+	<?php endif; ?>
 
 	<div id="bm-section-overview" class="bm-form-section">
 		<h2><?php esc_html_e('Overview i dane bazowe', 'basemgmt'); ?></h2>
@@ -133,6 +161,104 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 		</form>
 	</div>
 
+	<?php if ( $is_edit && $section_visible('workcenter') ) : ?>
+		<div id="bm-section-workcenter" class="bm-form-section">
+			<h2><?php esc_html_e('Centrum pracy', 'basemgmt'); ?></h2>
+			<p class="description"><?php esc_html_e('Operacyjny widok otwartych tasków, automatyzacji, ostatnich zmian i statusów modułów wokół tego obozu.', 'basemgmt'); ?></p>
+
+			<div class="bm-case-grid bm-case-grid--metrics">
+				<div class="bm-case-card">
+					<span class="bm-stat-label"><?php esc_html_e('Otwarte taski', 'basemgmt'); ?></span>
+					<strong><?php echo esc_html((string) count($open_tasks)); ?></strong>
+				</div>
+				<div class="bm-case-card">
+					<span class="bm-stat-label"><?php esc_html_e('Automatyczne alerty', 'basemgmt'); ?></span>
+					<strong><?php echo esc_html((string) count($workflow_events)); ?></strong>
+				</div>
+				<div class="bm-case-card">
+					<span class="bm-stat-label"><?php esc_html_e('Wpłaty po terminie', 'basemgmt'); ?></span>
+					<strong><?php echo esc_html((string) ($module_summary['payments']['overdue'] ?? 0)); ?></strong>
+				</div>
+				<div class="bm-case-card">
+					<span class="bm-stat-label"><?php esc_html_e('Dokumenty otwarte', 'basemgmt'); ?></span>
+					<strong><?php echo esc_html((string) ($module_summary['documents']['open'] ?? 0)); ?></strong>
+				</div>
+			</div>
+
+			<div class="bm-case-grid bm-case-grid--workcenter">
+				<div class="bm-case-card">
+					<h3 style="margin-top:0;"><?php esc_html_e('Otwarte taski', 'basemgmt'); ?></h3>
+					<?php if ( empty($open_tasks) ) : ?>
+						<p><?php esc_html_e('Brak otwartych tasków checklisty.', 'basemgmt'); ?></p>
+					<?php else : ?>
+						<ul class="bm-work-items">
+							<?php foreach ( $open_tasks as $task ) : ?>
+								<li>
+									<strong><?php echo esc_html($task->label); ?></strong>
+									<span class="bm-badge bm-badge--<?php echo esc_attr($task->priority ?? 'normal'); ?>"><?php echo esc_html($checklist_priorities[$task->priority ?? \BaseMgmt\Modules\Camps\CampCaseRepository::CHECKLIST_PRIORITY_NORMAL] ?? ($task->priority ?? 'normal')); ?></span>
+									<br>
+									<span class="bm-muted"><?php echo esc_html(($checklist_statuses[$task->status] ?? $task->status) . ' • ' . ($task->due_date ?: 'bez terminu')); ?></span>
+								</li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+				</div>
+				<div class="bm-case-card">
+					<h3 style="margin-top:0;"><?php esc_html_e('Automatyzacje i drafty', 'basemgmt'); ?></h3>
+					<?php if ( empty($workflow_events) ) : ?>
+						<p><?php esc_html_e('Brak otwartych automatycznych alertów.', 'basemgmt'); ?></p>
+					<?php else : ?>
+						<ul class="bm-work-items">
+							<?php foreach ( $workflow_events as $event ) : ?>
+								<li>
+									<strong><?php echo esc_html($event->title); ?></strong>
+									<span class="bm-badge bm-badge--<?php echo esc_attr($event->severity); ?>"><?php echo esc_html($event->severity); ?></span>
+									<?php if ( ! empty($event->reminder_date) ) : ?>
+										<br><span class="bm-muted"><?php echo esc_html(sprintf(__('Przypomnienie: %s', 'basemgmt'), $event->reminder_date)); ?></span>
+									<?php endif; ?>
+									<?php if ( ! empty($event->suggested_action) ) : ?>
+										<br><span><?php echo esc_html($event->suggested_action); ?></span>
+									<?php endif; ?>
+									<?php if ( ! empty($event->draft_message) ) : ?>
+										<details class="bm-work-details">
+											<summary><?php esc_html_e('Pokaż draft wiadomości', 'basemgmt'); ?></summary>
+											<p><?php echo esc_html($event->draft_message); ?></p>
+										</details>
+									<?php endif; ?>
+								</li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+				</div>
+				<div class="bm-case-card">
+					<h3 style="margin-top:0;"><?php esc_html_e('Status modułów źródłowych', 'basemgmt'); ?></h3>
+					<ul class="bm-work-items">
+						<li><?php echo esc_html(sprintf(__('Dokumenty: %1$d łącznie, %2$d otwartych, %3$d po terminie', 'basemgmt'), (int) ($module_summary['documents']['total'] ?? 0), (int) ($module_summary['documents']['open'] ?? 0), (int) ($module_summary['documents']['overdue'] ?? 0))); ?></li>
+						<li><?php echo esc_html(sprintf(__('Płatności: %1$d harmonogramów, %2$d wpłat, %3$d po terminie', 'basemgmt'), (int) ($module_summary['payments']['scheduled'] ?? 0), (int) ($module_summary['payments']['paid'] ?? 0), (int) ($module_summary['payments']['overdue'] ?? 0))); ?></li>
+						<li><?php echo esc_html(sprintf(__('Rozliczenia: %1$d łącznie, %2$d otwartych', 'basemgmt'), (int) ($module_summary['settlements']['total'] ?? 0), (int) ($module_summary['settlements']['open'] ?? 0))); ?></li>
+						<li><?php echo esc_html(sprintf(__('Uwagi / rozbieżności: %d otwartych', 'basemgmt'), (int) ($module_summary['issues']['open'] ?? 0))); ?></li>
+						<li><?php echo esc_html(sprintf(__('Zamknięcia: %1$d wpisów, %2$d zamkniętych', 'basemgmt'), (int) ($module_summary['closures']['total'] ?? 0), (int) ($module_summary['closures']['closed'] ?? 0))); ?></li>
+					</ul>
+				</div>
+				<div class="bm-case-card">
+					<h3 style="margin-top:0;"><?php esc_html_e('Ostatnie zmiany', 'basemgmt'); ?></h3>
+					<?php if ( empty($recent_activity) && empty($recent_workflow_events) ) : ?>
+						<p><?php esc_html_e('Brak ostatnich zmian do pokazania.', 'basemgmt'); ?></p>
+					<?php else : ?>
+						<ul class="bm-work-items">
+							<?php foreach ( $recent_activity as $activity ) : ?>
+								<li><strong><?php echo esc_html($activity->action); ?></strong><br><span class="bm-muted"><?php echo esc_html($activity->created_at); ?></span></li>
+							<?php endforeach; ?>
+							<?php foreach ( array_slice($recent_workflow_events, 0, 3) as $event ) : ?>
+								<li><strong><?php echo esc_html($event->title); ?></strong><br><span class="bm-muted"><?php echo esc_html($event->updated_at); ?></span></li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+	<?php endif; ?>
+
 	<?php if ( ! $is_edit ) : ?>
 		<div class="bm-form-section">
 			<p style="margin:0;">
@@ -140,6 +266,7 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 			</p>
 		</div>
 	<?php else : ?>
+		<?php if ( $section_visible('process') ) : ?>
 		<div id="bm-section-process" class="bm-form-section">
 			<h2><?php esc_html_e('Etap workflow, owner i decyzje', 'basemgmt'); ?></h2>
 			<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -152,11 +279,13 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 						<label for="bm_process_stage"><strong><?php esc_html_e('Etap procesu', 'basemgmt'); ?></strong></label><br>
 						<select id="bm_process_stage" name="process_stage">
 							<?php foreach ( $process_stages as $value => $label ) : ?>
-								<option value="<?php echo esc_attr($value); ?>" <?php selected($process_stage, $value); ?>>
-									<?php echo esc_html($label); ?>
+								<?php $is_allowed = $value === $process_stage || in_array($value, $allowed_transitions, true); ?>
+								<option value="<?php echo esc_attr($value); ?>" <?php selected($process_stage, $value); ?> <?php disabled(! $is_allowed); ?>>
+									<?php echo esc_html($label . ($is_allowed ? '' : ' — ' . __('niedostępne z tego etapu', 'basemgmt'))); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
+						<span class="description"><?php esc_html_e('Twarde przejścia workflow są wymuszane także po stronie zapisu — nie można przeskoczyć poza dozwolone etapy.', 'basemgmt'); ?></span>
 					</p>
 					<p>
 						<label for="bm_risk_level"><strong><?php esc_html_e('Poziom ryzyka', 'basemgmt'); ?></strong></label><br>
@@ -209,7 +338,9 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 				</p>
 			</form>
 		</div>
+		<?php endif; ?>
 
+		<?php if ( $section_visible('organizer') ) : ?>
 		<div id="bm-section-organizer" class="bm-form-section">
 			<h2><?php esc_html_e('Organizator i rozliczenia', 'basemgmt'); ?></h2>
 			<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -269,7 +400,9 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 				</p>
 			</form>
 		</div>
+		<?php endif; ?>
 
+		<?php if ( $section_visible('checklist') ) : ?>
 		<div id="bm-section-checklist" class="bm-form-section">
 			<h2><?php esc_html_e('Taski i checklista etapu', 'basemgmt'); ?></h2>
 			<p class="description">
@@ -294,6 +427,7 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 							<th><?php esc_html_e('Task', 'basemgmt'); ?></th>
 							<th><?php esc_html_e('Strona', 'basemgmt'); ?></th>
 							<th><?php esc_html_e('Status', 'basemgmt'); ?></th>
+							<th><?php esc_html_e('Priorytet', 'basemgmt'); ?></th>
 							<th><?php esc_html_e('Odpowiedzialny', 'basemgmt'); ?></th>
 							<th><?php esc_html_e('Termin', 'basemgmt'); ?></th>
 							<th><?php esc_html_e('Komentarz', 'basemgmt'); ?></th>
@@ -324,6 +458,15 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 										<?php endforeach; ?>
 									</select>
 								</td>
+								<td>
+									<select name="checklist[priority][]">
+										<?php foreach ( $checklist_priorities as $value => $label ) : ?>
+											<option value="<?php echo esc_attr($value); ?>" <?php selected($item['priority'] ?? \BaseMgmt\Modules\Camps\CampCaseRepository::CHECKLIST_PRIORITY_NORMAL, $value); ?>>
+												<?php echo esc_html($label); ?>
+											</option>
+										<?php endforeach; ?>
+									</select>
+								</td>
 								<td><input type="text" name="checklist[assigned_to][]" value="<?php echo esc_attr($item['assigned_to']); ?>" class="regular-text"></td>
 								<td><input type="date" name="checklist[due_date][]" value="<?php echo esc_attr($item['due_date']); ?>"></td>
 								<td><input type="text" name="checklist[comment][]" value="<?php echo esc_attr($item['comment']); ?>" class="widefat"></td>
@@ -338,7 +481,9 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 				</p>
 			</form>
 		</div>
+		<?php endif; ?>
 
+		<?php if ( $section_visible('prearrival') ) : ?>
 		<div id="bm-section-prearrival" class="bm-form-section">
 			<h2><?php esc_html_e('Dane operacyjne przed przyjazdem', 'basemgmt'); ?></h2>
 			<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -406,7 +551,9 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 				</p>
 			</form>
 		</div>
+		<?php endif; ?>
 
+		<?php if ( $section_visible('settlement') ) : ?>
 		<div id="bm-section-settlement" class="bm-form-section">
 			<h2><?php esc_html_e('Rozliczenie, dokumenty i historia', 'basemgmt'); ?></h2>
 			<div class="bm-case-grid">
@@ -417,6 +564,55 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 				<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Rozliczenia', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['settlements']); ?></strong></div>
 				<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Uwagi / rozbieżności', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['issues']); ?></strong></div>
 				<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Zamknięcia', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['closures']); ?></strong></div>
+			</div>
+
+			<div class="bm-case-grid bm-case-grid--workcenter">
+				<div class="bm-case-card">
+					<h3 style="margin-top:0;"><?php esc_html_e('Dokumenty i harmonogram płatności', 'basemgmt'); ?></h3>
+					<ul class="bm-work-items">
+						<?php foreach ( $module_summary['documents']['items'] ?? [] as $item ) : ?>
+							<li>
+								<strong><?php echo esc_html($item->title); ?></strong>
+								<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->due_date ?: __('bez terminu', 'basemgmt'))); ?></span>
+							</li>
+						<?php endforeach; ?>
+						<?php foreach ( $module_summary['payments']['items'] ?? [] as $item ) : ?>
+							<li>
+								<strong><?php echo esc_html($item->label); ?></strong>
+								<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->due_date ?: __('bez terminu', 'basemgmt'))); ?></span>
+							</li>
+						<?php endforeach; ?>
+						<?php if ( empty($module_summary['documents']['items']) && empty($module_summary['payments']['items']) ) : ?>
+							<li><?php esc_html_e('Brak rekordów dokumentów i płatności.', 'basemgmt'); ?></li>
+						<?php endif; ?>
+					</ul>
+				</div>
+				<div class="bm-case-card">
+					<h3 style="margin-top:0;"><?php esc_html_e('Rozliczenie i zamknięcie', 'basemgmt'); ?></h3>
+					<ul class="bm-work-items">
+						<?php foreach ( $module_summary['settlements']['items'] ?? [] as $item ) : ?>
+							<li>
+								<strong><?php echo esc_html(__('Rozliczenie', 'basemgmt')); ?></strong>
+								<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->period_end ?: __('bez okresu', 'basemgmt'))); ?></span>
+							</li>
+						<?php endforeach; ?>
+						<?php foreach ( $module_summary['issues']['items'] ?? [] as $item ) : ?>
+							<li>
+								<strong><?php echo esc_html($item->title); ?></strong>
+								<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->created_at ?: '')); ?></span>
+							</li>
+						<?php endforeach; ?>
+						<?php foreach ( $module_summary['closures']['items'] ?? [] as $item ) : ?>
+							<li>
+								<strong><?php echo esc_html(__('Zamknięcie', 'basemgmt')); ?></strong>
+								<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->closed_at ?: __('otwarte', 'basemgmt'))); ?></span>
+							</li>
+						<?php endforeach; ?>
+						<?php if ( empty($module_summary['settlements']['items']) && empty($module_summary['issues']['items']) && empty($module_summary['closures']['items']) ) : ?>
+							<li><?php esc_html_e('Brak rekordów rozliczeniowych.', 'basemgmt'); ?></li>
+						<?php endif; ?>
+					</ul>
+				</div>
 			</div>
 
 			<?php if ( ! empty($history) ) : ?>
@@ -447,5 +643,6 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 				</table>
 			<?php endif; ?>
 		</div>
+		<?php endif; ?>
 	<?php endif; ?>
 </div>
