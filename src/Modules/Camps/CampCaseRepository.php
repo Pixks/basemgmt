@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BaseMgmt\Modules\Camps;
 
+use BaseMgmt\Core\OperationLogger;
 use BaseMgmt\Database\Schema;
 
 defined('ABSPATH') || exit;
@@ -41,6 +42,11 @@ final class CampCaseRepository {
 	public const CHECKLIST_STATUS_IN_PROGRESS = 'in_progress';
 	public const CHECKLIST_STATUS_DONE        = 'done';
 	public const CHECKLIST_STATUS_BLOCKED     = 'blocked';
+
+	public const CHECKLIST_PRIORITY_LOW      = 'low';
+	public const CHECKLIST_PRIORITY_NORMAL   = 'normal';
+	public const CHECKLIST_PRIORITY_HIGH     = 'high';
+	public const CHECKLIST_PRIORITY_CRITICAL = 'critical';
 
 	public static function process_stages(): array {
 		return [
@@ -132,6 +138,42 @@ final class CampCaseRepository {
 		];
 	}
 
+	public static function checklist_priorities(): array {
+		return [
+			self::CHECKLIST_PRIORITY_LOW      => __('Niski', 'basemgmt'),
+			self::CHECKLIST_PRIORITY_NORMAL   => __('Normalny', 'basemgmt'),
+			self::CHECKLIST_PRIORITY_HIGH     => __('Wysoki', 'basemgmt'),
+			self::CHECKLIST_PRIORITY_CRITICAL => __('Krytyczny', 'basemgmt'),
+		];
+	}
+
+	public static function allowed_stage_transitions(): array {
+		return [
+			self::STAGE_INQUIRY          => [self::STAGE_OFFER, self::STAGE_CANCELLED],
+			self::STAGE_OFFER            => [self::STAGE_NEGOTIATION, self::STAGE_TENTATIVE, self::STAGE_CANCELLED],
+			self::STAGE_NEGOTIATION      => [self::STAGE_OFFER, self::STAGE_TENTATIVE, self::STAGE_CANCELLED],
+			self::STAGE_TENTATIVE        => [self::STAGE_NEGOTIATION, self::STAGE_CONTRACT_DRAFT, self::STAGE_CANCELLED],
+			self::STAGE_CONTRACT_DRAFT   => [self::STAGE_TENTATIVE, self::STAGE_CONTRACT_SIGNED, self::STAGE_CANCELLED],
+			self::STAGE_CONTRACT_SIGNED  => [self::STAGE_CONTRACT_DRAFT, self::STAGE_AWAITING_PAYMENT, self::STAGE_READY, self::STAGE_CANCELLED],
+			self::STAGE_AWAITING_PAYMENT => [self::STAGE_CONTRACT_SIGNED, self::STAGE_READY, self::STAGE_CANCELLED],
+			self::STAGE_READY            => [self::STAGE_AWAITING_PAYMENT, self::STAGE_ON_SITE, self::STAGE_CANCELLED],
+			self::STAGE_ON_SITE          => [self::STAGE_READY, self::STAGE_SETTLEMENT],
+			self::STAGE_SETTLEMENT       => [self::STAGE_ON_SITE, self::STAGE_CLOSED],
+			self::STAGE_CLOSED           => [],
+			self::STAGE_CANCELLED        => [],
+		];
+	}
+
+	public static function can_transition(string $from_stage, string $to_stage): bool {
+		$from_stage = self::sanitize_stage($from_stage);
+		$to_stage   = self::sanitize_stage($to_stage);
+		if ( $from_stage === $to_stage ) {
+			return true;
+		}
+
+		return in_array($to_stage, self::allowed_stage_transitions()[$from_stage] ?? [], true);
+	}
+
 	public static function default_checklist_template(): array {
 		return [
 			['label' => __('Podpisana umowa', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
@@ -163,6 +205,7 @@ final class CampCaseRepository {
 			'camp_id'               => $camp_id,
 			'process_stage'         => $stage,
 			'needs_attention'       => empty($data['needs_attention']) ? 0 : 1,
+			'manual_attention'      => empty($data['needs_attention']) ? 0 : 1,
 			'risk_level'            => self::sanitize_risk_level($data['risk_level'] ?? ($existing->risk_level ?? self::RISK_LOW)),
 			'owner_user_id'         => ! empty($data['owner_user_id']) ? (int) $data['owner_user_id'] : null,
 			'next_action_due_date'  => self::sanitize_date_or_null($data['next_action_due_date'] ?? ''),
@@ -327,9 +370,10 @@ final class CampCaseRepository {
 				continue;
 			}
 
-			$party  = self::sanitize_checklist_party($item['party'] ?? self::CHECKLIST_PARTY_SHARED);
-			$status = self::sanitize_checklist_status($item['status'] ?? self::CHECKLIST_STATUS_PENDING);
-			$key    = self::checklist_item_key($label, $party);
+			$party    = self::sanitize_checklist_party($item['party'] ?? self::CHECKLIST_PARTY_SHARED);
+			$status   = self::sanitize_checklist_status($item['status'] ?? self::CHECKLIST_STATUS_PENDING);
+			$priority = self::sanitize_checklist_priority($item['priority'] ?? self::CHECKLIST_PRIORITY_NORMAL);
+			$key      = self::checklist_item_key($label, $party);
 			$item_id = (int) ($item['id'] ?? 0);
 			$done   = $item_id > 0 ? ($preserved_done['id:' . $item_id] ?? null) : ($preserved_done[$key] ?? null);
 
@@ -338,6 +382,7 @@ final class CampCaseRepository {
 				'party'         => $party,
 				'label'         => $label,
 				'status'        => $status,
+				'priority'      => $priority,
 				'assigned_to'   => sanitize_text_field($item['assigned_to'] ?? ''),
 				'due_date'      => self::sanitize_date_or_null($item['due_date'] ?? ''),
 				'comment'       => sanitize_textarea_field($item['comment'] ?? ''),
@@ -365,6 +410,7 @@ final class CampCaseRepository {
 				'id'          => (string) $item->id,
 				'party'       => (string) $item->party,
 				'status'      => (string) $item->status,
+				'priority'    => (string) ($item->priority ?? self::CHECKLIST_PRIORITY_NORMAL),
 				'assigned_to' => (string) ($item->assigned_to ?? ''),
 				'due_date'    => (string) ($item->due_date ?? ''),
 				'comment'     => (string) ($item->comment ?? ''),
@@ -389,6 +435,7 @@ final class CampCaseRepository {
 				'id'          => '',
 				'party'       => $item['party'],
 				'status'      => self::CHECKLIST_STATUS_PENDING,
+				'priority'    => self::CHECKLIST_PRIORITY_NORMAL,
 				'assigned_to' => '',
 				'due_date'    => '',
 				'comment'     => '',
@@ -461,6 +508,7 @@ final class CampCaseRepository {
 				'id'          => '',
 				'party'       => $item['party'],
 				'status'      => self::CHECKLIST_STATUS_PENDING,
+				'priority'    => self::CHECKLIST_PRIORITY_NORMAL,
 				'assigned_to' => '',
 				'due_date'    => '',
 				'comment'     => '',
@@ -473,6 +521,7 @@ final class CampCaseRepository {
 				'id'          => '',
 				'party'       => self::CHECKLIST_PARTY_SHARED,
 				'status'      => self::CHECKLIST_STATUS_PENDING,
+				'priority'    => self::CHECKLIST_PRIORITY_NORMAL,
 				'assigned_to' => '',
 				'due_date'    => '',
 				'comment'     => '',
@@ -490,6 +539,7 @@ final class CampCaseRepository {
 					'id'          => (string) ($item['id'] ?? ''),
 					'party'       => (string) ($item['party'] ?? self::CHECKLIST_PARTY_SHARED),
 					'status'      => (string) ($item['status'] ?? self::CHECKLIST_STATUS_PENDING),
+					'priority'    => (string) ($item['priority'] ?? self::CHECKLIST_PRIORITY_NORMAL),
 					'assigned_to' => (string) ($item['assigned_to'] ?? ''),
 					'due_date'    => (string) ($item['due_date'] ?? ''),
 					'comment'     => (string) ($item['comment'] ?? ''),
@@ -504,6 +554,7 @@ final class CampCaseRepository {
 				'id'          => '',
 				'party'       => self::CHECKLIST_PARTY_SHARED,
 				'status'      => self::CHECKLIST_STATUS_PENDING,
+				'priority'    => self::CHECKLIST_PRIORITY_NORMAL,
 				'assigned_to' => '',
 				'due_date'    => '',
 				'comment'     => '',
@@ -511,6 +562,289 @@ final class CampCaseRepository {
 		}
 
 		return $rows;
+	}
+
+	public static function set_attention_state(int $camp_id, bool $automation_attention): void {
+		global $wpdb;
+
+		$case = self::get_case($camp_id);
+		if ( ! $case ) {
+			return;
+		}
+
+		$manual_attention = ! empty($case->manual_attention) || ! empty($case->needs_attention);
+		$wpdb->update(
+			Schema::table('camp_cases'),
+			[
+				'needs_attention' => $manual_attention || $automation_attention ? 1 : 0,
+			],
+			['camp_id' => $camp_id],
+			['%d'],
+			['%d']
+		);
+	}
+
+	public static function ensure_checklist_task(int $camp_id, array $task): void {
+		$rows = array_map(
+			static fn(object $item): array => [
+				'label'       => (string) $item->label,
+				'id'          => (string) $item->id,
+				'party'       => (string) $item->party,
+				'status'      => (string) $item->status,
+				'priority'    => (string) ($item->priority ?? self::CHECKLIST_PRIORITY_NORMAL),
+				'assigned_to' => (string) ($item->assigned_to ?? ''),
+				'due_date'    => (string) ($item->due_date ?? ''),
+				'comment'     => (string) ($item->comment ?? ''),
+			],
+			self::get_checklist($camp_id)
+		);
+
+		$label = sanitize_text_field((string) ($task['label'] ?? ''));
+		if ( $label === '' ) {
+			return;
+		}
+
+		$party    = self::sanitize_checklist_party((string) ($task['party'] ?? self::CHECKLIST_PARTY_CENTER));
+		$status   = self::sanitize_checklist_status((string) ($task['status'] ?? self::CHECKLIST_STATUS_PENDING));
+		$priority = self::sanitize_checklist_priority((string) ($task['priority'] ?? self::CHECKLIST_PRIORITY_HIGH));
+		$key      = self::checklist_item_key($label, $party);
+		$updated  = false;
+
+		foreach ( $rows as &$row ) {
+			if ( self::checklist_item_key((string) $row['label'], (string) $row['party']) !== $key ) {
+				continue;
+			}
+
+			if ( (string) $row['status'] !== self::CHECKLIST_STATUS_DONE ) {
+				$row['status'] = $status;
+			}
+			$row['priority']    = $priority;
+			$row['assigned_to'] = sanitize_text_field((string) ($task['assigned_to'] ?? $row['assigned_to']));
+			$row['due_date']    = (string) (self::sanitize_date_or_null((string) ($task['due_date'] ?? $row['due_date'])) ?? '');
+			$row['comment']     = sanitize_textarea_field((string) ($task['comment'] ?? $row['comment']));
+			$updated            = true;
+			break;
+		}
+		unset($row);
+
+		if ( ! $updated ) {
+			$rows[] = [
+				'label'       => $label,
+				'id'          => '',
+				'party'       => $party,
+				'status'      => $status,
+				'priority'    => $priority,
+				'assigned_to' => sanitize_text_field((string) ($task['assigned_to'] ?? '')),
+				'due_date'    => (string) (self::sanitize_date_or_null((string) ($task['due_date'] ?? '')) ?? ''),
+				'comment'     => sanitize_textarea_field((string) ($task['comment'] ?? '')),
+			];
+		}
+
+		self::replace_checklist($camp_id, $rows);
+	}
+
+	public static function get_open_checklist_items(int $camp_id, int $limit = 10): array {
+		$rows = array_filter(
+			self::get_checklist($camp_id),
+			static fn(object $item): bool => (string) $item->status !== self::CHECKLIST_STATUS_DONE
+		);
+
+		usort($rows, static function (object $a, object $b): int {
+			$a_overdue = ! empty($a->due_date) && (string) $a->due_date < current_time('Y-m-d');
+			$b_overdue = ! empty($b->due_date) && (string) $b->due_date < current_time('Y-m-d');
+			if ( $a_overdue !== $b_overdue ) {
+				return $a_overdue ? -1 : 1;
+			}
+
+			$a_priority = self::priority_weight((string) ($a->priority ?? self::CHECKLIST_PRIORITY_NORMAL));
+			$b_priority = self::priority_weight((string) ($b->priority ?? self::CHECKLIST_PRIORITY_NORMAL));
+			if ( $a_priority !== $b_priority ) {
+				return $b_priority <=> $a_priority;
+			}
+
+			return strcmp((string) ($a->due_date ?? ''), (string) ($b->due_date ?? ''));
+		});
+
+		return array_slice($rows, 0, max(1, $limit));
+	}
+
+	public static function get_recent_activity(int $camp_id, int $limit = 8): array {
+		global $wpdb;
+
+		$table = Schema::table('operation_logs');
+		if ( ! self::table_exists($table) ) {
+			return [];
+		}
+
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT created_at, action, object_type, details
+				 FROM {$table}
+				 WHERE object_id = %d
+				   AND object_type IN ('camp', 'camp_case', 'camp_checklist', 'camp_workflow_event')
+				 ORDER BY id DESC
+				 LIMIT %d",
+				$camp_id,
+				max(1, $limit)
+			)
+		) ?: [];
+	}
+
+	public static function get_module_summary(int $camp_id): array {
+		global $wpdb;
+
+		$today = current_time('Y-m-d');
+		$docs_t = Schema::table('camp_documents');
+		$pay_sched_t = Schema::table('camp_payment_schedules');
+		$pay_t = Schema::table('camp_payments');
+		$settlements_t = Schema::table('camp_settlements');
+		$issues_t = Schema::table('camp_settlement_issues');
+		$closures_t = Schema::table('camp_closures');
+
+		$documents = ['total' => 0, 'open' => 0, 'overdue' => 0, 'items' => []];
+		if ( self::table_exists($docs_t) ) {
+			$documents['items'] = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT title, status, due_date
+					 FROM {$docs_t}
+					 WHERE camp_id = %d
+					 ORDER BY COALESCE(due_date, '9999-12-31') ASC, id DESC
+					 LIMIT 5",
+					$camp_id
+				)
+			) ?: [];
+			$documents['total'] = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$docs_t} WHERE camp_id = %d", $camp_id));
+			$documents['open'] = (int) $wpdb->get_var(
+				$wpdb->prepare("SELECT COUNT(*) FROM {$docs_t} WHERE camp_id = %d AND status <> 'signed'", $camp_id)
+			);
+			$documents['overdue'] = (int) $wpdb->get_var(
+				$wpdb->prepare("SELECT COUNT(*) FROM {$docs_t} WHERE camp_id = %d AND due_date IS NOT NULL AND due_date < %s AND status <> 'signed'", $camp_id, $today)
+			);
+		}
+
+		$payments = ['scheduled' => 0, 'paid' => 0, 'overdue' => 0, 'upcoming' => 0, 'items' => []];
+		if ( self::table_exists($pay_sched_t) ) {
+			$payments['items'] = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT label, amount, due_date, status
+					 FROM {$pay_sched_t}
+					 WHERE camp_id = %d
+					 ORDER BY COALESCE(due_date, '9999-12-31') ASC, id DESC
+					 LIMIT 5",
+					$camp_id
+				)
+			) ?: [];
+			$payments['scheduled'] = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$pay_sched_t} WHERE camp_id = %d", $camp_id));
+			$payments['overdue'] = (int) $wpdb->get_var(
+				$wpdb->prepare("SELECT COUNT(*) FROM {$pay_sched_t} WHERE camp_id = %d AND due_date IS NOT NULL AND due_date < %s AND status NOT IN ('paid','cancelled')", $camp_id, $today)
+			);
+			$payments['upcoming'] = (int) $wpdb->get_var(
+				$wpdb->prepare("SELECT COUNT(*) FROM {$pay_sched_t} WHERE camp_id = %d AND due_date IS NOT NULL AND due_date BETWEEN %s AND DATE_ADD(%s, INTERVAL 7 DAY) AND status NOT IN ('paid','cancelled')", $camp_id, $today, $today)
+			);
+		}
+		if ( self::table_exists($pay_t) ) {
+			$payments['paid'] = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$pay_t} WHERE camp_id = %d", $camp_id));
+		}
+
+		$settlements = ['total' => 0, 'open' => 0, 'items' => []];
+		if ( self::table_exists($settlements_t) ) {
+			$settlements['items'] = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT status, period_end, outstanding_amount
+					 FROM {$settlements_t}
+					 WHERE camp_id = %d
+					 ORDER BY id DESC
+					 LIMIT 5",
+					$camp_id
+				)
+			) ?: [];
+			$settlements['total'] = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$settlements_t} WHERE camp_id = %d", $camp_id));
+			$settlements['open'] = (int) $wpdb->get_var(
+				$wpdb->prepare("SELECT COUNT(*) FROM {$settlements_t} WHERE camp_id = %d AND status <> 'closed'", $camp_id)
+			);
+		}
+
+		$issues = ['open' => 0, 'items' => []];
+		if ( self::table_exists($issues_t) ) {
+			$issues['items'] = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT title, status, created_at
+					 FROM {$issues_t}
+					 WHERE camp_id = %d
+					 ORDER BY id DESC
+					 LIMIT 5",
+					$camp_id
+				)
+			) ?: [];
+			$issues['open'] = (int) $wpdb->get_var(
+				$wpdb->prepare("SELECT COUNT(*) FROM {$issues_t} WHERE camp_id = %d AND status <> 'resolved'", $camp_id)
+			);
+		}
+
+		$closures = ['total' => 0, 'closed' => 0, 'items' => []];
+		if ( self::table_exists($closures_t) ) {
+			$closures['items'] = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT status, closed_at, follow_up_actions
+					 FROM {$closures_t}
+					 WHERE camp_id = %d
+					 ORDER BY id DESC
+					 LIMIT 3",
+					$camp_id
+				)
+			) ?: [];
+			$closures['total'] = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$closures_t} WHERE camp_id = %d", $camp_id));
+			$closures['closed'] = (int) $wpdb->get_var(
+				$wpdb->prepare("SELECT COUNT(*) FROM {$closures_t} WHERE camp_id = %d AND status = 'closed'", $camp_id)
+			);
+		}
+
+		return [
+			'documents'   => $documents,
+			'payments'    => $payments,
+			'settlements' => $settlements,
+			'issues'      => $issues,
+			'closures'    => $closures,
+		];
+	}
+
+	public static function is_organizer_ready(?object $organizer): bool {
+		return self::organizer_ready($organizer);
+	}
+
+	public static function is_prearrival_ready(?object $prearrival): bool {
+		return self::prearrival_ready($prearrival);
+	}
+
+	public static function stage_workspace(string $stage): array {
+		$phase = self::get_phase_for_stage($stage);
+
+		return match ( $phase ) {
+			'lead' => [
+				'label'    => __('Lead / zapytanie', 'basemgmt'),
+				'sections' => ['process', 'organizer', 'checklist'],
+			],
+			'offer' => [
+				'label'    => __('Oferta i ustalenia', 'basemgmt'),
+				'sections' => ['process', 'organizer', 'checklist'],
+			],
+			'contract' => [
+				'label'    => __('Umowa i płatności', 'basemgmt'),
+				'sections' => ['process', 'organizer', 'checklist', 'settlement'],
+			],
+			'operations' => [
+				'label'    => __('Przygotowanie operacyjne', 'basemgmt'),
+				'sections' => ['process', 'prearrival', 'checklist', 'settlement'],
+			],
+			'on_site' => [
+				'label'    => __('Przyjazd i pobyt', 'basemgmt'),
+				'sections' => ['process', 'checklist', 'settlement'],
+			],
+			default => [
+				'label'    => __('Rozliczenie i zamknięcie', 'basemgmt'),
+				'sections' => ['process', 'settlement', 'checklist'],
+			],
+		};
 	}
 
 	/**
@@ -563,7 +897,7 @@ final class CampCaseRepository {
 			return self::$tables_ready_cache;
 		}
 
-		foreach (['camp_cases', 'camp_organizers', 'camp_checklist_items', 'camp_prearrival'] as $key) {
+		foreach (['camp_cases', 'camp_organizers', 'camp_checklist_items', 'camp_workflow_events', 'camp_prearrival'] as $key) {
 			$table = Schema::table($key);
 			if ( ! self::table_exists($table) ) {
 				self::$tables_ready_cache = false;
@@ -831,6 +1165,11 @@ final class CampCaseRepository {
 		return array_key_exists($value, self::checklist_statuses()) ? $value : self::CHECKLIST_STATUS_PENDING;
 	}
 
+	private static function sanitize_checklist_priority(string $value): string {
+		$value = sanitize_key($value);
+		return array_key_exists($value, self::checklist_priorities()) ? $value : self::CHECKLIST_PRIORITY_NORMAL;
+	}
+
 	private static function sanitize_date_or_null(string $value): ?string {
 		$value = sanitize_text_field($value);
 		return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : null;
@@ -843,6 +1182,15 @@ final class CampCaseRepository {
 
 	private static function checklist_item_key(string $label, string $party): string {
 		return md5($party . '|' . $label);
+	}
+
+	private static function priority_weight(string $priority): int {
+		return match ( self::sanitize_checklist_priority($priority) ) {
+			self::CHECKLIST_PRIORITY_CRITICAL => 4,
+			self::CHECKLIST_PRIORITY_HIGH => 3,
+			self::CHECKLIST_PRIORITY_NORMAL => 2,
+			default => 1,
+		};
 	}
 
 	private static function table_exists(string $table): bool {
