@@ -131,6 +131,7 @@ final class Bootstrap {
 		$this->loader->add_action('bm_sync_imgw_alerts',         $sched, 'sync_imgw_alerts');
 		$this->loader->add_action('bm_expire_reservations',      $sched, 'expire_reservations');
 		$this->loader->add_action('bm_periodic_staff_report',    $sched, 'send_periodic_staff_report');
+		$this->loader->add_action('bm_camp_workflow_check',      $sched, 'check_camp_workflows');
 	}
 
 	private function register_notifications(): void {

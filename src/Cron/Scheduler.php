@@ -8,6 +8,7 @@ use BaseMgmt\Auth\SessionManager;
 use BaseMgmt\Core\EmailService;
 use BaseMgmt\Modules\Announcements\AnnouncementRepository;
 use BaseMgmt\Modules\Camps\CampRepository;
+use BaseMgmt\Modules\Camps\CampWorkflowAutomationRepository;
 use BaseMgmt\Modules\Camps\DailyCountRepository;
 use BaseMgmt\Modules\Reservations\ReservationRepository;
 use BaseMgmt\Modules\Weather\ImgwAlertsSync;
@@ -39,6 +40,7 @@ final class Scheduler {
 		'bm_sync_imgw_alerts',
 		'bm_expire_reservations',
 		'bm_periodic_staff_report',
+		'bm_camp_workflow_check',
 	];
 
 	/** Called during plugin activation. */
@@ -72,6 +74,11 @@ final class Scheduler {
 
 		// Periodic staff count report.
 		self::reschedule_staff_report();
+
+		// Camp workflow automation – runs daily at 07:30 UTC to evaluate all active camps.
+		if ( ! wp_next_scheduled('bm_camp_workflow_check') ) {
+			wp_schedule_event(strtotime('today 07:30:00 UTC'), 'daily', 'bm_camp_workflow_check');
+		}
 	}
 
 	/** Called during plugin deactivation. */
@@ -314,5 +321,10 @@ final class Scheduler {
 		}
 
 		wp_schedule_event(time(), $interval, $hook);
+	}
+
+	/** Evaluate workflow automation events for all active camps. */
+	public function check_camp_workflows(): void {
+		CampWorkflowAutomationRepository::evaluate_all_active_camps();
 	}
 }

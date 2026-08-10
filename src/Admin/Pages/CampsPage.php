@@ -109,7 +109,12 @@ final class CampsPage {
 		];
 
 		if ( $camp ) {
-			CampWorkflowAutomationRepository::evaluate_camp((int) $camp->id);
+			// Throttle: evaluate at most once every 15 minutes per camp to avoid redundant DB writes on every page view.
+			$throttle_key = 'bm_wf_eval_' . (int) $camp->id;
+			if ( false === get_transient($throttle_key) ) {
+				CampWorkflowAutomationRepository::evaluate_camp((int) $camp->id);
+				set_transient($throttle_key, 1, 15 * MINUTE_IN_SECONDS);
+			}
 			$case                 = CampCaseRepository::get_case((int) $camp->id);
 			$organizer            = CampCaseRepository::get_organizer((int) $camp->id);
 			$prearrival           = CampCaseRepository::get_prearrival((int) $camp->id);
