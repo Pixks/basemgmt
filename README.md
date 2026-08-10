@@ -2,7 +2,7 @@
 
 **Modularny system zarządzania ośrodkiem obozowym dla WordPress**
 
-[![Version](https://img.shields.io/badge/wersja-2.0.0--PRE1-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/wersja-2.0.0--PRE2-orange)](CHANGELOG.md)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759b)](https://wordpress.org)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb3)](https://php.net)
 [![License](https://img.shields.io/badge/licencja-GPL--2.0--or--later-green)](LICENSE)
@@ -19,7 +19,7 @@
 
 | Moduł | Opis |
 |-------|------|
-| 🏕️ **Obozy** | Ewidencja pobytów + teczka sprawy: proces, organizator, checklista i dane przed przyjazdem |
+| 🏕️ **Obozy** | Ewidencja pobytów + pełny workflow: 6 faz biznesowych, automatyczne taski, checklista, automatyzacje, centrum pracy |
 | 👥 **Kadra** | Przypisanie do obozów, bezpieczne kody dostępu (bcrypt), rate limiting, blokada kont |
 | 📢 **Ogłoszenia** | Globalne i skierowane do wybranych obozów, workflow zatwierdzania |
 | 📊 **Meldunki dzienne** | Liczniki uczestników, kadry i pracowników; raport zbiorczy |
@@ -103,4 +103,4 @@ GPL-2.0-or-later
 
 ---
 
-*CampLink v2.0.0-PRE1 | PHP 8.1+ | WordPress 6.0+*
+*CampLink v2.0.0-PRE2 | PHP 8.1+ | WordPress 6.0+*
