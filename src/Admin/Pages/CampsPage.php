@@ -20,10 +20,7 @@ final class CampsPage {
 
 	public function render(): void {
 		Capabilities::require_admin();
-		if ( ! CampCaseRepository::tables_ready() ) {
-			Schema::create_tables();
-			CampCaseRepository::invalidate_tables_ready_cache();
-		}
+		$this->ensure_tables_ready();
 
 		if ( isset($_GET['bm_create_tables']) ) {
 			if ( ! current_user_can('manage_options') ) {
@@ -129,6 +126,8 @@ final class CampsPage {
 			}
 		}
 
+		$workflow = CampCaseRepository::build_workflow_snapshot($camp, $case, $organizer, $prearrival, $readiness, $future_counts);
+
 		$process_stages    = CampCaseRepository::process_stages();
 		$risk_levels       = CampCaseRepository::risk_levels();
 		$checklist_parties = CampCaseRepository::checklist_parties();
@@ -138,21 +137,139 @@ final class CampsPage {
 		include BASEMGMT_DIR . 'templates/admin/camps/edit.php';
 	}
 
+	public function handle_save_overview(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_save_camp_overview');
+		$this->ensure_tables_ready();
+
+		$id       = (int) ($_POST['camp_id'] ?? 0);
+		$campData = $this->collect_camp_data();
+
+		if ( $campData['name'] === '' ) {
+			AdminMenu::set_notice(__('Nazwa obozu jest wymagana.', 'basemgmt'), 'error');
+			$this->redirect_back($id ? "basemgmt-camps&action=edit&id={$id}#bm-section-overview" : 'basemgmt-camps&action=new');
+			return;
+		}
+
+		$camp_id = $this->save_camp_record($id, $campData);
+		if ( ! $camp_id ) {
+			AdminMenu::set_notice(__('Błąd zapisu.', 'basemgmt'), 'error');
+			$this->redirect_back('basemgmt-camps');
+			return;
+		}
+
+		AdminMenu::set_notice(__('Podstawowe dane workflow obozu zostały zapisane.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-overview");
+	}
+
+	public function handle_save_process(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_save_camp_process');
+		$this->ensure_tables_ready();
+
+		$camp_id   = $this->require_camp_id();
+		$caseData  = $this->collect_case_data();
+		$stage     = (string) ($caseData['process_stage'] ?? CampCaseRepository::STAGE_INQUIRY);
+
+		CampCaseRepository::save_case($camp_id, $caseData);
+		CampCaseRepository::sync_checklist_for_stage($camp_id, $stage);
+
+		OperationLogger::log(
+			OperationLogger::ACTION_CAMP_CASE_UPDATED,
+			'camp_case',
+			$camp_id,
+			[
+				'section'         => 'process',
+				'process_stage'   => $stage ?: CampCaseRepository::STAGE_INQUIRY,
+				'needs_attention' => ! empty($caseData['needs_attention']),
+				'risk_level'      => (string) ($caseData['risk_level'] ?: CampCaseRepository::RISK_LOW),
+			]
+		);
+
+		AdminMenu::set_notice(__('Etap workflow i automatyczna checklista zostały zapisane.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-process");
+	}
+
+	public function handle_save_organizer(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_save_camp_organizer');
+		$this->ensure_tables_ready();
+
+		$camp_id        = $this->require_camp_id();
+		$organizer_data = $this->collect_organizer_data();
+
+		CampCaseRepository::save_organizer($camp_id, $organizer_data);
+		OperationLogger::log(
+			OperationLogger::ACTION_CAMP_UPDATED,
+			'camp',
+			$camp_id,
+			[
+				'section'           => 'organizer',
+				'organization_name' => $organizer_data['organization_name'],
+			]
+		);
+
+		AdminMenu::set_notice(__('Dane organizatora zostały zapisane.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-organizer");
+	}
+
+	public function handle_save_checklist(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_save_camp_checklist');
+		$this->ensure_tables_ready();
+
+		$camp_id = $this->require_camp_id();
+		CampCaseRepository::replace_checklist($camp_id, $this->parse_checklist($_POST['checklist'] ?? []));
+
+		if ( ! empty($_POST['sync_stage_template']) ) {
+			$case  = CampCaseRepository::get_case($camp_id);
+			$stage = (string) ($case->process_stage ?? CampCaseRepository::STAGE_INQUIRY);
+			CampCaseRepository::sync_checklist_for_stage($camp_id, $stage);
+		}
+
+		OperationLogger::log(
+			OperationLogger::ACTION_CAMP_CHECKLIST_UPDATED,
+			'camp_checklist',
+			$camp_id,
+			[
+				'section' => 'checklist',
+			]
+		);
+
+		AdminMenu::set_notice(__('Checklista workflow została zapisana.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-checklist");
+	}
+
+	public function handle_save_prearrival(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_save_camp_prearrival');
+		$this->ensure_tables_ready();
+
+		$camp_id         = $this->require_camp_id();
+		$prearrival_data = $this->collect_prearrival_data();
+
+		CampCaseRepository::save_prearrival($camp_id, $prearrival_data);
+		OperationLogger::log(
+			OperationLogger::ACTION_CAMP_UPDATED,
+			'camp',
+			$camp_id,
+			[
+				'section'      => 'prearrival',
+				'arrival_date' => $prearrival_data['arrival_date'],
+			]
+		);
+
+		AdminMenu::set_notice(__('Dane operacyjne zostały zapisane.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-prearrival");
+	}
+
 	public function handle_save(): void {
 		Capabilities::require_admin();
 		check_admin_referer('bm_save_camp');
-		if ( ! CampCaseRepository::tables_ready() ) {
-			Schema::create_tables();
-			CampCaseRepository::invalidate_tables_ready_cache();
-		}
+		$this->ensure_tables_ready();
 
 		$id       = (int) ($_POST['camp_id'] ?? 0);
-		$campData = [
-			'name'       => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
-			'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')),
-			'end_date'   => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')),
-			'status'     => sanitize_key(wp_unslash($_POST['status'] ?? 'active')),
-		];
+		$campData = $this->collect_camp_data();
 
 		if ( $campData['name'] === '' ) {
 			AdminMenu::set_notice(__('Nazwa obozu jest wymagana.', 'basemgmt'), 'error');
@@ -160,65 +277,22 @@ final class CampsPage {
 			return;
 		}
 
-		if ( $id ) {
-			CampRepository::update($id, $campData);
-			$camp_id = $id;
-			$action  = OperationLogger::ACTION_CAMP_UPDATED;
-		} else {
-			$camp_id = (int) CampRepository::insert($campData);
-			$action  = OperationLogger::ACTION_CAMP_CREATED;
-		}
-
+		$camp_id = $this->save_camp_record($id, $campData);
 		if ( ! $camp_id ) {
 			AdminMenu::set_notice(__('Błąd zapisu.', 'basemgmt'), 'error');
 			$this->redirect_back('basemgmt-camps');
 			return;
 		}
 
-		$caseData = [
-			'process_stage'        => sanitize_key(wp_unslash($_POST['process_stage'] ?? '')),
-			'needs_attention'      => ! empty($_POST['needs_attention']) ? '1' : '',
-			'risk_level'           => sanitize_key(wp_unslash($_POST['risk_level'] ?? '')),
-			'owner_user_id'        => (string) (int) wp_unslash($_POST['owner_user_id'] ?? '0'),
-			'next_action_due_date' => sanitize_text_field(wp_unslash($_POST['next_action_due_date'] ?? '')),
-			'notes'                => sanitize_textarea_field(wp_unslash($_POST['case_notes'] ?? '')),
-			'readiness_notes'      => sanitize_textarea_field(wp_unslash($_POST['readiness_notes'] ?? '')),
-			'stage_change_note'    => sanitize_textarea_field(wp_unslash($_POST['stage_change_note'] ?? '')),
-		];
-		$organizerData = [
-			'organization_name'        => sanitize_text_field(wp_unslash($_POST['organization_name'] ?? '')),
-			'contact_person'           => sanitize_text_field(wp_unslash($_POST['contact_person'] ?? '')),
-			'contact_email'            => sanitize_email(wp_unslash($_POST['contact_email'] ?? '')),
-			'contact_phone'            => sanitize_text_field(wp_unslash($_POST['contact_phone'] ?? '')),
-			'billing_name'             => sanitize_text_field(wp_unslash($_POST['billing_name'] ?? '')),
-			'billing_tax_id'           => sanitize_text_field(wp_unslash($_POST['billing_tax_id'] ?? '')),
-			'billing_address'          => sanitize_textarea_field(wp_unslash($_POST['billing_address'] ?? '')),
-			'settlement_contact_name'  => sanitize_text_field(wp_unslash($_POST['settlement_contact_name'] ?? '')),
-			'settlement_contact_email' => sanitize_email(wp_unslash($_POST['settlement_contact_email'] ?? '')),
-			'settlement_contact_phone' => sanitize_text_field(wp_unslash($_POST['settlement_contact_phone'] ?? '')),
-			'notes'                    => sanitize_textarea_field(wp_unslash($_POST['organizer_notes'] ?? '')),
-		];
-		$prearrivalData = [
-			'arrival_date'          => sanitize_text_field(wp_unslash($_POST['arrival_date'] ?? '')),
-			'arrival_time'          => sanitize_text_field(wp_unslash($_POST['arrival_time'] ?? '')),
-			'departure_date'        => sanitize_text_field(wp_unslash($_POST['departure_date'] ?? '')),
-			'departure_time'        => sanitize_text_field(wp_unslash($_POST['departure_time'] ?? '')),
-			'declared_participants' => (string) max(0, (int) wp_unslash($_POST['declared_participants'] ?? '0')),
-			'declared_staff'        => (string) max(0, (int) wp_unslash($_POST['declared_staff'] ?? '0')),
-			'declared_support'      => (string) max(0, (int) wp_unslash($_POST['declared_support'] ?? '0')),
-			'dietary_requirements'  => sanitize_textarea_field(wp_unslash($_POST['dietary_requirements'] ?? '')),
-			'allergens'             => sanitize_textarea_field(wp_unslash($_POST['allergens'] ?? '')),
-			'infrastructure_plan'   => sanitize_textarea_field(wp_unslash($_POST['infrastructure_plan'] ?? '')),
-			'additional_needs'      => sanitize_textarea_field(wp_unslash($_POST['additional_needs'] ?? '')),
-			'invoice_details'       => sanitize_textarea_field(wp_unslash($_POST['invoice_details'] ?? '')),
-			'authorized_contacts'   => sanitize_textarea_field(wp_unslash($_POST['authorized_contacts'] ?? '')),
-		];
+		$caseData       = $this->collect_case_data();
+		$organizerData  = $this->collect_organizer_data();
+		$prearrivalData = $this->collect_prearrival_data();
 
 		CampCaseRepository::save_case($camp_id, $caseData);
 		CampCaseRepository::save_organizer($camp_id, $organizerData);
 		CampCaseRepository::save_prearrival($camp_id, $prearrivalData);
-
 		CampCaseRepository::replace_checklist($camp_id, $this->parse_checklist($_POST['checklist'] ?? []));
+		CampCaseRepository::sync_checklist_for_stage($camp_id, (string) ($caseData['process_stage'] ?? CampCaseRepository::STAGE_INQUIRY));
 
 		OperationLogger::log(
 			OperationLogger::ACTION_CAMP_CASE_UPDATED,
@@ -228,17 +302,6 @@ final class CampsPage {
 				'process_stage'   => $caseData['process_stage'] ?: CampCaseRepository::STAGE_INQUIRY,
 				'needs_attention' => $caseData['needs_attention'] === '1',
 				'risk_level'      => $caseData['risk_level'] ?: CampCaseRepository::RISK_LOW,
-			]
-		);
-
-		OperationLogger::log(
-			$action,
-			'camp',
-			$camp_id,
-			[
-				'name'          => $campData['name'],
-				'status'        => $campData['status'],
-				'process_stage' => $caseData['process_stage'] ?: CampCaseRepository::STAGE_INQUIRY,
 			]
 		);
 
@@ -297,5 +360,122 @@ final class CampsPage {
 	private function redirect_back(string $page): void {
 		wp_safe_redirect(admin_url("admin.php?page={$page}"));
 		exit;
+	}
+
+	private function ensure_tables_ready(): void {
+		if ( ! CampCaseRepository::tables_ready() ) {
+			Schema::create_tables();
+			CampCaseRepository::invalidate_tables_ready_cache();
+		}
+	}
+
+	private function require_camp_id(): int {
+		$camp_id = (int) ($_POST['camp_id'] ?? 0);
+		if ( $camp_id > 0 ) {
+			return $camp_id;
+		}
+
+		AdminMenu::set_notice(__('Najpierw zapisz podstawowe dane obozu.', 'basemgmt'), 'error');
+		$this->redirect_back('basemgmt-camps&action=new');
+		return 0;
+	}
+
+	private function save_camp_record(int $id, array $camp_data): int {
+		if ( $id ) {
+			CampRepository::update($id, $camp_data);
+			OperationLogger::log(
+				OperationLogger::ACTION_CAMP_UPDATED,
+				'camp',
+				$id,
+				[
+					'name'   => $camp_data['name'],
+					'status' => $camp_data['status'],
+				]
+			);
+			return $id;
+		}
+
+		$camp_id = (int) CampRepository::insert($camp_data);
+		if ( $camp_id > 0 ) {
+			OperationLogger::log(
+				OperationLogger::ACTION_CAMP_CREATED,
+				'camp',
+				$camp_id,
+				[
+					'name'   => $camp_data['name'],
+					'status' => $camp_data['status'],
+				]
+			);
+		}
+
+		return $camp_id;
+	}
+
+	/**
+	 * @return array{name:string,start_date:string,end_date:string,status:string}
+	 */
+	private function collect_camp_data(): array {
+		return [
+			'name'       => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
+			'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')),
+			'end_date'   => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')),
+			'status'     => sanitize_key(wp_unslash($_POST['status'] ?? 'active')),
+		];
+	}
+
+	/**
+	 * @return array<string,string>
+	 */
+	private function collect_case_data(): array {
+		return [
+			'process_stage'        => sanitize_key(wp_unslash($_POST['process_stage'] ?? '')),
+			'needs_attention'      => ! empty($_POST['needs_attention']) ? '1' : '',
+			'risk_level'           => sanitize_key(wp_unslash($_POST['risk_level'] ?? '')),
+			'owner_user_id'        => (string) (int) wp_unslash($_POST['owner_user_id'] ?? '0'),
+			'next_action_due_date' => sanitize_text_field(wp_unslash($_POST['next_action_due_date'] ?? '')),
+			'notes'                => sanitize_textarea_field(wp_unslash($_POST['case_notes'] ?? '')),
+			'readiness_notes'      => sanitize_textarea_field(wp_unslash($_POST['readiness_notes'] ?? '')),
+			'stage_change_note'    => sanitize_textarea_field(wp_unslash($_POST['stage_change_note'] ?? '')),
+		];
+	}
+
+	/**
+	 * @return array<string,string>
+	 */
+	private function collect_organizer_data(): array {
+		return [
+			'organization_name'        => sanitize_text_field(wp_unslash($_POST['organization_name'] ?? '')),
+			'contact_person'           => sanitize_text_field(wp_unslash($_POST['contact_person'] ?? '')),
+			'contact_email'            => sanitize_email(wp_unslash($_POST['contact_email'] ?? '')),
+			'contact_phone'            => sanitize_text_field(wp_unslash($_POST['contact_phone'] ?? '')),
+			'billing_name'             => sanitize_text_field(wp_unslash($_POST['billing_name'] ?? '')),
+			'billing_tax_id'           => sanitize_text_field(wp_unslash($_POST['billing_tax_id'] ?? '')),
+			'billing_address'          => sanitize_textarea_field(wp_unslash($_POST['billing_address'] ?? '')),
+			'settlement_contact_name'  => sanitize_text_field(wp_unslash($_POST['settlement_contact_name'] ?? '')),
+			'settlement_contact_email' => sanitize_email(wp_unslash($_POST['settlement_contact_email'] ?? '')),
+			'settlement_contact_phone' => sanitize_text_field(wp_unslash($_POST['settlement_contact_phone'] ?? '')),
+			'notes'                    => sanitize_textarea_field(wp_unslash($_POST['organizer_notes'] ?? '')),
+		];
+	}
+
+	/**
+	 * @return array<string,string>
+	 */
+	private function collect_prearrival_data(): array {
+		return [
+			'arrival_date'          => sanitize_text_field(wp_unslash($_POST['arrival_date'] ?? '')),
+			'arrival_time'          => sanitize_text_field(wp_unslash($_POST['arrival_time'] ?? '')),
+			'departure_date'        => sanitize_text_field(wp_unslash($_POST['departure_date'] ?? '')),
+			'departure_time'        => sanitize_text_field(wp_unslash($_POST['departure_time'] ?? '')),
+			'declared_participants' => (string) max(0, (int) wp_unslash($_POST['declared_participants'] ?? '0')),
+			'declared_staff'        => (string) max(0, (int) wp_unslash($_POST['declared_staff'] ?? '0')),
+			'declared_support'      => (string) max(0, (int) wp_unslash($_POST['declared_support'] ?? '0')),
+			'dietary_requirements'  => sanitize_textarea_field(wp_unslash($_POST['dietary_requirements'] ?? '')),
+			'allergens'             => sanitize_textarea_field(wp_unslash($_POST['allergens'] ?? '')),
+			'infrastructure_plan'   => sanitize_textarea_field(wp_unslash($_POST['infrastructure_plan'] ?? '')),
+			'additional_needs'      => sanitize_textarea_field(wp_unslash($_POST['additional_needs'] ?? '')),
+			'invoice_details'       => sanitize_textarea_field(wp_unslash($_POST['invoice_details'] ?? '')),
+			'authorized_contacts'   => sanitize_textarea_field(wp_unslash($_POST['authorized_contacts'] ?? '')),
+		];
 	}
 }

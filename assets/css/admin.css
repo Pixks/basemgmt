@@ -147,6 +147,34 @@
 	margin-bottom: 20px;
 }
 
+.bm-workflow-phase-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 12px;
+	margin: 16px 0 24px;
+}
+
+.bm-workflow-phase {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 14px 16px;
+}
+
+.bm-workflow-phase--done {
+	border-color: #4f8a10;
+	background: #f3fff3;
+}
+
+.bm-workflow-phase--current {
+	border-color: #2271b1;
+	background: #f0f6fc;
+}
+
+.bm-workflow-phase--upcoming {
+	background: #f6f7f7;
+}
+
 .bm-inline-check {
 	display: flex;
 	align-items: center;
