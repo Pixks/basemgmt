@@ -8,6 +8,7 @@ use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Cron\Scheduler;
 use BaseMgmt\Frontend\ShortcodeHandler;
+use BaseMgmt\License\LicenseManager;
 use BaseMgmt\Modules\Reservations\ReservationNotifier;
 use BaseMgmt\REST\AuthController;
 use BaseMgmt\REST\CommunicationController;
@@ -46,6 +47,7 @@ final class Bootstrap {
 	public function init(): void {
 		$this->load_textdomain();
 		$this->register_capabilities();
+		$this->register_license();
 
 		if ( is_admin() ) {
 			$this->register_admin();
@@ -74,6 +76,10 @@ final class Bootstrap {
 	private function register_capabilities(): void {
 		$caps = new Capabilities();
 		$this->loader->add_action('init', $caps, 'register');
+	}
+
+	private function register_license(): void {
+		LicenseManager::instance()->init();
 	}
 
 	private function register_admin(): void {
