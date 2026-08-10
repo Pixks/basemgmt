@@ -7,6 +7,7 @@ namespace BaseMgmt\Core;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Cron\Scheduler;
 use BaseMgmt\Database\Schema;
+use BaseMgmt\License\LicenseClient;
 
 defined('ABSPATH') || exit;
 
@@ -23,6 +24,12 @@ final class Activator {
 		BreakdanceIntegration::create_directories();
 
 		update_option('basemgmt_db_version', BASEMGMT_VERSION);
+
+		// If a license key is already stored (e.g. re-activation), re-activate it.
+		$lc = new LicenseClient();
+		if ( '' !== $lc->get_license_key() && '' !== $lc->get_api_base() ) {
+			$lc->activate();
+		}
 
 		// Flush rewrite rules so REST routes are available immediately.
 		flush_rewrite_rules();

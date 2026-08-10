@@ -14,6 +14,7 @@ use BaseMgmt\Admin\Pages\LogsPage;
 use BaseMgmt\Admin\Pages\MealOptionsPage;
 use BaseMgmt\Admin\Pages\MealTemplatesPage;
 use BaseMgmt\Admin\Pages\MenuPage;
+use BaseMgmt\Admin\Pages\LicensePage;
 use BaseMgmt\Admin\Pages\PdfPage;
 use BaseMgmt\Admin\Pages\PlanTemplatesPage;
 use BaseMgmt\Admin\Pages\ReportsPage;
@@ -52,6 +53,7 @@ final class AdminMenu {
 	private MealOptionsPage   $meal_options;
 	private MealTemplatesPage $meal_templates;
 	private PdfPage           $pdf;
+	private LicensePage       $license;
 
 	public function __construct() {
 		$this->dashboard       = new DashboardPage();
@@ -72,6 +74,7 @@ final class AdminMenu {
 		$this->meal_options    = new MealOptionsPage();
 		$this->meal_templates  = new MealTemplatesPage();
 		$this->pdf             = new PdfPage();
+		$this->license         = new LicensePage();
 	}
 
 	// ── admin_menu hook ───────────────────────────────────────────────────────
@@ -244,6 +247,15 @@ final class AdminMenu {
 			'manage_options',
 			'basemgmt-settings',
 			[$this->settings, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Licencja', 'basemgmt'),
+			__('Licencja', 'basemgmt'),
+			'manage_options',
+			'basemgmt-license',
+			[$this->license, 'render']
 		);
 
 		// Logs page: registered so it remains accessible via URL, but hidden from the sidebar.
@@ -423,6 +435,9 @@ final class AdminMenu {
 			'bm_delete_meal_template_item'=> [$this->meal_templates, 'handle_delete_item'],
 			'bm_apply_meal_template'      => [$this->meal_templates, 'handle_apply'],
 			'bm_render_pdf'               => [$this->pdf,            'handle_render'],
+			// License
+			'bm_activate_license'         => [$this->license,        'handle_activate'],
+			'bm_deactivate_license'       => [$this->license,        'handle_deactivate'],
 		];
 	}
 
