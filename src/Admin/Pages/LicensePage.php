@@ -41,12 +41,14 @@ final class LicensePage {
 		$api_url     = sanitize_text_field(wp_unslash($_POST['license_api_url'] ?? ''));
 		$license_key = sanitize_text_field(wp_unslash($_POST['license_key'] ?? ''));
 
-		if ( $api_url ) {
-			$client->save_api_base($api_url);
+		if ( '' === $api_url || '' === $license_key ) {
+			AdminMenu::set_notice(__('Podaj URL serwera licencji oraz klucz licencji.', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-license'));
+			exit;
 		}
-		if ( $license_key ) {
-			$client->save_license_key($license_key);
-		}
+
+		$client->save_api_base($api_url);
+		$client->save_license_key($license_key);
 
 		$response = $client->activate();
 

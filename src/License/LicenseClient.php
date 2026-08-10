@@ -54,7 +54,7 @@ final class LicenseClient {
 			'license_key'  => $this->get_license_key(),
 			'domain'       => $this->get_canonical_domain(),
 			'site_url'     => home_url(),
-			'fingerprint'  => md5(home_url() . ABSPATH),
+			'fingerprint'  => hash('sha256', home_url() . ABSPATH),
 		]);
 	}
 
@@ -146,7 +146,7 @@ final class LicenseClient {
 					'plugin'       => $plugin_file,
 					'new_version'  => $data['latest_version'],
 					'package'      => $data['download_url'],
-					'tested'       => $data['min_wordpress_version'] ?? '',
+					'tested'       => $data['tested_up_to'] ?? $data['min_wordpress_version'] ?? '',
 					'requires_php' => $data['min_php_version'] ?? '',
 				];
 			}
