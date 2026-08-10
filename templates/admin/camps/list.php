@@ -54,9 +54,9 @@
 				<tr>
 					<th><?php esc_html_e('Obóz', 'basemgmt'); ?></th>
 					<th><?php esc_html_e('Organizator', 'basemgmt'); ?></th>
-					<th><?php esc_html_e('Termin', 'basemgmt'); ?></th>
-					<th><?php esc_html_e('Status pobytu', 'basemgmt'); ?></th>
 					<th><?php esc_html_e('Etap procesu', 'basemgmt'); ?></th>
+					<th><?php esc_html_e('Stan pracy', 'basemgmt'); ?></th>
+					<th><?php esc_html_e('Następne działanie', 'basemgmt'); ?></th>
 					<th><?php esc_html_e('Gotowość', 'basemgmt'); ?></th>
 					<th><?php esc_html_e('Ryzyko', 'basemgmt'); ?></th>
 					<th><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
@@ -72,6 +72,16 @@
 					);
 					$stage_label       = $stage_options[$camp->process_stage] ?? $camp->process_stage;
 					$risk_label        = $risk_levels[$camp->risk_level] ?? $camp->risk_level;
+					$health_class      = ! empty($camp->needs_attention) || (int) ($camp->readiness_overdue ?? 0) > 0
+						? 'critical'
+						: ((string) ($camp->next_action_due_date ?? '') !== '' ? 'medium' : 'low');
+					$health_label      = ! empty($camp->needs_attention)
+						? __('Wymaga reakcji', 'basemgmt')
+						: ((int) ($camp->readiness_overdue ?? 0) > 0
+							? __('Taski po terminie', 'basemgmt')
+							: ((string) ($camp->next_action_due_date ?? '') !== ''
+								? __('W toku', 'basemgmt')
+								: __('Stabilnie', 'basemgmt')));
 					?>
 					<tr>
 						<td>
@@ -86,12 +96,15 @@
 								<br><span class="description"><?php echo esc_html($camp->contact_person); ?></span>
 							<?php endif; ?>
 						</td>
-						<td>
-							<?php echo esc_html($camp->start_date); ?><br>
-							<span class="description"><?php echo esc_html($camp->end_date); ?></span>
-						</td>
-						<td><span class="bm-badge bm-badge--<?php echo esc_attr($camp->status); ?>"><?php echo esc_html($camp->status); ?></span></td>
 						<td><span class="bm-badge bm-badge--<?php echo esc_attr($camp->process_stage); ?>"><?php echo esc_html($stage_label); ?></span></td>
+						<td>
+							<span class="bm-badge bm-badge--<?php echo esc_attr($health_class); ?>"><?php echo esc_html($health_label); ?></span>
+							<br><span class="description"><?php echo esc_html($camp->status); ?></span>
+						</td>
+						<td>
+							<?php echo esc_html($camp->next_action_due_date ?: '—'); ?>
+							<br><span class="description"><?php echo esc_html($camp->start_date); ?> → <?php echo esc_html($camp->end_date); ?></span>
+						</td>
 						<td>
 							<strong><?php echo esc_html($readiness_percent); ?>%</strong>
 							<?php if ( (int) ($camp->readiness_total ?? 0) > 0 ) : ?>
@@ -119,7 +132,7 @@
 						<td><span class="bm-badge bm-badge--<?php echo esc_attr($camp->risk_level); ?>"><?php echo esc_html($risk_label); ?></span></td>
 						<td class="bm-actions">
 							<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-camps&action=edit&id={$camp->id}")); ?>">
-								<?php esc_html_e('Teczka', 'basemgmt'); ?>
+								<?php esc_html_e('Workflow', 'basemgmt'); ?>
 							</a>
 							&nbsp;|&nbsp;
 							<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-staff&filter_camp={$camp->id}")); ?>">

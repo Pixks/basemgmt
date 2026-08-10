@@ -59,6 +59,53 @@ final class CampCaseRepository {
 		];
 	}
 
+	public static function workflow_phases(): array {
+		return [
+			'lead' => [
+				'label'  => __('Lead / zapytanie', 'basemgmt'),
+				'stages' => [
+					self::STAGE_INQUIRY,
+				],
+			],
+			'offer' => [
+				'label'  => __('Oferta i ustalenia', 'basemgmt'),
+				'stages' => [
+					self::STAGE_OFFER,
+					self::STAGE_NEGOTIATION,
+					self::STAGE_TENTATIVE,
+				],
+			],
+			'contract' => [
+				'label'  => __('Umowa i płatności', 'basemgmt'),
+				'stages' => [
+					self::STAGE_CONTRACT_DRAFT,
+					self::STAGE_CONTRACT_SIGNED,
+					self::STAGE_AWAITING_PAYMENT,
+				],
+			],
+			'operations' => [
+				'label'  => __('Przygotowanie operacyjne', 'basemgmt'),
+				'stages' => [
+					self::STAGE_READY,
+				],
+			],
+			'on_site' => [
+				'label'  => __('Przyjazd i pobyt', 'basemgmt'),
+				'stages' => [
+					self::STAGE_ON_SITE,
+				],
+			],
+			'closing' => [
+				'label'  => __('Rozliczenie i zamknięcie', 'basemgmt'),
+				'stages' => [
+					self::STAGE_SETTLEMENT,
+					self::STAGE_CLOSED,
+					self::STAGE_CANCELLED,
+				],
+			],
+		];
+	}
+
 	public static function risk_levels(): array {
 		return [
 			self::RISK_LOW      => __('Niskie', 'basemgmt'),
@@ -138,6 +185,17 @@ final class CampCaseRepository {
 				'change_note'  => sanitize_textarea_field($data['stage_change_note'] ?? ''),
 			]);
 		}
+	}
+
+	public static function get_phase_for_stage(string $stage): string {
+		$stage = self::sanitize_stage($stage);
+		foreach ( self::workflow_phases() as $phase => $config ) {
+			if ( in_array($stage, $config['stages'], true) ) {
+				return $phase;
+			}
+		}
+
+		return 'lead';
 	}
 
 	public static function get_history(int $camp_id, int $limit = 20): array {
@@ -297,6 +355,56 @@ final class CampCaseRepository {
 	}
 
 	/**
+	 * Adds missing stage-template tasks without overwriting existing checklist rows.
+	 */
+	public static function sync_checklist_for_stage(int $camp_id, string $stage): void {
+		$existing = self::get_checklist($camp_id);
+		$rows     = array_map(
+			static fn(object $item): array => [
+				'label'       => (string) $item->label,
+				'id'          => (string) $item->id,
+				'party'       => (string) $item->party,
+				'status'      => (string) $item->status,
+				'assigned_to' => (string) ($item->assigned_to ?? ''),
+				'due_date'    => (string) ($item->due_date ?? ''),
+				'comment'     => (string) ($item->comment ?? ''),
+			],
+			$existing
+		);
+
+		$known_keys = [];
+		foreach ( $rows as $row ) {
+			$known_keys[self::checklist_item_key((string) $row['label'], (string) $row['party'])] = true;
+		}
+
+		$changed = false;
+		foreach ( self::stage_checklist_template($stage) as $item ) {
+			$key = self::checklist_item_key($item['label'], $item['party']);
+			if ( isset($known_keys[$key]) ) {
+				continue;
+			}
+
+			$rows[]      = [
+				'label'       => $item['label'],
+				'id'          => '',
+				'party'       => $item['party'],
+				'status'      => self::CHECKLIST_STATUS_PENDING,
+				'assigned_to' => '',
+				'due_date'    => '',
+				'comment'     => '',
+			];
+			$known_keys[$key] = true;
+			$changed          = true;
+		}
+
+		if ( ! $changed ) {
+			return;
+		}
+
+		self::replace_checklist($camp_id, $rows);
+	}
+
+	/**
 	 * @return array{total:int,done:int,overdue:int,percent:int}
 	 */
 	public static function get_readiness_summary(int $camp_id): array {
@@ -405,6 +513,49 @@ final class CampCaseRepository {
 		return $rows;
 	}
 
+	/**
+	 * @param array{total:int,done:int,overdue:int,percent:int} $readiness
+	 * @param array<string,int>                                 $future_counts
+	 * @return array{
+	 *   current_stage:string,
+	 *   current_stage_label:string,
+	 *   current_phase:string,
+	 *   current_phase_label:string,
+	 *   health:string,
+	 *   health_label:string,
+	 *   blockers:array<int,string>,
+	 *   next_actions:array<int,string>,
+	 *   phases:array<int,array{slug:string,label:string,state:string}>
+	 * }
+	 */
+	public static function build_workflow_snapshot(
+		?object $camp,
+		?object $case,
+		?object $organizer,
+		?object $prearrival,
+		array $readiness,
+		array $future_counts
+	): array {
+		$stage        = self::sanitize_stage((string) ($case->process_stage ?? self::STAGE_INQUIRY));
+		$phase        = self::get_phase_for_stage($stage);
+		$phase_map    = self::workflow_phases();
+		$blockers     = self::collect_blockers($stage, $case, $organizer, $prearrival, $readiness, $future_counts);
+		$next_actions = self::collect_next_actions($stage, $case, $organizer, $prearrival, $readiness, $future_counts, $camp);
+		$health       = self::determine_health($case, $readiness, $blockers);
+
+		return [
+			'current_stage'       => $stage,
+			'current_stage_label' => self::process_stages()[$stage] ?? $stage,
+			'current_phase'       => $phase,
+			'current_phase_label' => $phase_map[$phase]['label'] ?? $phase,
+			'health'              => $health,
+			'health_label'        => self::health_labels()[$health] ?? $health,
+			'blockers'            => $blockers,
+			'next_actions'        => $next_actions,
+			'phases'              => self::phase_progress($phase),
+		];
+	}
+
 	public static function tables_ready(): bool {
 		global $wpdb;
 
@@ -439,6 +590,225 @@ final class CampCaseRepository {
 		return (int) $wpdb->get_var(
 			$wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE camp_id = %d", $camp_id)
 		);
+	}
+
+	/**
+	 * @return array<int,array{label:string,party:string}>
+	 */
+	private static function stage_checklist_template(string $stage): array {
+		return match ( self::get_phase_for_stage($stage) ) {
+			'lead' => [
+				['label' => __('Potwierdzone terminy i liczebność wstępna', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_SHARED],
+				['label' => __('Przypisany owner sprawy i termin kolejnego kontaktu', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_CENTER],
+			],
+			'offer' => [
+				['label' => __('Przygotowana oferta i warunki pobytu', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_CENTER],
+				['label' => __('Ustalone potrzeby programu i infrastruktury', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_SHARED],
+				['label' => __('Decyzja organizatora / follow-up sprzedażowy', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
+			],
+			'contract' => [
+				['label' => __('Podpisana umowa', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
+				['label' => __('Harmonogram płatności i termin zaliczki', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_CENTER],
+				['label' => __('Potwierdzenie wpłaty lub przypomnienie o płatności', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_SHARED],
+			],
+			'operations' => [
+				['label' => __('Lista uczestników i kadry', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
+				['label' => __('Dane przyjazdu / wyjazdu i osoby upoważnione', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_ORGANIZER],
+				['label' => __('Diety, alergeny i potrzeby dodatkowe', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_SHARED],
+				['label' => __('Zakwaterowanie i infrastruktura gotowe', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_CENTER],
+			],
+			'on_site' => [
+				['label' => __('Codzienna komunikacja i meldunki przebiegają bez blokad', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_SHARED],
+				['label' => __('Zebrane dane do rozliczenia pobytu', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_CENTER],
+			],
+			'closing' => [
+				['label' => __('Przygotowane rozliczenie końcowe', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_CENTER],
+				['label' => __('Wyjaśnione rozbieżności i uwagi', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_SHARED],
+				['label' => __('Sprawa zamknięta i zarchiwizowana', 'basemgmt'), 'party' => self::CHECKLIST_PARTY_CENTER],
+			],
+			default => self::default_checklist_template(),
+		};
+	}
+
+	private static function health_labels(): array {
+		return [
+			'ok'       => __('Stabilnie', 'basemgmt'),
+			'warning'  => __('Do dopilnowania', 'basemgmt'),
+			'critical' => __('Blokery', 'basemgmt'),
+		];
+	}
+
+	/**
+	 * @return array<int,array{slug:string,label:string,state:string}>
+	 */
+	private static function phase_progress(string $current_phase): array {
+		$phases        = [];
+		$current_index = array_search($current_phase, array_keys(self::workflow_phases()), true);
+		$current_index = $current_index === false ? 0 : $current_index;
+
+		foreach ( array_values(self::workflow_phases()) as $index => $phase ) {
+			$state = 'upcoming';
+			if ( $index < $current_index ) {
+				$state = 'done';
+			} elseif ( $index === $current_index ) {
+				$state = 'current';
+			}
+
+			$phases[] = [
+				'slug'  => array_keys(self::workflow_phases())[$index],
+				'label' => $phase['label'],
+				'state' => $state,
+			];
+		}
+
+		return $phases;
+	}
+
+	/**
+	 * @param array{total:int,done:int,overdue:int,percent:int} $readiness
+	 * @param array<string,int>                                 $future_counts
+	 * @return string[]
+	 */
+	private static function collect_blockers(
+		string $stage,
+		?object $case,
+		?object $organizer,
+		?object $prearrival,
+		array $readiness,
+		array $future_counts
+	): array {
+		$blockers = [];
+		$phase    = self::get_phase_for_stage($stage);
+
+		if ( $phase !== 'lead' && ! self::organizer_ready($organizer) ) {
+			$blockers[] = __('Brakuje kompletnych danych organizatora.', 'basemgmt');
+		}
+
+		if ( in_array($phase, ['operations', 'on_site'], true) && ! self::prearrival_ready($prearrival) ) {
+			$blockers[] = __('Brakuje kompletu danych operacyjnych przed przyjazdem.', 'basemgmt');
+		}
+
+		if ( $phase === 'contract' && (int) ($future_counts['payments'] ?? 0) === 0 ) {
+			$blockers[] = __('Etap umowy/płatności nie ma jeszcze żadnej wpłaty.', 'basemgmt');
+		}
+
+		if ( $phase === 'closing' && (int) ($future_counts['settlements'] ?? 0) === 0 ) {
+			$blockers[] = __('Brakuje rozliczenia końcowego.', 'basemgmt');
+		}
+
+		if ( $stage === self::STAGE_CLOSED && (int) ($future_counts['closures'] ?? 0) === 0 ) {
+			$blockers[] = __('Etap zamknięcia nie ma wpisu archiwizacyjnego.', 'basemgmt');
+		}
+
+		if ( (int) ($readiness['overdue'] ?? 0) > 0 ) {
+			$blockers[] = sprintf(
+				/* translators: %d number of overdue tasks */
+				__('%d zadań checklisty jest po terminie.', 'basemgmt'),
+				(int) $readiness['overdue']
+			);
+		}
+
+		if ( empty($case?->owner_user_id) ) {
+			$blockers[] = __('Brakuje przypisanego ownera sprawy.', 'basemgmt');
+		}
+
+		return array_values(array_unique($blockers));
+	}
+
+	/**
+	 * @param array{total:int,done:int,overdue:int,percent:int} $readiness
+	 * @param array<string,int>                                 $future_counts
+	 * @return string[]
+	 */
+	private static function collect_next_actions(
+		string $stage,
+		?object $case,
+		?object $organizer,
+		?object $prearrival,
+		array $readiness,
+		array $future_counts,
+		?object $camp
+	): array {
+		$actions = [];
+		$phase   = self::get_phase_for_stage($stage);
+
+		if ( ! self::organizer_ready($organizer) ) {
+			$actions[] = __('Uzupełnij dane organizatora i kontakt do rozliczeń.', 'basemgmt');
+		}
+
+		if ( empty($case?->next_action_due_date) ) {
+			$actions[] = __('Ustaw termin następnego działania dla ownera sprawy.', 'basemgmt');
+		}
+
+		if ( $phase === 'contract' && (int) ($future_counts['payments'] ?? 0) === 0 ) {
+			$actions[] = __('Dodaj lub potwierdź pierwszą płatność / zaliczkę.', 'basemgmt');
+		}
+
+		if ( in_array($phase, ['operations', 'on_site'], true) && ! self::prearrival_ready($prearrival) ) {
+			$actions[] = __('Dokończ dane przyjazdu, liczebności i osoby upoważnione.', 'basemgmt');
+		}
+
+		if ( (int) ($readiness['total'] ?? 0) === 0 ) {
+			$actions[] = __('Wygeneruj checklistę dla aktualnego etapu i przypisz zadania.', 'basemgmt');
+		} elseif ( (int) ($readiness['done'] ?? 0) < (int) ($readiness['total'] ?? 0) ) {
+			$actions[] = __('Domknij otwarte zadania checklisty przed przejściem dalej.', 'basemgmt');
+		}
+
+		if ( $phase === 'closing' && (int) ($future_counts['settlements'] ?? 0) === 0 ) {
+			$actions[] = __('Przygotuj rozliczenie końcowe i archiwizację sprawy.', 'basemgmt');
+		}
+
+		if ( $camp && ! empty($camp->start_date) && $phase !== 'closing' ) {
+			$actions[] = sprintf(
+				/* translators: %s camp start date */
+				__('Pilnuj przygotowania obozu przed startem: %s.', 'basemgmt'),
+				(string) $camp->start_date
+			);
+		}
+
+		return array_values(array_slice(array_unique($actions), 0, 4));
+	}
+
+	/**
+	 * @param array{total:int,done:int,overdue:int,percent:int} $readiness
+	 * @param string[]                                          $blockers
+	 */
+	private static function determine_health(?object $case, array $readiness, array $blockers): string {
+		if ( ! empty($blockers) || (string) ($case->risk_level ?? '') === self::RISK_CRITICAL ) {
+			return 'critical';
+		}
+
+		$today = current_time('Y-m-d');
+		if (
+			! empty($case?->needs_attention)
+			|| (int) ($readiness['overdue'] ?? 0) > 0
+			|| ( ! empty($case?->next_action_due_date) && (string) $case->next_action_due_date <= $today )
+		) {
+			return 'warning';
+		}
+
+		return 'ok';
+	}
+
+	private static function organizer_ready(?object $organizer): bool {
+		if ( ! $organizer ) {
+			return false;
+		}
+
+		return (string) ($organizer->organization_name ?? '') !== ''
+			&& (string) ($organizer->contact_person ?? '') !== ''
+			&& (string) ($organizer->contact_email ?? '') !== '';
+	}
+
+	private static function prearrival_ready(?object $prearrival): bool {
+		if ( ! $prearrival ) {
+			return false;
+		}
+
+		return (string) ($prearrival->arrival_date ?? '') !== ''
+			&& (string) ($prearrival->departure_date ?? '') !== ''
+			&& ((int) ($prearrival->declared_participants ?? 0) > 0 || (int) ($prearrival->declared_staff ?? 0) > 0)
+			&& (string) ($prearrival->authorized_contacts ?? '') !== '';
 	}
 
 	private static function sanitize_stage(string $value): string {

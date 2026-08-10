@@ -358,6 +358,11 @@ final class AdminMenu {
 	public function post_actions(): array {
 		return [
 			'bm_save_camp'             => [$this->camps,         'handle_save'],
+			'bm_save_camp_overview'    => [$this->camps,         'handle_save_overview'],
+			'bm_save_camp_process'     => [$this->camps,         'handle_save_process'],
+			'bm_save_camp_organizer'   => [$this->camps,         'handle_save_organizer'],
+			'bm_save_camp_checklist'   => [$this->camps,         'handle_save_checklist'],
+			'bm_save_camp_prearrival'  => [$this->camps,         'handle_save_prearrival'],
 			'bm_delete_camp'           => [$this->camps,         'handle_delete'],
 			'bm_save_staff'            => [$this->staff,         'handle_save'],
 			'bm_delete_staff'          => [$this->staff,         'handle_delete'],
