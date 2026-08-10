@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0-PRE2] – 2026-08-10
+## [2.0.0-alpha.1] – 2026-08-10
 
 ### Nowe funkcje
 
@@ -44,7 +44,7 @@ Nowe tabele:
 
 ---
 
-## [2.0.0-PRE1] – 2026-08-09
+## [2.0.0-alpha.0] – 2026-08-09
 
 ### Nowe funkcje
 
