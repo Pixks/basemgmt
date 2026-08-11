@@ -43,14 +43,16 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 			</div>
 		</div>
 
-		<nav class="nav-tab-wrapper bm-camp-tabs" id="bm-camp-tab-nav" style="margin-bottom:0;">
+		<nav class="nav-tab-wrapper bm-camp-tabs" id="bm-camp-tab-nav" style="margin-bottom:0;display:flex;align-items:center;">
 			<a href="#" class="nav-tab" data-tab="panel"><?php esc_html_e('Panel', 'basemgmt'); ?></a>
 			<a href="#" class="nav-tab" data-tab="workcenter"><?php esc_html_e('Centrum Pracy', 'basemgmt'); ?></a>
 			<a href="#" class="nav-tab" data-tab="organizer"><?php esc_html_e('Organizator', 'basemgmt'); ?></a>
 			<a href="#" class="nav-tab" data-tab="documents"><?php esc_html_e('Dokumenty', 'basemgmt'); ?></a>
 			<a href="#" class="nav-tab" data-tab="finance"><?php esc_html_e('Finanse', 'basemgmt'); ?></a>
-			<a href="#" class="nav-tab" data-tab="planning"><?php esc_html_e('Planowanie', 'basemgmt'); ?></a>
-			<a href="#" class="nav-tab" data-tab="settlement"><?php esc_html_e('Rozliczenie', 'basemgmt'); ?></a>
+			<span style="flex:1;"></span>
+			<button type="button" class="button button-primary" style="margin:4px 0 4px 8px;" onclick="alert('<?php esc_attr_e('Funkcja rozliczenia zostanie wkrótce uruchomiona.', 'basemgmt'); ?>')">
+				<?php esc_html_e('Rozlicz', 'basemgmt'); ?>
+			</button>
 		</nav>
 
 		<!-- ── PANEL ─────────────────────────────────────────────────────────── -->
@@ -500,35 +502,108 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 							$decl_status = '<span class="bm-badge bm-badge--normal">' . esc_html__('Szkic', 'basemgmt') . '</span>';
 						}
 					}
-					if ($decl_status) { echo '<p>Status: ' . $decl_status . '</p>'; }
+					if ($decl_status) { echo '<p>' . esc_html__('Status:', 'basemgmt') . ' ' . $decl_status . '</p>'; }
+
+					// Build the list of days in this camp's stay
+					$camp_dates_range = [];
+					if (!empty($camp->start_date) && !empty($camp->end_date)) {
+						$d_cur = new DateTime($camp->start_date);
+						$d_end = new DateTime($camp->end_date);
+						while ($d_cur <= $d_end) {
+							$camp_dates_range[] = $d_cur->format('Y-m-d');
+							$d_cur->modify('+1 day');
+						}
+					}
 					?>
 					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
 						<?php wp_nonce_field('bm_save_camp_declaration'); ?>
 						<input type="hidden" name="action" value="bm_save_camp_declaration">
 						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
-						<div class="bm-form-grid">
-							<p>
-								<label for="decl_persons"><strong><?php esc_html_e('Deklarowana liczba osób', 'basemgmt'); ?></strong></label><br>
-								<input type="number" id="decl_persons" name="declared_persons" min="0" class="regular-text"
-									value="<?php echo esc_attr($camp_declaration->declared_persons ?? 0); ?>">
-							</p>
-							<p>
-								<label for="decl_diets"><strong><?php esc_html_e('Deklarowane diety', 'basemgmt'); ?></strong></label><br>
-								<input type="number" id="decl_diets" name="declared_diets" min="0" class="regular-text"
-									value="<?php echo esc_attr($camp_declaration->declared_diets ?? 0); ?>">
-							</p>
-							<p>
-								<label for="decl_arrival_time"><strong><?php esc_html_e('Godzina przyjazdu', 'basemgmt'); ?></strong></label><br>
-								<input type="text" id="decl_arrival_time" name="decl_arrival_time" class="regular-text"
-									value="<?php echo esc_attr($camp_declaration->arrival_time ?? ''); ?>" placeholder="np. 14:00">
-							</p>
-							<p>
-								<label for="decl_departure_time"><strong><?php esc_html_e('Godzina wyjazdu', 'basemgmt'); ?></strong></label><br>
-								<input type="text" id="decl_departure_time" name="decl_departure_time" class="regular-text"
-									value="<?php echo esc_attr($camp_declaration->departure_time ?? ''); ?>" placeholder="np. 10:00">
-							</p>
-						</div>
-						<p>
+
+						<?php if (empty($camp_dates_range)): ?>
+							<p class="bm-muted"><?php esc_html_e('Uzupełnij daty obozu (Panel → Podstawowe dane), aby wypełnić deklarację.', 'basemgmt'); ?></p>
+						<?php else: ?>
+							<?php
+							$has_diet_types  = !empty($decl_diet_types);
+							$has_accom_types = !empty($decl_accommodation_types);
+							$first_date = $camp_dates_range[0];
+							$last_date  = $camp_dates_range[count($camp_dates_range) - 1];
+							?>
+							<div style="overflow-x:auto;">
+							<table class="widefat bm-table" style="min-width:600px;">
+								<thead>
+									<tr>
+										<th style="width:110px;"><?php esc_html_e('Data', 'basemgmt'); ?></th>
+										<th style="width:80px;"><?php esc_html_e('Osoby', 'basemgmt'); ?></th>
+										<?php foreach ($decl_diet_types as $dt): ?>
+											<th style="width:90px;" title="<?php echo esc_attr($dt->name); ?>">
+												<?php echo esc_html(mb_strimwidth($dt->name, 0, 12, '…')); ?><br>
+												<small class="bm-muted"><?php esc_html_e('diety', 'basemgmt'); ?></small>
+											</th>
+										<?php endforeach; ?>
+										<?php foreach ($decl_accommodation_types as $at): ?>
+											<th style="width:90px;" title="<?php echo esc_attr($at->name); ?>">
+												<?php echo esc_html(mb_strimwidth($at->name, 0, 12, '…')); ?><br>
+												<small class="bm-muted"><?php esc_html_e('noclegi', 'basemgmt'); ?></small>
+											</th>
+										<?php endforeach; ?>
+										<th style="width:80px;"><?php esc_html_e('Przyjazd', 'basemgmt'); ?></th>
+										<th style="width:80px;"><?php esc_html_e('Wyjazd', 'basemgmt'); ?></th>
+									</tr>
+								</thead>
+								<tbody>
+									<?php foreach ($camp_dates_range as $date_str):
+										$existing_day = $decl_days_by_date[$date_str] ?? null;
+										$day_id       = $existing_day ? (int) $existing_day->id : 0;
+										$day_persons  = $existing_day ? (int) $existing_day->declared_persons : 0;
+										$day_arrival  = $existing_day ? $existing_day->arrival_time : '';
+										$day_departure= $existing_day ? $existing_day->departure_time : '';
+										$day_diets    = $day_id ? ($decl_diet_lines_by_day_id[$day_id] ?? []) : [];
+										$day_accoms   = $day_id ? ($decl_accom_lines_by_day_id[$day_id] ?? []) : [];
+										$is_first     = ($date_str === $first_date);
+										$is_last      = ($date_str === $last_date);
+									?>
+									<tr>
+										<td><strong><?php echo esc_html((new DateTime($date_str))->format('d.m.Y')); ?></strong><br><small class="bm-muted"><?php echo esc_html((new DateTime($date_str))->format('D')); ?></small></td>
+										<td><input type="number" name="days[<?php echo esc_attr($date_str); ?>][persons]" value="<?php echo esc_attr($day_persons); ?>" min="0" style="width:70px;"></td>
+										<?php foreach ($decl_diet_types as $dt): ?>
+											<td><input type="number" name="days[<?php echo esc_attr($date_str); ?>][diets][<?php echo esc_attr($dt->id); ?>]"
+												value="<?php echo esc_attr($day_diets[$dt->id] ?? 0); ?>" min="0" style="width:70px;"></td>
+										<?php endforeach; ?>
+										<?php foreach ($decl_accommodation_types as $at): ?>
+											<td><input type="number" name="days[<?php echo esc_attr($date_str); ?>][accommodations][<?php echo esc_attr($at->id); ?>]"
+												value="<?php echo esc_attr($day_accoms[$at->id] ?? 0); ?>" min="0" style="width:70px;"></td>
+										<?php endforeach; ?>
+										<td>
+											<?php if ($is_first): ?>
+												<input type="text" name="days[<?php echo esc_attr($date_str); ?>][arrival_time]"
+													value="<?php echo esc_attr($day_arrival); ?>" placeholder="14:00" style="width:70px;">
+											<?php else: ?>
+												<span class="bm-muted">—</span>
+											<?php endif; ?>
+										</td>
+										<td>
+											<?php if ($is_last): ?>
+												<input type="text" name="days[<?php echo esc_attr($date_str); ?>][departure_time]"
+													value="<?php echo esc_attr($day_departure); ?>" placeholder="10:00" style="width:70px;">
+											<?php else: ?>
+												<span class="bm-muted">—</span>
+											<?php endif; ?>
+										</td>
+									</tr>
+									<?php endforeach; ?>
+								</tbody>
+							</table>
+							</div>
+							<?php if (!$has_diet_types): ?>
+								<p class="description"><?php esc_html_e('Brak zdefiniowanych typów diety — dodaj je w CampLink → Jadłospis → Opcje.', 'basemgmt'); ?></p>
+							<?php endif; ?>
+							<?php if (!$has_accom_types): ?>
+								<p class="description"><?php esc_html_e('Brak zdefiniowanych typów noclegów — dodaj je w CampLink → Organizacja → Noclegi.', 'basemgmt'); ?></p>
+							<?php endif; ?>
+						<?php endif; ?>
+
+						<p style="margin-top:16px;">
 							<label>
 								<input type="checkbox" name="decl_is_active" value="1" <?php checked($camp_declaration->is_active ?? 1, 1); ?>>
 								<strong><?php esc_html_e('Deklaracja aktywna', 'basemgmt'); ?></strong>
@@ -850,210 +925,42 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 						</table>
 					<?php endif; ?>
 
-					<div style="margin-top:16px;padding-top:16px;border-top:1px solid #dcdcde;">
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:16px;padding-top:16px;border-top:1px solid #dcdcde;">
+						<?php wp_nonce_field('bm_add_camp_damage'); ?>
+						<input type="hidden" name="action" value="bm_add_camp_damage">
+						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
 						<h4 style="margin:0 0 12px;"><?php esc_html_e('Dodaj szkodę', 'basemgmt'); ?></h4>
-					</div>
+						<div class="bm-form-grid" style="margin:0 0 12px;">
+							<p>
+								<label for="damage_name"><strong><?php esc_html_e('Nazwa szkody', 'basemgmt'); ?></strong></label><br>
+								<input type="text" id="damage_name" name="damage_name" class="regular-text" required>
+							</p>
+							<p>
+								<label for="damage_cost"><strong><?php esc_html_e('Koszt (PLN)', 'basemgmt'); ?></strong></label><br>
+								<input type="text" id="damage_cost" name="damage_cost" class="regular-text" value="0.00">
+							</p>
+							<p>
+								<label for="damage_status"><strong><?php esc_html_e('Status', 'basemgmt'); ?></strong></label><br>
+								<select id="damage_status" name="damage_status" class="regular-text">
+									<option value="reported"><?php esc_html_e('Zgłoszona', 'basemgmt'); ?></option>
+									<option value="investigating"><?php esc_html_e('W ocenie', 'basemgmt'); ?></option>
+									<option value="settled"><?php esc_html_e('Rozliczona', 'basemgmt'); ?></option>
+									<option value="dismissed"><?php esc_html_e('Odrzucona', 'basemgmt'); ?></option>
+								</select>
+							</p>
+						</div>
+						<p>
+							<label for="damage_description"><strong><?php esc_html_e('Opis', 'basemgmt'); ?></strong></label><br>
+							<textarea id="damage_description" name="damage_description" class="large-text" rows="2"></textarea>
+						</p>
+						<p>
+							<button type="submit" class="button button-secondary"><?php esc_html_e('Dodaj szkodę', 'basemgmt'); ?></button>
+						</p>
+					</form>
 				</div>
 			</div>
-
-			<!-- Damage add form (separate <form> to avoid nesting) -->
-			<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:0;">
-				<?php wp_nonce_field('bm_add_camp_damage'); ?>
-				<input type="hidden" name="action" value="bm_add_camp_damage">
-				<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
-				<div class="bm-form-grid" style="margin:0 0 12px;">
-					<p>
-						<label for="damage_name"><strong><?php esc_html_e('Nazwa szkody', 'basemgmt'); ?></strong></label><br>
-						<input type="text" id="damage_name" name="damage_name" class="regular-text" required>
-					</p>
-					<p>
-						<label for="damage_cost"><strong><?php esc_html_e('Koszt (PLN)', 'basemgmt'); ?></strong></label><br>
-						<input type="text" id="damage_cost" name="damage_cost" class="regular-text" value="0.00">
-					</p>
-					<p>
-						<label for="damage_status"><strong><?php esc_html_e('Status', 'basemgmt'); ?></strong></label><br>
-						<select id="damage_status" name="damage_status" class="regular-text">
-							<option value="reported"><?php esc_html_e('Zgłoszona', 'basemgmt'); ?></option>
-							<option value="investigating"><?php esc_html_e('W ocenie', 'basemgmt'); ?></option>
-							<option value="settled"><?php esc_html_e('Rozliczona', 'basemgmt'); ?></option>
-							<option value="dismissed"><?php esc_html_e('Odrzucona', 'basemgmt'); ?></option>
-						</select>
-					</p>
-				</div>
-				<p>
-					<label for="damage_description"><strong><?php esc_html_e('Opis', 'basemgmt'); ?></strong></label><br>
-					<textarea id="damage_description" name="damage_description" class="large-text" rows="2"></textarea>
-				</p>
-				<p>
-					<button type="submit" class="button button-secondary"><?php esc_html_e('Dodaj szkodę', 'basemgmt'); ?></button>
-				</p>
-			</form>
 		</div><!-- /finance -->
 
-		<!-- ── PLANOWANIE ────────────────────────────────────────────────────── -->
-		<div class="bm-tab-panel" data-tab="planning" id="bm-section-prearrival">
-			<div class="bm-form-section">
-				<h2 style="margin-top:0;"><?php esc_html_e('Planowanie pobytu', 'basemgmt'); ?></h2>
-				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-					<?php wp_nonce_field('bm_save_camp_prearrival'); ?>
-					<input type="hidden" name="action" value="bm_save_camp_prearrival">
-					<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
-
-					<div class="bm-form-grid">
-						<p>
-							<label for="bm_arrival_date"><strong><?php esc_html_e('Dzień przyjazdu', 'basemgmt'); ?></strong></label><br>
-							<input type="date" id="bm_arrival_date" name="arrival_date" value="<?php echo esc_attr($prearrival->arrival_date ?? ''); ?>">
-						</p>
-						<p>
-							<label for="bm_arrival_time"><strong><?php esc_html_e('Godzina przyjazdu', 'basemgmt'); ?></strong></label><br>
-							<input type="time" id="bm_arrival_time" name="arrival_time" value="<?php echo esc_attr($prearrival->arrival_time ?? ''); ?>">
-						</p>
-						<p>
-							<label for="bm_departure_date"><strong><?php esc_html_e('Dzień wyjazdu', 'basemgmt'); ?></strong></label><br>
-							<input type="date" id="bm_departure_date" name="departure_date" value="<?php echo esc_attr($prearrival->departure_date ?? ''); ?>">
-						</p>
-						<p>
-							<label for="bm_departure_time"><strong><?php esc_html_e('Godzina wyjazdu', 'basemgmt'); ?></strong></label><br>
-							<input type="time" id="bm_departure_time" name="departure_time" value="<?php echo esc_attr($prearrival->departure_time ?? ''); ?>">
-						</p>
-						<p>
-							<label for="bm_declared_participants"><strong><?php esc_html_e('Deklarowani uczestnicy', 'basemgmt'); ?></strong></label><br>
-							<input type="number" min="0" id="bm_declared_participants" name="declared_participants" value="<?php echo esc_attr((string) ($prearrival->declared_participants ?? '0')); ?>">
-						</p>
-						<p>
-							<label for="bm_declared_staff"><strong><?php esc_html_e('Deklarowana kadra', 'basemgmt'); ?></strong></label><br>
-							<input type="number" min="0" id="bm_declared_staff" name="declared_staff" value="<?php echo esc_attr((string) ($prearrival->declared_staff ?? '0')); ?>">
-						</p>
-						<p>
-							<label for="bm_declared_support"><strong><?php esc_html_e('Deklarowana obsługa', 'basemgmt'); ?></strong></label><br>
-							<input type="number" min="0" id="bm_declared_support" name="declared_support" value="<?php echo esc_attr((string) ($prearrival->declared_support ?? '0')); ?>">
-						</p>
-					</div>
-					<p>
-						<label for="bm_dietary_requirements"><strong><?php esc_html_e('Zapotrzebowanie żywieniowe i diety', 'basemgmt'); ?></strong></label><br>
-						<textarea id="bm_dietary_requirements" name="dietary_requirements" class="large-text" rows="3"><?php echo esc_textarea($prearrival->dietary_requirements ?? ''); ?></textarea>
-					</p>
-					<p>
-						<label for="bm_allergens"><strong><?php esc_html_e('Alergeny i potrzeby szczególne', 'basemgmt'); ?></strong></label><br>
-						<textarea id="bm_allergens" name="allergens" class="large-text" rows="3"><?php echo esc_textarea($prearrival->allergens ?? ''); ?></textarea>
-					</p>
-					<p>
-						<label for="bm_infrastructure_plan"><strong><?php esc_html_e('Plan korzystania z infrastruktury', 'basemgmt'); ?></strong></label><br>
-						<textarea id="bm_infrastructure_plan" name="infrastructure_plan" class="large-text" rows="3"><?php echo esc_textarea($prearrival->infrastructure_plan ?? ''); ?></textarea>
-					</p>
-					<p>
-						<label for="bm_additional_needs"><strong><?php esc_html_e('Potrzeby dodatkowe', 'basemgmt'); ?></strong></label><br>
-						<textarea id="bm_additional_needs" name="additional_needs" class="large-text" rows="3"><?php echo esc_textarea($prearrival->additional_needs ?? ''); ?></textarea>
-					</p>
-					<p>
-						<label for="bm_invoice_details"><strong><?php esc_html_e('Dane do faktury / ustaleń', 'basemgmt'); ?></strong></label><br>
-						<textarea id="bm_invoice_details" name="invoice_details" class="large-text" rows="3"><?php echo esc_textarea($prearrival->invoice_details ?? ''); ?></textarea>
-					</p>
-					<p>
-						<label for="bm_authorized_contacts"><strong><?php esc_html_e('Osoby upoważnione', 'basemgmt'); ?></strong></label><br>
-						<textarea id="bm_authorized_contacts" name="authorized_contacts" class="large-text" rows="3"><?php echo esc_textarea($prearrival->authorized_contacts ?? ''); ?></textarea>
-					</p>
-					<p class="submit" style="margin-bottom:0;">
-						<button type="submit" class="button button-primary"><?php esc_html_e('Zapisz dane planowania', 'basemgmt'); ?></button>
-					</p>
-				</form>
-			</div>
-		</div><!-- /planning -->
-
-		<!-- ── ROZLICZENIE ───────────────────────────────────────────────────── -->
-		<div class="bm-tab-panel" data-tab="settlement" id="bm-section-settlement">
-			<div class="bm-form-section">
-				<h2 style="margin-top:0;"><?php esc_html_e('Rozliczenie', 'basemgmt'); ?></h2>
-				<p class="description"><?php esc_html_e('Sekcja rozliczeniowa — przeprowadzenie rozliczenia wypoczynku i generowanie rachunku. Pełna funkcjonalność w rozbudowie.', 'basemgmt'); ?></p>
-
-				<div class="bm-case-grid">
-					<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Dokumenty', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['documents']); ?></strong></div>
-					<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Wpłaty', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['payments']); ?></strong></div>
-					<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Ewidencja pobytu', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['actuals']); ?></strong></div>
-					<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Reguły cenowe', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['pricing']); ?></strong></div>
-					<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Rozliczenia', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['settlements']); ?></strong></div>
-					<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Uwagi / rozbieżności', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['issues']); ?></strong></div>
-					<div class="bm-case-card"><span class="bm-stat-label"><?php esc_html_e('Zamknięcia', 'basemgmt'); ?></span><strong><?php echo esc_html((string) $future_counts['closures']); ?></strong></div>
-				</div>
-
-				<div class="bm-case-grid bm-case-grid--workcenter" style="margin-top:16px;">
-					<div class="bm-case-card">
-						<h3 style="margin-top:0;"><?php esc_html_e('Dokumenty i harmonogram płatności', 'basemgmt'); ?></h3>
-						<ul class="bm-work-items">
-							<?php foreach ( $module_summary['documents']['items'] ?? [] as $item ) : ?>
-								<li>
-									<strong><?php echo esc_html($item->title); ?></strong>
-									<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->due_date ?: __('bez terminu', 'basemgmt'))); ?></span>
-								</li>
-							<?php endforeach; ?>
-							<?php foreach ( $module_summary['payments']['items'] ?? [] as $item ) : ?>
-								<li>
-									<strong><?php echo esc_html($item->label); ?></strong>
-									<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->due_date ?: __('bez terminu', 'basemgmt'))); ?></span>
-								</li>
-							<?php endforeach; ?>
-							<?php if ( empty($module_summary['documents']['items']) && empty($module_summary['payments']['items']) ) : ?>
-								<li><?php esc_html_e('Brak rekordów dokumentów i płatności.', 'basemgmt'); ?></li>
-							<?php endif; ?>
-						</ul>
-					</div>
-					<div class="bm-case-card">
-						<h3 style="margin-top:0;"><?php esc_html_e('Rozliczenie i zamknięcie', 'basemgmt'); ?></h3>
-						<ul class="bm-work-items">
-							<?php foreach ( $module_summary['settlements']['items'] ?? [] as $item ) : ?>
-								<li>
-									<strong><?php esc_html_e('Rozliczenie', 'basemgmt'); ?></strong>
-									<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->period_end ?: __('bez okresu', 'basemgmt'))); ?></span>
-								</li>
-							<?php endforeach; ?>
-							<?php foreach ( $module_summary['issues']['items'] ?? [] as $item ) : ?>
-								<li>
-									<strong><?php echo esc_html($item->title); ?></strong>
-									<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->created_at ?: '')); ?></span>
-								</li>
-							<?php endforeach; ?>
-							<?php foreach ( $module_summary['closures']['items'] ?? [] as $item ) : ?>
-								<li>
-									<strong><?php esc_html_e('Zamknięcie', 'basemgmt'); ?></strong>
-									<br><span class="bm-muted"><?php echo esc_html(($item->status ?: '—') . ' • ' . ($item->closed_at ?: __('otwarte', 'basemgmt'))); ?></span>
-								</li>
-							<?php endforeach; ?>
-							<?php if ( empty($module_summary['settlements']['items']) && empty($module_summary['issues']['items']) && empty($module_summary['closures']['items']) ) : ?>
-								<li><?php esc_html_e('Brak rekordów rozliczeniowych.', 'basemgmt'); ?></li>
-							<?php endif; ?>
-						</ul>
-					</div>
-				</div>
-
-				<?php if ( ! empty($history) ) : ?>
-					<h3><?php esc_html_e('Historia etapów', 'basemgmt'); ?></h3>
-					<table class="widefat striped bm-table">
-						<thead>
-							<tr>
-								<th><?php esc_html_e('Data', 'basemgmt'); ?></th>
-								<th><?php esc_html_e('Zmiana', 'basemgmt'); ?></th>
-								<th><?php esc_html_e('Uwagi', 'basemgmt'); ?></th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php foreach ( $history as $item ) : ?>
-								<tr>
-									<td><?php echo esc_html($item->created_at); ?></td>
-									<td>
-										<?php
-										echo esc_html($process_stages[$item->old_stage] ?? ($item->old_stage ?: '—'));
-										echo esc_html(' → ');
-										echo esc_html($process_stages[$item->new_stage] ?? $item->new_stage);
-										?>
-									</td>
-									<td><?php echo esc_html($item->change_note ?: '—'); ?></td>
-								</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
-				<?php endif; ?>
-			</div>
-		</div><!-- /settlement -->
 
 	<?php else : ?>
 

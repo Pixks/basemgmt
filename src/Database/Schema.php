@@ -82,10 +82,15 @@ final class Schema {
 			'doc_library'            => $wpdb->prefix . 'bm_doc_library',
 			'payment_packages'       => $wpdb->prefix . 'bm_payment_packages',
 			'payment_package_lines'  => $wpdb->prefix . 'bm_payment_package_lines',
-			// New tables
-			'task_templates'     => $wpdb->prefix . 'bm_task_templates',
-			'camp_declarations'  => $wpdb->prefix . 'bm_camp_declarations',
-			'camp_damages'       => $wpdb->prefix . 'bm_camp_damages',
+			// Task & declaration tables
+			'task_templates'                    => $wpdb->prefix . 'bm_task_templates',
+			'camp_declarations'                 => $wpdb->prefix . 'bm_camp_declarations',
+			'camp_damages'                      => $wpdb->prefix . 'bm_camp_damages',
+			// Accommodation types & per-day declarations
+			'accommodation_types'               => $wpdb->prefix . 'bm_accommodation_types',
+			'camp_declaration_days'             => $wpdb->prefix . 'bm_camp_declaration_days',
+			'camp_declaration_diet_lines'       => $wpdb->prefix . 'bm_camp_declaration_diet_lines',
+			'camp_declaration_accommodation_lines' => $wpdb->prefix . 'bm_camp_declaration_accommodation_lines',
 		];
 	}
 
@@ -1199,6 +1204,63 @@ final class Schema {
 		) $charset;";
 
 		foreach ( $dmg_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Typy noclegów (Accommodation Types) ──────────────────────────────────
+
+		$accom_sql = [];
+
+		$accom_sql[] = "CREATE TABLE {$p}bm_accommodation_types (
+			id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name           VARCHAR(255)    NOT NULL,
+			rate_per_night DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			description    TEXT            DEFAULT NULL,
+			sort_order     INT             NOT NULL DEFAULT 0,
+			created_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_order (sort_order)
+		) $charset;";
+
+		foreach ( $accom_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Deklaracje per dzień (Camp Declaration Days) ──────────────────────────
+
+		$decl_day_sql = [];
+
+		$decl_day_sql[] = "CREATE TABLE {$p}bm_camp_declaration_days (
+			id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id          BIGINT UNSIGNED NOT NULL,
+			declaration_date DATE            NOT NULL,
+			declared_persons INT             NOT NULL DEFAULT 0,
+			arrival_time     VARCHAR(10)     NOT NULL DEFAULT '',
+			departure_time   VARCHAR(10)     NOT NULL DEFAULT '',
+			PRIMARY KEY (id),
+			UNIQUE KEY idx_camp_date (camp_id, declaration_date),
+			KEY idx_camp (camp_id)
+		) $charset;";
+
+		$decl_day_sql[] = "CREATE TABLE {$p}bm_camp_declaration_diet_lines (
+			id      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			day_id  BIGINT UNSIGNED NOT NULL,
+			diet_id BIGINT UNSIGNED NOT NULL,
+			count   INT             NOT NULL DEFAULT 0,
+			PRIMARY KEY (id),
+			UNIQUE KEY idx_day_diet (day_id, diet_id)
+		) $charset;";
+
+		$decl_day_sql[] = "CREATE TABLE {$p}bm_camp_declaration_accommodation_lines (
+			id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			day_id                BIGINT UNSIGNED NOT NULL,
+			accommodation_type_id BIGINT UNSIGNED NOT NULL,
+			count                 INT             NOT NULL DEFAULT 0,
+			PRIMARY KEY (id),
+			UNIQUE KEY idx_day_type (day_id, accommodation_type_id)
+		) $charset;";
+
+		foreach ( $decl_day_sql as $statement ) {
 			dbDelta($statement);
 		}
 

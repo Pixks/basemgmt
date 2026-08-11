@@ -184,6 +184,46 @@ final class CampsPage {
 			$camp_id
 		)) : null;
 
+		// Per-day declaration data
+		$camp_declaration_days = $camp_id > 0 ? $wpdb->get_results($wpdb->prepare(
+			"SELECT * FROM " . Schema::table('camp_declaration_days') . " WHERE camp_id = %d ORDER BY declaration_date ASC",
+			$camp_id
+		)) : [];
+
+		$decl_days_by_date = [];
+		foreach ( $camp_declaration_days as $day ) {
+			$decl_days_by_date[$day->declaration_date] = $day;
+		}
+
+		$decl_diet_lines_by_day_id = [];
+		$decl_accom_lines_by_day_id = [];
+		if ( $camp_declaration_days ) {
+			$day_ids = array_map(static fn( $d ) => (int) $d->id, $camp_declaration_days);
+			$ids_placeholder = implode(',', $day_ids);
+
+			$diet_lines = $wpdb->get_results(
+				"SELECT * FROM " . Schema::table('camp_declaration_diet_lines') . " WHERE day_id IN ({$ids_placeholder})" // phpcs:ignore
+			) ?: [];
+			foreach ( $diet_lines as $dl ) {
+				$decl_diet_lines_by_day_id[$dl->day_id][$dl->diet_id] = (int) $dl->count;
+			}
+
+			$accom_lines = $wpdb->get_results(
+				"SELECT * FROM " . Schema::table('camp_declaration_accommodation_lines') . " WHERE day_id IN ({$ids_placeholder})" // phpcs:ignore
+			) ?: [];
+			foreach ( $accom_lines as $al ) {
+				$decl_accom_lines_by_day_id[$al->day_id][$al->accommodation_type_id] = (int) $al->count;
+			}
+		}
+
+		// Diet types and accommodation types for declaration columns
+		$decl_diet_types = $wpdb->get_results(
+			"SELECT * FROM " . Schema::table('meal_diets') . " ORDER BY sort_order ASC, id ASC"
+		) ?: [];
+		$decl_accommodation_types = $wpdb->get_results(
+			"SELECT * FROM " . Schema::table('accommodation_types') . " ORDER BY sort_order ASC, id ASC"
+		) ?: [];
+
 		// ── Damages tab data ──────────────────────────────────────────────────
 		$camp_damages = $camp_id > 0 ? $wpdb->get_results($wpdb->prepare(
 			"SELECT * FROM " . Schema::table('camp_damages') . " WHERE camp_id = %d ORDER BY created_at DESC",
@@ -980,27 +1020,99 @@ final class CampsPage {
 		Capabilities::require_admin();
 		check_admin_referer('bm_save_camp_declaration');
 		$camp_id = (int) ($_POST['camp_id'] ?? 0);
-		if ($camp_id <= 0) {
+		if ( $camp_id <= 0 ) {
 			$this->redirect_back('basemgmt-camps');
 			return;
 		}
 		global $wpdb;
 		$tbl = Schema::table('camp_declarations');
-		$data = [
-			'camp_id'          => $camp_id,
-			'declared_persons' => (int) ($_POST['declared_persons'] ?? 0),
-			'declared_diets'   => (int) ($_POST['declared_diets'] ?? 0),
-			'arrival_time'     => sanitize_text_field($_POST['decl_arrival_time'] ?? ''),
-			'departure_time'   => sanitize_text_field($_POST['decl_departure_time'] ?? ''),
-			'is_active'        => ! empty($_POST['decl_is_active']) ? 1 : 0,
-			'notes'            => sanitize_textarea_field($_POST['decl_notes'] ?? ''),
+
+		// Save global declaration header (is_active, notes)
+		$header = [
+			'camp_id'   => $camp_id,
+			'is_active' => ! empty($_POST['decl_is_active']) ? 1 : 0,
+			'notes'     => sanitize_textarea_field($_POST['decl_notes'] ?? ''),
 		];
 		$existing = $wpdb->get_row($wpdb->prepare("SELECT id FROM {$tbl} WHERE camp_id = %d", $camp_id));
-		if ($existing) {
-			$wpdb->update($tbl, $data, ['camp_id' => $camp_id]);
+		if ( $existing ) {
+			$wpdb->update($tbl, $header, ['camp_id' => $camp_id]);
 		} else {
-			$wpdb->insert($tbl, $data);
+			$wpdb->insert($tbl, $header);
 		}
+
+		// Save per-day data
+		$days_input = $_POST['days'] ?? []; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( is_array($days_input) ) {
+			$tbl_days  = Schema::table('camp_declaration_days');
+			$tbl_diets = Schema::table('camp_declaration_diet_lines');
+			$tbl_accom = Schema::table('camp_declaration_accommodation_lines');
+
+			foreach ( $days_input as $date_raw => $day_data ) {
+				$date = sanitize_text_field($date_raw);
+				if ( ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) ) {
+					continue;
+				}
+
+				$day_row = [
+					'camp_id'          => $camp_id,
+					'declaration_date' => $date,
+					'declared_persons' => (int) ($day_data['persons'] ?? 0),
+					'arrival_time'     => sanitize_text_field($day_data['arrival_time'] ?? ''),
+					'departure_time'   => sanitize_text_field($day_data['departure_time'] ?? ''),
+				];
+
+				$existing_day = $wpdb->get_row($wpdb->prepare(
+					"SELECT id FROM {$tbl_days} WHERE camp_id = %d AND declaration_date = %s",
+					$camp_id,
+					$date
+				));
+
+				if ( $existing_day ) {
+					$wpdb->update($tbl_days, $day_row, ['id' => (int) $existing_day->id]);
+					$day_id = (int) $existing_day->id;
+				} else {
+					$wpdb->insert($tbl_days, $day_row);
+					$day_id = (int) $wpdb->insert_id;
+				}
+
+				if ( $day_id <= 0 ) {
+					continue;
+				}
+
+				// Diet lines: delete then re-insert
+				$wpdb->delete($tbl_diets, ['day_id' => $day_id]);
+				$diets_input = $day_data['diets'] ?? [];
+				if ( is_array($diets_input) ) {
+					foreach ( $diets_input as $diet_id => $cnt ) {
+						$cnt = (int) $cnt;
+						if ( $cnt > 0 ) {
+							$wpdb->insert($tbl_diets, [
+								'day_id'  => $day_id,
+								'diet_id' => (int) $diet_id,
+								'count'   => $cnt,
+							]);
+						}
+					}
+				}
+
+				// Accommodation lines: delete then re-insert
+				$wpdb->delete($tbl_accom, ['day_id' => $day_id]);
+				$accom_input = $day_data['accommodations'] ?? [];
+				if ( is_array($accom_input) ) {
+					foreach ( $accom_input as $type_id => $cnt ) {
+						$cnt = (int) $cnt;
+						if ( $cnt > 0 ) {
+							$wpdb->insert($tbl_accom, [
+								'day_id'                => $day_id,
+								'accommodation_type_id' => (int) $type_id,
+								'count'                 => $cnt,
+							]);
+						}
+					}
+				}
+			}
+		}
+
 		AdminMenu::set_notice(__('Deklaracja zapisana.', 'basemgmt'));
 		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
 	}
