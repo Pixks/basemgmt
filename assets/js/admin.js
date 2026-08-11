@@ -2,6 +2,63 @@
 (function ($) {
     'use strict';
 
+    /* ── Camp dashboard tabs ──────────────────────────────────────────────── */
+    var HASH_MAP = {
+        'bm-section-overview'    : 'panel',
+        'bm-section-process'     : 'panel',
+        'bm-section-workcenter'  : 'workcenter',
+        'bm-section-checklist'   : 'workcenter',
+        'bm-section-organizer'   : 'organizer',
+        'bm-section-prearrival'  : 'planning',
+        'bm-section-settlement'  : 'settlement',
+    };
+
+    function activateCampTab(tabName) {
+        var $nav    = $('#bm-camp-tab-nav');
+        var $panels = $('.bm-tab-panel');
+        if (!$nav.length) return;
+
+        $nav.find('.nav-tab').removeClass('nav-tab-active');
+        $nav.find('[data-tab="' + tabName + '"]').addClass('nav-tab-active');
+
+        $panels.removeClass('is-active');
+        $panels.filter('[data-tab="' + tabName + '"]').addClass('is-active');
+
+        history.replaceState(null, '', window.location.pathname + window.location.search + '#bm-tab-' + tabName);
+    }
+
+    function initCampTabs() {
+        var $nav = $('#bm-camp-tab-nav');
+        if (!$nav.length) return;
+
+        // Determine initial tab from URL hash.
+        var hash    = window.location.hash.replace('#', '');
+        var initial = 'panel';
+
+        if (hash.indexOf('bm-tab-') === 0) {
+            initial = hash.replace('bm-tab-', '');
+        } else if (HASH_MAP[hash]) {
+            initial = HASH_MAP[hash];
+        }
+
+        activateCampTab(initial);
+
+        $nav.on('click', '.nav-tab', function (e) {
+            e.preventDefault();
+            activateCampTab($(this).data('tab'));
+        });
+    }
+
+    /* ── Add task row ─────────────────────────────────────────────────────── */
+    function initAddTaskRow() {
+        $(document).on('click', '#bm-add-task-row', function () {
+            var tpl = document.getElementById('bm-task-row-template');
+            if (!tpl) return;
+            var clone = document.importNode(tpl.content, true);
+            document.getElementById('bm-checklist-tbody').appendChild(clone);
+        });
+    }
+
     /* ── Sortable.js: plan item drag-and-drop reorder ─────────────────────── */
     function initSortable() {
         var el = document.getElementById('bm-plan-items-tbody');
@@ -76,6 +133,8 @@
 
     /* ── Bootstrap ───────────────────────────────────────────────────────────  */
     $(function () {
+        initCampTabs();
+        initAddTaskRow();
         initSortable();
         initCalendar();
     });

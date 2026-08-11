@@ -211,3 +211,435 @@
 	font-size: 13px;
 	font-weight: 400;
 }
+
+/* ── Camp dashboard header ──────────────────────────────────────────────────── */
+.bm-camp-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 16px 0 0;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.bm-camp-header__title h1 {
+	margin: 0 0 4px;
+	font-size: 23px;
+	line-height: 1.3;
+}
+
+.bm-camp-header__meta {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+/* ── Super-status badges ────────────────────────────────────────────────────── */
+.bm-status-badge {
+	display: inline-block;
+	padding: 4px 14px;
+	border-radius: 20px;
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: .5px;
+}
+
+.bm-status-badge--zapytanie     { background: #e0f2fe; color: #075985; }
+.bm-status-badge--przygotowanie { background: #fef3c7; color: #92400e; }
+.bm-status-badge--pobyt         { background: #d1fae5; color: #065f46; }
+.bm-status-badge--rozliczenie   { background: #ede9fe; color: #5b21b6; }
+.bm-status-badge--zakonczone    { background: #f3f4f6; color: #374151; }
+
+/* ── Tab panels (real JS-powered tabs) ──────────────────────────────────────── */
+.bm-tab-panel {
+	display: none;
+	padding-top: 20px;
+}
+
+.bm-tab-panel.is-active {
+	display: block;
+}
+
+.bm-camp-tabs {
+	margin-top: 12px;
+}
+
+
+/* ── Workcenter header ──────────────────────────────────────────────────────── */
+.bm-workcenter-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 20px;
+gap: 16px;
+flex-wrap: wrap;
+}
+.bm-workcenter-stats {
+display: flex;
+align-items: center;
+gap: 12px;
+color: #646970;
+font-size: 13px;
+}
+.bm-progress-bar {
+width: 120px;
+height: 6px;
+background: #e5e7eb;
+border-radius: 3px;
+overflow: hidden;
+}
+.bm-progress-fill {
+height: 100%;
+background: #2563eb;
+border-radius: 3px;
+transition: width 0.3s;
+}
+
+/* ── Kanban board ───────────────────────────────────────────────────────────── */
+.bm-kanban {
+display: flex;
+gap: 16px;
+align-items: flex-start;
+overflow-x: auto;
+padding-bottom: 8px;
+}
+.bm-kanban-col {
+flex: 1 1 220px;
+min-width: 220px;
+background: #f6f7f7;
+border-radius: 6px;
+display: flex;
+flex-direction: column;
+}
+.bm-kanban-col__header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 10px 14px;
+border-radius: 6px 6px 0 0;
+font-weight: 600;
+font-size: 12px;
+text-transform: uppercase;
+letter-spacing: .04em;
+}
+.bm-kanban-col--pending   .bm-kanban-col__header { background: #e0f2fe; color: #075985; }
+.bm-kanban-col--in_progress .bm-kanban-col__header { background: #fef3c7; color: #92400e; }
+.bm-kanban-col--blocked   .bm-kanban-col__header { background: #fee2e2; color: #991b1b; }
+.bm-kanban-col--done      .bm-kanban-col__header { background: #d1fae5; color: #065f46; }
+.bm-kanban-col__count {
+background: rgba(0,0,0,.1);
+border-radius: 10px;
+padding: 1px 7px;
+font-size: 11px;
+}
+.bm-kanban-col__body {
+padding: 8px;
+display: flex;
+flex-direction: column;
+gap: 8px;
+flex: 1;
+min-height: 60px;
+}
+.bm-kanban-col__footer {
+padding: 6px 8px;
+}
+.bm-kanban-add-link {
+display: block;
+text-align: center;
+font-size: 12px;
+color: #646970;
+padding: 4px;
+border-radius: 4px;
+text-decoration: none;
+}
+.bm-kanban-add-link:hover { background: #e5e7eb; color: #1d2327; }
+.bm-kanban-empty {
+text-align: center;
+color: #a0aec0;
+font-size: 12px;
+padding: 16px 8px;
+}
+
+/* ── Task cards ─────────────────────────────────────────────────────────────── */
+.bm-task-card {
+background: #fff;
+border: 1px solid #e5e7eb;
+border-radius: 5px;
+padding: 10px 12px;
+display: block;
+text-decoration: none;
+color: #1d2327;
+transition: box-shadow 0.15s, border-color 0.15s;
+}
+.bm-task-card:hover {
+box-shadow: 0 2px 8px rgba(0,0,0,.1);
+border-color: #93c5fd;
+color: #1d2327;
+}
+.bm-task-card--overdue {
+border-left: 3px solid #ef4444;
+}
+.bm-task-card__title {
+font-weight: 600;
+font-size: 13px;
+margin-bottom: 4px;
+line-height: 1.4;
+}
+.bm-task-card__desc {
+font-size: 12px;
+color: #6b7280;
+margin-bottom: 6px;
+line-height: 1.4;
+}
+.bm-task-card__meta {
+display: flex;
+flex-wrap: wrap;
+gap: 6px;
+font-size: 11px;
+color: #6b7280;
+align-items: center;
+}
+.bm-task-card__assignee, .bm-task-card__due { white-space: nowrap; }
+.bm-task-card__due--overdue { color: #ef4444; font-weight: 600; }
+
+/* ── Priority badges ────────────────────────────────────────────────────────── */
+.bm-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; text-transform: uppercase; letter-spacing: .03em; }
+.bm-badge--low    { background: #e5e7eb; color: #374151; }
+.bm-badge--normal { background: #dbeafe; color: #1e40af; }
+.bm-badge--high   { background: #fef3c7; color: #92400e; }
+.bm-badge--urgent { background: #fee2e2; color: #991b1b; }
+
+/* ── Task edit page ─────────────────────────────────────────────────────────── */
+.bm-task-header {
+display: flex;
+align-items: center;
+gap: 12px;
+margin-bottom: 20px;
+flex-wrap: wrap;
+}
+.bm-back-link {
+color: #646970;
+text-decoration: none;
+font-size: 13px;
+}
+.bm-back-link:hover { color: #2271b1; }
+.bm-task-header__title {
+flex: 1;
+font-size: 22px;
+font-weight: 600;
+margin: 0;
+}
+.bm-task-body {
+display: flex;
+gap: 24px;
+align-items: flex-start;
+}
+.bm-task-main {
+flex: 1 1 0;
+min-width: 0;
+display: flex;
+flex-direction: column;
+gap: 16px;
+}
+.bm-task-sidebar {
+width: 280px;
+flex-shrink: 0;
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.bm-task-meta-box {
+background: #fff;
+border: 1px solid #e5e7eb;
+border-radius: 6px;
+padding: 16px;
+}
+.bm-task-meta-box h4 {
+margin: 0 0 12px;
+font-size: 11px;
+text-transform: uppercase;
+letter-spacing: .05em;
+color: #6b7280;
+}
+.bm-task-meta-box label {
+display: block;
+font-size: 12px;
+color: #374151;
+margin-bottom: 4px;
+font-weight: 600;
+}
+.bm-task-meta-box select,
+.bm-task-meta-box input[type="date"],
+.bm-task-meta-box input[type="text"] {
+width: 100%;
+margin-bottom: 12px;
+}
+.bm-task-meta-box select:last-child,
+.bm-task-meta-box input:last-child { margin-bottom: 0; }
+.bm-task-actions {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+.bm-task-actions .button { width: 100%; text-align: center; justify-content: center; }
+.bm-task-field { margin-bottom: 16px; }
+.bm-task-field label { display: block; font-weight: 600; margin-bottom: 6px; }
+
+
+/* ── Org page layout ────────────────────────────────────────────────────────── */
+.bm-page-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 16px;
+flex-wrap: wrap;
+gap: 8px;
+}
+.bm-page-header h1 { margin: 0; }
+.bm-two-col-layout {
+display: flex;
+gap: 20px;
+align-items: flex-start;
+}
+.bm-col-sidebar { width: 340px; flex-shrink: 0; }
+.bm-col-main    { flex: 1 1 0; min-width: 0; }
+
+/* ── Empty state ────────────────────────────────────────────────────────────── */
+.bm-empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: #646970;
+}
+.bm-empty-state p { font-size: 14px; }
+.bm-empty-state .dashicons {
+    display: block;
+    width: auto;
+    height: auto;
+    line-height: 1;
+    margin: 0 auto 12px;
+}
+
+/* ── Doctype badges ─────────────────────────────────────────────────────────── */
+.bm-badge--doctype-contract    { background: #dbeafe; color: #1e40af; }
+.bm-badge--doctype-regulation  { background: #fef9c3; color: #854d0e; }
+.bm-badge--doctype-declaration { background: #ede9fe; color: #5b21b6; }
+.bm-badge--doctype-document    { background: #f3f4f6; color: #374151; }
+.bm-badge--doctype-other       { background: #f3f4f6; color: #374151; }
+.bm-badge--success { background: #d1fae5; color: #065f46; }
+.bm-link-small { font-size: 12px; }
+
+/* ── Finance lines table ────────────────────────────────────────────────────── */
+.bm-finance-lines-table th, .bm-finance-lines-table td { padding: 6px 8px; }
+.bm-finance-lines-table input[type="number"] { width: 80px; }
+
+/* ── Modals ─────────────────────────────────────────────────────────────────── */
+.bm-modal-overlay {
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,.55);
+z-index: 100000;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.bm-modal {
+background: #fff;
+border-radius: 6px;
+width: 500px;
+max-width: 95vw;
+box-shadow: 0 8px 40px rgba(0,0,0,.18);
+display: flex;
+flex-direction: column;
+max-height: 80vh;
+}
+.bm-modal-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 16px 20px;
+border-bottom: 1px solid #e5e7eb;
+}
+.bm-modal-header h3 { margin: 0; font-size: 16px; }
+.bm-modal-close {
+background: none;
+border: none;
+cursor: pointer;
+font-size: 18px;
+color: #646970;
+line-height: 1;
+padding: 2px 6px;
+}
+.bm-modal-close:hover { color: #1d2327; }
+.bm-modal-body {
+padding: 20px;
+overflow-y: auto;
+flex: 1;
+}
+.bm-modal-footer {
+padding: 14px 20px;
+border-top: 1px solid #e5e7eb;
+display: flex;
+gap: 8px;
+justify-content: flex-end;
+}
+
+/* ── Kanban WP improvements ─────────────────────────────────────────────────── */
+.bm-kanban-col {
+box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.bm-kanban-col__header {
+font-size: 11px;
+}
+.bm-task-card {
+box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+.bm-task-card:hover {
+box-shadow: 0 3px 10px rgba(0,0,0,.12);
+}
+.bm-workcenter-header {
+background: #fff;
+border: 1px solid #e5e7eb;
+border-radius: 4px;
+padding: 12px 16px;
+margin-bottom: 16px;
+}
+
+/* ── Postbox fixes ──────────────────────────────────────────────────────────── */
+.postbox {
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	margin-bottom: 16px;
+	overflow: hidden; /* clip header background to rounded corners */
+}
+.postbox .postbox-header {
+	background: #f6f7f7;
+	border-bottom: 1px solid #dcdcde;
+	padding: 0;
+	display: flex;
+	align-items: stretch;
+}
+.postbox .postbox-header h2.hndle,
+.postbox .hndle {
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.4;
+	margin: 0;
+	padding: 10px 14px;
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	cursor: default;
+}
+.postbox .inside {
+	padding: 14px 16px;
+	background: #fff;
+}
+
+/* ── Danger button ──────────────────────────────────────────────────────────── */
+.bm-danger { color: #d63638 !important; border-color: #d63638 !important; }
+.bm-danger:hover { background: #d63638 !important; color: #fff !important; }

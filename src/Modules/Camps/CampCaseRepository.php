@@ -272,6 +272,13 @@ final class CampCaseRepository {
 			'contact_phone'           => sanitize_text_field($data['contact_phone'] ?? ''),
 			'billing_name'            => sanitize_text_field($data['billing_name'] ?? ''),
 			'billing_tax_id'          => sanitize_text_field($data['billing_tax_id'] ?? ''),
+			'billing_regon'           => sanitize_text_field($data['billing_regon'] ?? ''),
+			'billing_krs'             => sanitize_text_field($data['billing_krs'] ?? ''),
+			'billing_street'          => sanitize_text_field($data['billing_street'] ?? ''),
+			'billing_city'            => sanitize_text_field($data['billing_city'] ?? ''),
+			'billing_zip'             => sanitize_text_field($data['billing_zip'] ?? ''),
+			'bank_name'               => sanitize_text_field($data['bank_name'] ?? ''),
+			'bank_account'            => sanitize_text_field($data['bank_account'] ?? ''),
 			'billing_address'         => sanitize_textarea_field($data['billing_address'] ?? ''),
 			'settlement_contact_name' => sanitize_text_field($data['settlement_contact_name'] ?? ''),
 			'settlement_contact_email'=> sanitize_email($data['settlement_contact_email'] ?? ''),
@@ -381,6 +388,7 @@ final class CampCaseRepository {
 				'camp_id'       => $camp_id,
 				'party'         => $party,
 				'label'         => $label,
+				'description'   => sanitize_textarea_field($item['description'] ?? ''),
 				'status'        => $status,
 				'priority'      => $priority,
 				'assigned_to'   => sanitize_text_field($item['assigned_to'] ?? ''),
@@ -500,26 +508,14 @@ final class CampCaseRepository {
 	/**
 	 * @return array<int,array<string,string>>
 	 */
-	public static function default_checklist_rows(int $minimum_rows = 10): array {
+	public static function default_checklist_rows(int $minimum_rows = 5): array {
 		$rows = [];
 		foreach ( self::default_checklist_template() as $item ) {
 			$rows[] = [
 				'label'       => $item['label'],
 				'id'          => '',
 				'party'       => $item['party'],
-				'status'      => self::CHECKLIST_STATUS_PENDING,
-				'priority'    => self::CHECKLIST_PRIORITY_NORMAL,
-				'assigned_to' => '',
-				'due_date'    => '',
-				'comment'     => '',
-			];
-		}
-
-		while ( count($rows) < $minimum_rows ) {
-			$rows[] = [
-				'label'       => '',
-				'id'          => '',
-				'party'       => self::CHECKLIST_PARTY_SHARED,
+				'description' => '',
 				'status'      => self::CHECKLIST_STATUS_PENDING,
 				'priority'    => self::CHECKLIST_PRIORITY_NORMAL,
 				'assigned_to' => '',
@@ -531,13 +527,14 @@ final class CampCaseRepository {
 		return $rows;
 	}
 
-	public static function pad_checklist_rows(array $items, int $minimum_rows = 10): array {
+	public static function pad_checklist_rows(array $items, int $minimum_rows = 0): array {
 		$rows = array_map(
 			static function (array $item): array {
 				return [
 					'label'       => (string) ($item['label'] ?? ''),
 					'id'          => (string) ($item['id'] ?? ''),
 					'party'       => (string) ($item['party'] ?? self::CHECKLIST_PARTY_SHARED),
+					'description' => (string) ($item['description'] ?? ''),
 					'status'      => (string) ($item['status'] ?? self::CHECKLIST_STATUS_PENDING),
 					'priority'    => (string) ($item['priority'] ?? self::CHECKLIST_PRIORITY_NORMAL),
 					'assigned_to' => (string) ($item['assigned_to'] ?? ''),
@@ -548,20 +545,66 @@ final class CampCaseRepository {
 			$items
 		);
 
-		while ( count($rows) < $minimum_rows ) {
-			$rows[] = [
-				'label'       => '',
-				'id'          => '',
-				'party'       => self::CHECKLIST_PARTY_SHARED,
-				'status'      => self::CHECKLIST_STATUS_PENDING,
-				'priority'    => self::CHECKLIST_PRIORITY_NORMAL,
-				'assigned_to' => '',
-				'due_date'    => '',
-				'comment'     => '',
-			];
-		}
-
 		return $rows;
+	}
+
+	public static function get_single_checklist_item(int $id): ?object {
+		global $wpdb;
+		$table = Schema::table('camp_checklist_items');
+		return $wpdb->get_row(
+			$wpdb->prepare("SELECT * FROM {$table} WHERE id = %d LIMIT 1", $id)
+		) ?: null;
+	}
+
+	public static function insert_checklist_item(int $camp_id, array $data): int {
+		global $wpdb;
+		$table  = Schema::table('camp_checklist_items');
+		$status = self::sanitize_checklist_status($data['status'] ?? self::CHECKLIST_STATUS_PENDING);
+		$wpdb->insert($table, [
+			'camp_id'      => $camp_id,
+			'party'        => self::sanitize_checklist_party($data['party'] ?? self::CHECKLIST_PARTY_SHARED),
+			'label'        => sanitize_text_field($data['label'] ?? ''),
+			'description'  => sanitize_textarea_field($data['description'] ?? ''),
+			'status'       => $status,
+			'priority'     => self::sanitize_checklist_priority($data['priority'] ?? self::CHECKLIST_PRIORITY_NORMAL),
+			'assigned_to'  => sanitize_text_field($data['assigned_to'] ?? ''),
+			'due_date'     => self::sanitize_date_or_null($data['due_date'] ?? ''),
+			'comment'      => sanitize_textarea_field($data['comment'] ?? ''),
+			'sort_order'   => (int) $wpdb->get_var($wpdb->prepare("SELECT COALESCE(MAX(sort_order),0)+1 FROM {$table} WHERE camp_id=%d", $camp_id)),
+			'completed_at' => $status === self::CHECKLIST_STATUS_DONE ? current_time('mysql') : null,
+			'completed_by' => $status === self::CHECKLIST_STATUS_DONE ? (int) get_current_user_id() : null,
+		]);
+		return (int) $wpdb->insert_id;
+	}
+
+	public static function update_checklist_item(int $id, int $camp_id, array $data): void {
+		global $wpdb;
+		$table      = Schema::table('camp_checklist_items');
+		$status     = self::sanitize_checklist_status($data['status'] ?? self::CHECKLIST_STATUS_PENDING);
+		$existing   = self::get_single_checklist_item($id);
+		$was_done   = $existing && $existing->status === self::CHECKLIST_STATUS_DONE;
+		$now_done   = $status === self::CHECKLIST_STATUS_DONE;
+		$wpdb->update(
+			$table,
+			[
+				'party'        => self::sanitize_checklist_party($data['party'] ?? self::CHECKLIST_PARTY_SHARED),
+				'label'        => sanitize_text_field($data['label'] ?? ''),
+				'description'  => sanitize_textarea_field($data['description'] ?? ''),
+				'status'       => $status,
+				'priority'     => self::sanitize_checklist_priority($data['priority'] ?? self::CHECKLIST_PRIORITY_NORMAL),
+				'assigned_to'  => sanitize_text_field($data['assigned_to'] ?? ''),
+				'due_date'     => self::sanitize_date_or_null($data['due_date'] ?? ''),
+				'comment'      => sanitize_textarea_field($data['comment'] ?? ''),
+				'completed_at' => ( $now_done && ! $was_done ) ? current_time('mysql') : ( $was_done ? $existing->completed_at : null ),
+				'completed_by' => ( $now_done && ! $was_done ) ? (int) get_current_user_id() : ( $was_done ? $existing->completed_by : null ),
+			],
+			['id' => $id, 'camp_id' => $camp_id]
+		);
+	}
+
+	public static function delete_checklist_item(int $id, int $camp_id): void {
+		global $wpdb;
+		$wpdb->delete(Schema::table('camp_checklist_items'), ['id' => $id, 'camp_id' => $camp_id]);
 	}
 
 	public static function set_attention_state(int $camp_id, bool $automation_attention): void {
@@ -1198,3 +1241,4 @@ final class CampCaseRepository {
 		return $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) === $table;
 	}
 }
+

@@ -1,0 +1,205 @@
+# CampLink – Translation Template
+# Copyright (C) 2025 Pixks - Jakub Boiński
+# This file is distributed under the same license as the CampLink plugin.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: CampLink 2.0.0\n"
+"Report-Msgid-Bugs-To: https://pixks.pl\n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"X-Generator: CampLink POT Generator\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SearchPath-0: src\n"
+"X-Poedit-SearchPath-1: templates\n"
+
+msgid "CampLink"
+msgstr ""
+
+msgid "Dashboard"
+msgstr ""
+
+msgid "Obozy"
+msgstr ""
+
+msgid "Kadra"
+msgstr ""
+
+msgid "Ustawienia"
+msgstr ""
+
+msgid "Organizacja"
+msgstr ""
+
+msgid "Szablony dok."
+msgstr ""
+
+msgid "Dokumenty"
+msgstr ""
+
+msgid "Finanse"
+msgstr ""
+
+msgid "Baza Obozowa – Dashboard"
+msgstr ""
+
+msgid "Nowy obóz"
+msgstr ""
+
+msgid "Nowa osoba kadry"
+msgstr ""
+
+msgid "Aktywne obozy"
+msgstr ""
+
+msgid "Zapisz"
+msgstr ""
+
+msgid "Edytuj"
+msgstr ""
+
+msgid "Usuń"
+msgstr ""
+
+msgid "Anuluj"
+msgstr ""
+
+msgid "Dodaj"
+msgstr ""
+
+msgid "Utwórz"
+msgstr ""
+
+msgid "Wyślij"
+msgstr ""
+
+msgid "Szukaj"
+msgstr ""
+
+msgid "Filtruj"
+msgstr ""
+
+msgid "Panel"
+msgstr ""
+
+msgid "Centrum Pracy"
+msgstr ""
+
+msgid "Organizator"
+msgstr ""
+
+msgid "Planowanie"
+msgstr ""
+
+msgid "Rozliczenie"
+msgstr ""
+
+msgid "Zapytanie"
+msgstr ""
+
+msgid "Przygotowanie"
+msgstr ""
+
+msgid "Pobyt"
+msgstr ""
+
+msgid "Zakończono"
+msgstr ""
+
+msgid "Do zrobienia"
+msgstr ""
+
+msgid "W trakcie"
+msgstr ""
+
+msgid "Gotowe"
+msgstr ""
+
+msgid "Zablokowane"
+msgstr ""
+
+msgid "Niski"
+msgstr ""
+
+msgid "Średni"
+msgstr ""
+
+msgid "Wysoki"
+msgstr ""
+
+msgid "Krytyczny"
+msgstr ""
+
+msgid "Tytuł"
+msgstr ""
+
+msgid "Opis"
+msgstr ""
+
+msgid "Data"
+msgstr ""
+
+msgid "Akcje"
+msgstr ""
+
+msgid "Typ"
+msgstr ""
+
+msgid "Brak danych."
+msgstr ""
+
+msgid "Zapisz ustawienia"
+msgstr ""
+
+msgid "Ustawienia zapisane."
+msgstr ""
+
+msgid "Szablony dokumentów"
+msgstr ""
+
+msgid "Biblioteka dokumentów"
+msgstr ""
+
+msgid "Pakiety finansowe"
+msgstr ""
+
+msgid "Pobierz backup (JSON)"
+msgstr ""
+
+msgid "Importuj backup"
+msgstr ""
+
+msgid "Wyczyść wszystkie dane"
+msgstr ""
+
+msgid "Zarządzanie danymi wtyczki"
+msgstr ""
+
+msgid "Aktualny etap"
+msgstr ""
+
+msgid "Stan pracy"
+msgstr ""
+
+msgid "Gotowość"
+msgstr ""
+
+msgid "Następny termin"
+msgstr ""
+
+msgid "Otwarte blokery"
+msgstr ""
+
+msgid "Sugerowane działania"
+msgstr ""
+
+msgid "Co blokuje przejście dalej"
+msgstr ""

@@ -1,0 +1,87 @@
+# CampLink – Polish (Poland) Translations
+# Copyright (C) 2025 Pixks - Jakub Boiński
+# This file is distributed under the same license as the CampLink plugin.
+# NOTE: Since the plugin source strings are already in Polish, this file is a
+# pass-through — each msgstr mirrors the msgid. Update individual strings to
+# customize wording.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: CampLink 2.0.0\n"
+"Report-Msgid-Bugs-To: https://pixks.pl\n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: CampLink Translation Team\n"
+"Language-Team: Polish <pl@li.org>\n"
+"Language: pl_PL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);\n"
+"X-Generator: CampLink\n"
+
+msgid "CampLink"
+msgstr "CampLink"
+
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Obozy"
+msgstr "Obozy"
+
+msgid "Kadra"
+msgstr "Kadra"
+
+msgid "Ustawienia"
+msgstr "Ustawienia"
+
+msgid "Organizacja"
+msgstr "Organizacja"
+
+msgid "Szablony dok."
+msgstr "Szablony dok."
+
+msgid "Dokumenty"
+msgstr "Dokumenty"
+
+msgid "Finanse"
+msgstr "Finanse"
+
+msgid "Panel"
+msgstr "Panel"
+
+msgid "Centrum Pracy"
+msgstr "Centrum Pracy"
+
+msgid "Organizator"
+msgstr "Organizator"
+
+msgid "Planowanie"
+msgstr "Planowanie"
+
+msgid "Rozliczenie"
+msgstr "Rozliczenie"
+
+msgid "Zapytanie"
+msgstr "Zapytanie"
+
+msgid "Przygotowanie"
+msgstr "Przygotowanie"
+
+msgid "Pobyt"
+msgstr "Pobyt"
+
+msgid "Zakończono"
+msgstr "Zakończono"
+
+msgid "Do zrobienia"
+msgstr "Do zrobienia"
+
+msgid "W trakcie"
+msgstr "W trakcie"
+
+msgid "Gotowe"
+msgstr "Gotowe"
+
+msgid "Zablokowane"
+msgstr "Zablokowane"

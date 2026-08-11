@@ -49,6 +49,10 @@ final class SettingsPage {
 		update_option('bm_report_emails',         sanitize_text_field(wp_unslash($_POST['report_emails'] ?? '')));
 		update_option('bm_report_interval',       sanitize_key($_POST['report_interval'] ?? 'daily'));
 		update_option('bm_lockout_minutes',        max(1, (int) ($_POST['lockout_minutes'] ?? 15)));
+		update_option('bm_notify_task_added', ! empty($_POST['bm_notify_task_added']) ? '1' : '0');
+		update_option('bm_notify_doc_sent',   ! empty($_POST['bm_notify_doc_sent'])   ? '1' : '0');
+		update_option('bm_notify_task_email', sanitize_email($_POST['bm_notify_task_email'] ?? ''));
+		update_option('bm_notify_doc_email',  sanitize_email($_POST['bm_notify_doc_email'] ?? ''));
 
 		// Reschedule periodic report if config changed.
 		\BaseMgmt\Cron\Scheduler::reschedule_staff_report();
@@ -124,6 +128,132 @@ final class SettingsPage {
 
 		AdminMenu::set_notice(__('Szablon przywrócony do domyślnego.', 'basemgmt'));
 		wp_safe_redirect(admin_url("admin.php?page=basemgmt-settings&edit_template=$slug"));
+		exit;
+	}
+
+	// ── Translations ─────────────────────────────────────────────────────────
+
+	public function handle_compile_mo(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_compile_mo');
+
+		$results = \BaseMgmt\Core\MoCompiler::compile_all();
+		$ok      = array_filter( $results );
+		$fail    = array_diff_key( $results, $ok );
+
+		if ( $fail ) {
+			$msg = sprintf(
+				/* translators: %s: comma-separated list of failed .po filenames */
+				__( 'Nie udało się skompilować: %s', 'basemgmt' ),
+				implode( ', ', array_keys( $fail ) )
+			);
+			AdminMenu::set_notice( $msg, 'warning' );
+		} else {
+			AdminMenu::set_notice(
+				sprintf(
+					/* translators: %d: number of compiled files */
+					__( 'Skompilowano %d plików tłumaczeń (.mo).', 'basemgmt' ),
+					count( $ok )
+				)
+			);
+		}
+		wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=translations' ) );
+		exit;
+	}
+
+	// ── Backup / Import / Clear ───────────────────────────────────────────────
+
+	public function handle_backup(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_backup_data');
+
+		global $wpdb;
+		$tables = \BaseMgmt\Database\Schema::table_names();
+		$backup = [
+			'version'    => BASEMGMT_VERSION,
+			'created_at' => gmdate('Y-m-d H:i:s'),
+			'tables'     => [],
+		];
+
+		foreach ( $tables as $key => $table ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows = $wpdb->get_results( "SELECT * FROM `$table`", ARRAY_A );
+			$backup['tables'][ $key ] = $rows ?: [];
+		}
+
+		$filename = 'camplink-backup-' . gmdate('Y-m-d-His') . '.json';
+		header( 'Content-Type: application/json; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		header( 'Pragma: no-cache' );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo wp_json_encode( $backup, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE );
+		exit;
+	}
+
+	public function handle_import(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_import_data');
+
+		if ( empty( $_FILES['backup_file']['tmp_name'] ) ) {
+			AdminMenu::set_notice( __( 'Nie wybrano pliku.', 'basemgmt' ), 'error' );
+			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
+			exit;
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$raw = file_get_contents( $_FILES['backup_file']['tmp_name'] );
+		if ( ! $raw ) {
+			AdminMenu::set_notice( __( 'Nie można odczytać pliku backupu.', 'basemgmt' ), 'error' );
+			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
+			exit;
+		}
+
+		$data = json_decode( $raw, true );
+		if ( ! $data || empty( $data['tables'] ) ) {
+			AdminMenu::set_notice( __( 'Nieprawidłowy format pliku backupu.', 'basemgmt' ), 'error' );
+			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
+			exit;
+		}
+
+		global $wpdb;
+		$tables  = \BaseMgmt\Database\Schema::table_names();
+		$count   = 0;
+
+		foreach ( $data['tables'] as $key => $rows ) {
+			if ( empty( $tables[ $key ] ) ) {
+				continue;
+			}
+			$table = $tables[ $key ];
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "TRUNCATE TABLE `$table`" );
+			foreach ( $rows as $row ) {
+				$wpdb->insert( $table, $row ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$count++;
+			}
+		}
+
+		AdminMenu::set_notice( sprintf( __( 'Import zakończony – przywrócono %d rekordów.', 'basemgmt' ), $count ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
+		exit;
+	}
+
+	public function handle_clear(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_clear_data');
+
+		global $wpdb;
+		$tables = \BaseMgmt\Database\Schema::table_names();
+
+		// Disable FK checks temporarily so truncate works regardless of order.
+		$wpdb->query( 'SET FOREIGN_KEY_CHECKS = 0' );
+		foreach ( $tables as $table ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "TRUNCATE TABLE `$table`" );
+		}
+		$wpdb->query( 'SET FOREIGN_KEY_CHECKS = 1' );
+
+		AdminMenu::set_notice( __( 'Wszystkie dane wtyczki zostały wyczyszczone.', 'basemgmt' ), 'success' );
+		wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
 		exit;
 	}
 

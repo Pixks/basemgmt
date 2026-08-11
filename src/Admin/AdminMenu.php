@@ -15,6 +15,10 @@ use BaseMgmt\Admin\Pages\MealOptionsPage;
 use BaseMgmt\Admin\Pages\MealTemplatesPage;
 use BaseMgmt\Admin\Pages\MenuPage;
 use BaseMgmt\Admin\Pages\LicensePage;
+use BaseMgmt\Admin\Pages\OrgDocTemplatesPage;
+use BaseMgmt\Admin\Pages\OrgDocumentsPage;
+use BaseMgmt\Admin\Pages\OrgFinancePage;
+use BaseMgmt\Admin\Pages\OrgTasksPage;
 use BaseMgmt\Admin\Pages\PdfPage;
 use BaseMgmt\Admin\Pages\PlanTemplatesPage;
 use BaseMgmt\Admin\Pages\ReportsPage;
@@ -54,6 +58,10 @@ final class AdminMenu {
 	private MealTemplatesPage $meal_templates;
 	private PdfPage           $pdf;
 	private LicensePage       $license;
+	private OrgDocTemplatesPage $org_doc_templates;
+	private OrgDocumentsPage    $org_documents;
+	private OrgFinancePage      $org_finance;
+	private OrgTasksPage        $org_tasks;
 
 	public function __construct() {
 		$this->dashboard       = new DashboardPage();
@@ -75,6 +83,10 @@ final class AdminMenu {
 		$this->meal_templates  = new MealTemplatesPage();
 		$this->pdf             = new PdfPage();
 		$this->license         = new LicensePage();
+		$this->org_doc_templates = new OrgDocTemplatesPage();
+		$this->org_documents     = new OrgDocumentsPage();
+		$this->org_finance       = new OrgFinancePage();
+		$this->org_tasks         = new OrgTasksPage();
 	}
 
 	// ── admin_menu hook ───────────────────────────────────────────────────────
@@ -121,6 +133,43 @@ final class AdminMenu {
 			'manage_bm_staff',
 			'basemgmt-staff',
 			[$this->staff, 'render']
+		);
+
+		// ── Organizacja (under CampLink) ─────────────────────────────────────
+		add_submenu_page(
+			'basemgmt',
+			__('Organizacja – Szablony', 'basemgmt'),
+			__('Organizacja', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-org',
+			[$this->org_doc_templates, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Organizacja – Dokumenty', 'basemgmt'),
+			'&nbsp;&nbsp;↳ ' . __('Dokumenty', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-org-documents',
+			[$this->org_documents, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Organizacja – Finanse', 'basemgmt'),
+			'&nbsp;&nbsp;↳ ' . __('Finanse', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-org-finance',
+			[$this->org_finance, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Organizacja – Zadania', 'basemgmt'),
+			'&nbsp;&nbsp;↳ ' . __('Zadania', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-org-tasks',
+			[$this->org_tasks, 'render']
 		);
 
 		add_submenu_page(
@@ -295,6 +344,12 @@ final class AdminMenu {
 
 		// Sortable.js – only on schedule edit page.
 		$page = sanitize_key($_GET['page'] ?? '');
+
+		// WP media uploader – on Org documents page.
+		if ( $page === 'basemgmt-org-documents' || $page === 'basemgmt-org' ) {
+			wp_enqueue_media();
+		}
+
 		if ( $page === 'basemgmt-schedule' && ! empty($_GET['edit']) ) {
 			wp_enqueue_script(
 				'sortablejs',
@@ -363,6 +418,8 @@ final class AdminMenu {
 			'bm_save_camp_organizer'   => [$this->camps,         'handle_save_organizer'],
 			'bm_save_camp_checklist'   => [$this->camps,         'handle_save_checklist'],
 			'bm_save_camp_prearrival'  => [$this->camps,         'handle_save_prearrival'],
+			'bm_save_camp_task'        => [$this->camps,         'handle_save_task'],
+			'bm_delete_camp_task'      => [$this->camps,         'handle_delete_task'],
 			'bm_delete_camp'           => [$this->camps,         'handle_delete'],
 			'bm_save_staff'            => [$this->staff,         'handle_save'],
 			'bm_delete_staff'          => [$this->staff,         'handle_delete'],
@@ -397,6 +454,10 @@ final class AdminMenu {
 			'bm_send_test_email'          => [$this->settings,     'handle_send_test'],
 			'bm_save_email_template'      => [$this->settings,     'handle_save_template'],
 			'bm_reset_email_template'     => [$this->settings,     'handle_reset_template'],
+			'bm_backup_data'              => [$this->settings,     'handle_backup'],
+			'bm_import_data'              => [$this->settings,     'handle_import'],
+			'bm_clear_data'               => [$this->settings,     'handle_clear'],
+			'bm_compile_mo'               => [$this->settings,     'handle_compile_mo'],
 			// Menu (Jadłospis)
 			'bm_save_menu'                => [$this->menu,         'handle_save'],
 			'bm_delete_menu'              => [$this->menu,         'handle_delete'],
@@ -443,6 +504,26 @@ final class AdminMenu {
 			// License
 			'bm_activate_license'         => [$this->license,        'handle_activate'],
 			'bm_deactivate_license'       => [$this->license,        'handle_deactivate'],
+			// Organizacja
+			'bm_save_doc_template'              => [$this->org_doc_templates, 'handle_save'],
+			'bm_delete_doc_template'            => [$this->org_doc_templates, 'handle_delete'],
+			'bm_save_doc_library'               => [$this->org_documents,     'handle_save'],
+			'bm_delete_doc_library'             => [$this->org_documents,     'handle_delete'],
+			'bm_save_payment_package'           => [$this->org_finance,       'handle_save'],
+			'bm_delete_payment_package'         => [$this->org_finance,       'handle_delete'],
+			'bm_save_task_template'             => [$this->org_tasks,  'handle_save'],
+			'bm_delete_task_template'           => [$this->org_tasks,  'handle_delete'],
+			'bm_add_task_from_template'         => [$this->camps,      'handle_add_task_from_template'],
+			'bm_save_camp_declaration'          => [$this->camps,      'handle_save_camp_declaration'],
+			'bm_add_camp_damage'                => [$this->camps,      'handle_add_camp_damage'],
+			'bm_delete_camp_damage'             => [$this->camps,      'handle_delete_camp_damage'],
+			// Camp documents
+			'bm_add_camp_doc_library'           => [$this->camps, 'handle_add_camp_doc_library'],
+			'bm_create_camp_doc_from_template'  => [$this->camps, 'handle_create_camp_doc_from_template'],
+			'bm_send_camp_doc'                  => [$this->camps, 'handle_send_camp_doc'],
+			'bm_delete_camp_doc'                => [$this->camps, 'handle_delete_camp_doc'],
+			// Camp finance
+			'bm_save_camp_finance'              => [$this->camps, 'handle_save_camp_finance'],
 		];
 	}
 

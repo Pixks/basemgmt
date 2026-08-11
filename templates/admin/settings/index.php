@@ -244,6 +244,179 @@ wp_enqueue_style('wp-codemirror');
         </form>
     </div>
 
+    <!-- Translations -->
+    <div class="postbox" id="translations" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 10px;">🌐 <?php esc_html_e('Tłumaczenia', 'basemgmt'); ?></h2>
+        <p class="description" style="margin:0 0 12px;">
+            <?php esc_html_e('Pliki tłumaczeń (.po) znajdują się w folderze', 'basemgmt'); ?>
+            <code><?php echo esc_html(basename(BASEMGMT_DIR)); ?>/languages/</code>.
+            <?php esc_html_e('Edytuj pliki .po i kliknij "Kompiluj", aby wygenerować binarne pliki .mo wymagane przez WordPress.', 'basemgmt'); ?>
+        </p>
+        <?php
+        $lang_dir = BASEMGMT_DIR . 'languages/';
+        $po_files = glob($lang_dir . '*.po') ?: [];
+        ?>
+        <?php if ($po_files) : ?>
+            <table class="wp-list-table widefat fixed striped" style="border:0;margin-bottom:12px;">
+                <thead><tr>
+                    <th><?php esc_html_e('Plik .po', 'basemgmt'); ?></th>
+                    <th style="width:120px;"><?php esc_html_e('Plik .mo', 'basemgmt'); ?></th>
+                    <th style="width:140px;"><?php esc_html_e('Data modyfikacji', 'basemgmt'); ?></th>
+                </tr></thead>
+                <tbody>
+                    <?php foreach ($po_files as $po) :
+                        $mo      = substr($po, 0, -3) . '.mo';
+                        $mo_ok   = file_exists($mo);
+                        $po_time = filemtime($po);
+                        $mo_time = $mo_ok ? filemtime($mo) : 0;
+                        $outdated = $mo_ok && ($po_time > $mo_time);
+                    ?>
+                    <tr>
+                        <td><code><?php echo esc_html(basename($po)); ?></code></td>
+                        <td>
+                            <?php if ($mo_ok && !$outdated) : ?>
+                                <span style="color:#2a9d2a;">✓ <?php esc_html_e('Aktualny', 'basemgmt'); ?></span>
+                            <?php elseif ($outdated) : ?>
+                                <span style="color:#d63638;">⚠ <?php esc_html_e('Nieaktualny', 'basemgmt'); ?></span>
+                            <?php else : ?>
+                                <span style="color:#d63638;">✗ <?php esc_html_e('Brak .mo', 'basemgmt'); ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td><small><?php echo esc_html(date_i18n('d.m.Y H:i', $po_time)); ?></small></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <?php wp_nonce_field('bm_compile_mo'); ?>
+            <input type="hidden" name="action" value="bm_compile_mo">
+            <button type="submit" class="button button-primary">
+                🔄 <?php esc_html_e('Kompiluj tłumaczenia (.po → .mo)', 'basemgmt'); ?>
+            </button>
+        </form>
+        <p class="description" style="margin-top:8px;">
+            <?php esc_html_e('Dostępne języki: pl_PL (polski), en_US (angielski). Zmień język witryny w Ustawienia > Ogólne.', 'basemgmt'); ?>
+        </p>
+    </div>
+
+
+    <!-- Notifications: tasks and documents -->
+    <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 10px;">📬 <?php esc_html_e('Powiadomienia – zadania i dokumenty', 'basemgmt'); ?></h2>
+        <p class="description" style="margin:0 0 14px;">
+            <?php esc_html_e('Skonfiguruj automatyczne powiadomienia email dla zdarzeń w obozach.', 'basemgmt'); ?>
+        </p>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <?php wp_nonce_field('bm_save_settings'); ?>
+            <input type="hidden" name="action" value="bm_save_settings">
+            <!-- Preserve existing values -->
+            <input type="hidden" name="from_name"          value="<?php echo esc_attr($s['from_name']); ?>">
+            <input type="hidden" name="from_email"         value="<?php echo esc_attr($s['from_email']); ?>">
+            <input type="hidden" name="admin_notify_email" value="<?php echo esc_attr($s['admin_notify_email']); ?>">
+            <input type="hidden" name="header_color"       value="<?php echo esc_attr($s['header_color']); ?>">
+            <input type="hidden" name="logo_url"           value="<?php echo esc_attr($s['logo_url']); ?>">
+            <input type="hidden" name="header_title"       value="<?php echo esc_attr($s['header_title']); ?>">
+            <input type="hidden" name="header_html"        value="<?php echo esc_attr($s['header_html']); ?>">
+            <input type="hidden" name="footer_text"        value="<?php echo esc_attr($s['footer_text']); ?>">
+            <table class="form-table" style="margin:0;">
+                <tr>
+                    <th><?php esc_html_e('Powiadomienie o zadaniach', 'basemgmt'); ?></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="bm_notify_task_added" value="1"
+                                <?php checked(get_option('bm_notify_task_added', '0'), '1'); ?>>
+                            <?php esc_html_e('Wyślij email gdy zadanie jest dodane do obozu', 'basemgmt'); ?>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-notify-task-email"><?php esc_html_e('Email do powiadomień o zadaniach', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="email" id="bm-notify-task-email" name="bm_notify_task_email" class="regular-text"
+                               value="<?php echo esc_attr((string) get_option('bm_notify_task_email', '')); ?>"
+                               placeholder="<?php echo esc_attr(get_option('admin_email')); ?>">
+                        <p class="description"><?php esc_html_e('Zostaw puste, aby używać głównego adresu admina.', 'basemgmt'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e('Powiadomienie o dokumentach', 'basemgmt'); ?></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="bm_notify_doc_sent" value="1"
+                                <?php checked(get_option('bm_notify_doc_sent', '0'), '1'); ?>>
+                            <?php esc_html_e('Wyślij email gdy dokument jest wysłany do klienta', 'basemgmt'); ?>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-notify-doc-email"><?php esc_html_e('Email do powiadomień o dokumentach', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="email" id="bm-notify-doc-email" name="bm_notify_doc_email" class="regular-text"
+                               value="<?php echo esc_attr((string) get_option('bm_notify_doc_email', '')); ?>"
+                               placeholder="<?php esc_html_e('email organizatora (z karty obozu)', 'basemgmt'); ?>">
+                        <p class="description"><?php esc_html_e('Zostaw puste, aby używać emaila kontaktowego organizatora z karty obozu.', 'basemgmt'); ?></p>
+                    </td>
+                </tr>
+            </table>
+            <?php submit_button(__('Zapisz ustawienia powiadomień', 'basemgmt')); ?>
+        </form>
+    </div>
+
+    <!-- Backup / Import / Clear -->
+    <div class="postbox" id="backup" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 10px;">🗄 <?php esc_html_e('Zarządzanie danymi wtyczki', 'basemgmt'); ?></h2>
+        <p class="description" style="margin:0 0 16px;">
+            <?php esc_html_e('Wykonaj pełny backup danych wtyczki, przywróć dane z pliku backupu lub wyczyść wszystkie dane.', 'basemgmt'); ?>
+        </p>
+
+        <!-- Backup download -->
+        <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #dcdcde;">
+            <h3 style="margin:0 0 6px;"><?php esc_html_e('Pobierz backup', 'basemgmt'); ?></h3>
+            <p class="description"><?php esc_html_e('Eksportuje wszystkie tabele wtyczki do pliku JSON.', 'basemgmt'); ?></p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <?php wp_nonce_field('bm_backup_data'); ?>
+                <input type="hidden" name="action" value="bm_backup_data">
+                <button type="submit" class="button button-secondary">
+                    ⬇ <?php esc_html_e('Pobierz backup (JSON)', 'basemgmt'); ?>
+                </button>
+            </form>
+        </div>
+
+        <!-- Import -->
+        <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #dcdcde;">
+            <h3 style="margin:0 0 6px;"><?php esc_html_e('Importuj z backupu', 'basemgmt'); ?></h3>
+            <p class="description" style="color:#d63638;font-weight:600;">
+                ⚠ <?php esc_html_e('Uwaga: import nadpisuje istniejące dane. Zalecane wykonanie backupu przed importem.', 'basemgmt'); ?>
+            </p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data">
+                <?php wp_nonce_field('bm_import_data'); ?>
+                <input type="hidden" name="action" value="bm_import_data">
+                <input type="file" name="backup_file" accept=".json" required style="margin-right:8px;">
+                <button type="submit" class="button button-secondary"
+                    onclick="return confirm('<?php esc_attr_e('Czy na pewno chcesz importować dane? Istniejące dane zostaną nadpisane.', 'basemgmt'); ?>')">
+                    ⬆ <?php esc_html_e('Importuj backup', 'basemgmt'); ?>
+                </button>
+            </form>
+        </div>
+
+        <!-- Clear all data -->
+        <div>
+            <h3 style="margin:0 0 6px;"><?php esc_html_e('Wyczyść wszystkie dane', 'basemgmt'); ?></h3>
+            <p class="description" style="color:#d63638;font-weight:600;">
+                ⚠ <?php esc_html_e('Niebezpieczna operacja: permanentnie usuwa WSZYSTKIE dane wtyczki ze wszystkich tabel. Nie można cofnąć.', 'basemgmt'); ?>
+            </p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <?php wp_nonce_field('bm_clear_data'); ?>
+                <input type="hidden" name="action" value="bm_clear_data">
+                <button type="submit" class="button bm-danger"
+                    onclick="return confirm('<?php esc_attr_e('UWAGA! Ta operacja jest nieodwracalna i usunie WSZYSTKIE dane wtyczki. Czy na pewno chcesz kontynuować?', 'basemgmt'); ?>')">
+                    🗑 <?php esc_html_e('Wyczyść wszystkie dane', 'basemgmt'); ?>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Plugin info -->
     <div class="postbox" style="max-width:700px;padding:16px 20px;">
         <h2 class="hndle" style="padding:0 0 10px;"><?php esc_html_e('O pluginie', 'basemgmt'); ?></h2>

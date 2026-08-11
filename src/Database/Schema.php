@@ -77,6 +77,15 @@ final class Schema {
 			// Meal Templates
 			'meal_templates'         => $wpdb->prefix . 'bm_meal_templates',
 			'meal_template_items'    => $wpdb->prefix . 'bm_meal_template_items',
+			// Organizacja module
+			'doc_templates'          => $wpdb->prefix . 'bm_doc_templates',
+			'doc_library'            => $wpdb->prefix . 'bm_doc_library',
+			'payment_packages'       => $wpdb->prefix . 'bm_payment_packages',
+			'payment_package_lines'  => $wpdb->prefix . 'bm_payment_package_lines',
+			// New tables
+			'task_templates'     => $wpdb->prefix . 'bm_task_templates',
+			'camp_declarations'  => $wpdb->prefix . 'bm_camp_declarations',
+			'camp_damages'       => $wpdb->prefix . 'bm_camp_damages',
 		];
 	}
 
@@ -167,6 +176,7 @@ final class Schema {
 			camp_id      BIGINT UNSIGNED NOT NULL,
 			party        VARCHAR(20)     NOT NULL DEFAULT 'shared',
 			label        VARCHAR(255)    NOT NULL,
+			description  TEXT            DEFAULT NULL,
 			status       VARCHAR(20)     NOT NULL DEFAULT 'pending',
 			priority     VARCHAR(20)     NOT NULL DEFAULT 'normal',
 			assigned_to  VARCHAR(255)    NOT NULL DEFAULT '',
@@ -235,8 +245,17 @@ final class Schema {
 			id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			camp_id         BIGINT UNSIGNED NOT NULL,
 			document_type   VARCHAR(40)     NOT NULL DEFAULT 'contract',
+			doc_category    VARCHAR(20)     NOT NULL DEFAULT 'document',
 			title           VARCHAR(255)    NOT NULL,
 			status          VARCHAR(20)     NOT NULL DEFAULT 'draft',
+			template_id     BIGINT UNSIGNED DEFAULT NULL,
+			html_content    LONGTEXT        DEFAULT NULL,
+			file_id         BIGINT UNSIGNED DEFAULT NULL,
+			file_url        VARCHAR(500)    NOT NULL DEFAULT '',
+			sent_at         DATETIME        DEFAULT NULL,
+			sent_token      VARCHAR(64)     NOT NULL DEFAULT '',
+			signed_at       DATETIME        DEFAULT NULL,
+			locked          TINYINT(1)      NOT NULL DEFAULT 0,
 			responsible_user BIGINT UNSIGNED DEFAULT NULL,
 			due_date        DATE            DEFAULT NULL,
 			current_version INT UNSIGNED    NOT NULL DEFAULT 1,
@@ -244,7 +263,8 @@ final class Schema {
 			updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
 			KEY idx_camp (camp_id),
-			KEY idx_status (status)
+			KEY idx_status (status),
+			KEY idx_category (doc_category)
 		) $charset;";
 
 		$sql[] = "CREATE TABLE {$p}bm_camp_document_versions (
@@ -1039,6 +1059,185 @@ final class Schema {
 		$existing = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_staff");
 		if ( ! in_array('permanent_lock', $existing, true) ) {
 			$wpdb->query("ALTER TABLE {$p}bm_staff ADD COLUMN permanent_lock TINYINT(1) NOT NULL DEFAULT 0 AFTER locked_until");
+		}
+
+		// ── Organizacja: szablony dokumentów, biblioteka, pakiety finansowe ──────
+
+		$org_sql = [];
+
+		$org_sql[] = "CREATE TABLE {$p}bm_doc_templates (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			title        VARCHAR(255)    NOT NULL,
+			doc_type     VARCHAR(30)     NOT NULL DEFAULT 'contract',
+			html_content LONGTEXT        NOT NULL DEFAULT '',
+			auto_add     TINYINT(1)      NOT NULL DEFAULT 0,
+			sort_order   INT             NOT NULL DEFAULT 0,
+			created_by   BIGINT UNSIGNED DEFAULT NULL,
+			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_type     (doc_type),
+			KEY idx_auto_add (auto_add),
+			KEY idx_order    (sort_order)
+		) $charset;";
+
+		$org_sql[] = "CREATE TABLE {$p}bm_doc_library (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			title        VARCHAR(255)    NOT NULL,
+			doc_type     VARCHAR(30)     NOT NULL DEFAULT 'document',
+			file_id      BIGINT UNSIGNED DEFAULT NULL,
+			file_url     VARCHAR(500)    NOT NULL DEFAULT '',
+			file_name    VARCHAR(255)    NOT NULL DEFAULT '',
+			auto_add     TINYINT(1)      NOT NULL DEFAULT 0,
+			sort_order   INT             NOT NULL DEFAULT 0,
+			created_by   BIGINT UNSIGNED DEFAULT NULL,
+			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_type     (doc_type),
+			KEY idx_auto_add (auto_add),
+			KEY idx_order    (sort_order)
+		) $charset;";
+
+		$org_sql[] = "CREATE TABLE {$p}bm_payment_packages (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name         VARCHAR(255)    NOT NULL,
+			description  TEXT            DEFAULT NULL,
+			currency     VARCHAR(3)      NOT NULL DEFAULT 'PLN',
+			is_default   TINYINT(1)      NOT NULL DEFAULT 0,
+			created_by   BIGINT UNSIGNED DEFAULT NULL,
+			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_default (is_default)
+		) $charset;";
+
+		$org_sql[] = "CREATE TABLE {$p}bm_payment_package_lines (
+			id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			package_id      BIGINT UNSIGNED NOT NULL,
+			line_type       VARCHAR(30)     NOT NULL DEFAULT 'accommodation',
+			label           VARCHAR(255)    NOT NULL,
+			unit_price      DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			unit            VARCHAR(30)     NOT NULL DEFAULT 'person_night',
+			vat_rate        DECIMAL(5,2)    NOT NULL DEFAULT 0.00,
+			days_before     INT             NOT NULL DEFAULT 0,
+			is_deposit      TINYINT(1)      NOT NULL DEFAULT 0,
+			sort_order      INT             NOT NULL DEFAULT 0,
+			PRIMARY KEY (id),
+			KEY idx_package (package_id),
+			KEY idx_type    (line_type)
+		) $charset;";
+
+		foreach ( $org_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Szablony zadań (Task Templates) ──────────────────────────────────────
+
+		$task_tpl_sql = [];
+
+		$task_tpl_sql[] = "CREATE TABLE {$p}bm_task_templates (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			title        VARCHAR(255)    NOT NULL,
+			description  TEXT            DEFAULT NULL,
+			priority     VARCHAR(20)     NOT NULL DEFAULT 'normal',
+			auto_add     TINYINT(1)      NOT NULL DEFAULT 0,
+			sort_order   INT             NOT NULL DEFAULT 0,
+			created_by   BIGINT UNSIGNED DEFAULT NULL,
+			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_auto_add (auto_add),
+			KEY idx_order    (sort_order)
+		) $charset;";
+
+		foreach ( $task_tpl_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Deklaracja obozu (Camp Declarations) ─────────────────────────────────
+
+		$decl_sql = [];
+
+		$decl_sql[] = "CREATE TABLE {$p}bm_camp_declarations (
+			id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id           BIGINT UNSIGNED NOT NULL,
+			declared_persons  INT             NOT NULL DEFAULT 0,
+			declared_diets    INT             NOT NULL DEFAULT 0,
+			arrival_time      VARCHAR(10)     NOT NULL DEFAULT '',
+			departure_time    VARCHAR(10)     NOT NULL DEFAULT '',
+			is_active         TINYINT(1)      NOT NULL DEFAULT 1,
+			submitted_at      DATETIME        DEFAULT NULL,
+			submitted_token   VARCHAR(64)     NOT NULL DEFAULT '',
+			signed_at         DATETIME        DEFAULT NULL,
+			notes             TEXT            DEFAULT NULL,
+			updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY idx_camp (camp_id)
+		) $charset;";
+
+		foreach ( $decl_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Szkody obozu (Camp Damages) ───────────────────────────────────────────
+
+		$dmg_sql = [];
+
+		$dmg_sql[] = "CREATE TABLE {$p}bm_camp_damages (
+			id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id     BIGINT UNSIGNED NOT NULL,
+			name        VARCHAR(255)    NOT NULL,
+			description TEXT            DEFAULT NULL,
+			cost        DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			status      VARCHAR(20)     NOT NULL DEFAULT 'reported',
+			created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id)
+		) $charset;";
+
+		foreach ( $dmg_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// Add new columns to bm_camp_organizers if they don't exist yet (ALTER for existing installs)
+		$org_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_camp_organizers");
+		if ( $org_cols ) {
+			$new_org_cols = [
+				'billing_regon'  => "ALTER TABLE {$p}bm_camp_organizers ADD COLUMN billing_regon  VARCHAR(20) NOT NULL DEFAULT '' AFTER billing_tax_id",
+				'billing_krs'    => "ALTER TABLE {$p}bm_camp_organizers ADD COLUMN billing_krs    VARCHAR(30) NOT NULL DEFAULT '' AFTER billing_regon",
+				'billing_street' => "ALTER TABLE {$p}bm_camp_organizers ADD COLUMN billing_street VARCHAR(255) NOT NULL DEFAULT '' AFTER billing_krs",
+				'billing_city'   => "ALTER TABLE {$p}bm_camp_organizers ADD COLUMN billing_city   VARCHAR(100) NOT NULL DEFAULT '' AFTER billing_street",
+				'billing_zip'    => "ALTER TABLE {$p}bm_camp_organizers ADD COLUMN billing_zip    VARCHAR(20) NOT NULL DEFAULT '' AFTER billing_city",
+				'bank_name'      => "ALTER TABLE {$p}bm_camp_organizers ADD COLUMN bank_name      VARCHAR(255) NOT NULL DEFAULT '' AFTER billing_zip",
+				'bank_account'   => "ALTER TABLE {$p}bm_camp_organizers ADD COLUMN bank_account   VARCHAR(50) NOT NULL DEFAULT '' AFTER bank_name",
+			];
+			foreach ( $new_org_cols as $col => $alter ) {
+				if ( ! in_array($col, $org_cols, true) ) {
+					$wpdb->query($alter); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				}
+			}
+		}
+
+		// Add new columns to bm_camp_documents if they don't exist yet (ALTER for existing installs)
+		$doc_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_camp_documents");
+		if ( $doc_cols ) {
+			$new_doc_cols = [
+				'doc_category' => "ALTER TABLE {$p}bm_camp_documents ADD COLUMN doc_category VARCHAR(20) NOT NULL DEFAULT 'document' AFTER document_type",
+				'template_id'  => "ALTER TABLE {$p}bm_camp_documents ADD COLUMN template_id BIGINT UNSIGNED DEFAULT NULL AFTER status",
+				'html_content' => "ALTER TABLE {$p}bm_camp_documents ADD COLUMN html_content LONGTEXT DEFAULT NULL AFTER template_id",
+				'file_id'      => "ALTER TABLE {$p}bm_camp_documents ADD COLUMN file_id BIGINT UNSIGNED DEFAULT NULL AFTER html_content",
+				'file_url'     => "ALTER TABLE {$p}bm_camp_documents ADD COLUMN file_url VARCHAR(500) NOT NULL DEFAULT '' AFTER file_id",
+				'sent_at'      => "ALTER TABLE {$p}bm_camp_documents ADD COLUMN sent_at DATETIME DEFAULT NULL AFTER file_url",
+				'sent_token'   => "ALTER TABLE {$p}bm_camp_documents ADD COLUMN sent_token VARCHAR(64) NOT NULL DEFAULT '' AFTER sent_at",
+				'signed_at'    => "ALTER TABLE {$p}bm_camp_documents ADD COLUMN signed_at DATETIME DEFAULT NULL AFTER sent_token",
+				'locked'       => "ALTER TABLE {$p}bm_camp_documents ADD COLUMN locked TINYINT(1) NOT NULL DEFAULT 0 AFTER signed_at",
+			];
+			foreach ( $new_doc_cols as $col => $alter ) {
+				if ( ! in_array($col, $doc_cols, true) ) {
+					$wpdb->query($alter); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				}
+			}
 		}
 	}
 }
