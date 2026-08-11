@@ -673,6 +673,7 @@ final class Schema {
 			max_advance_days      INT UNSIGNED    NOT NULL DEFAULT 30,
 			cancel_advance_hours  INT UNSIGNED    NOT NULL DEFAULT 0,
 			max_reservations_per_camp INT UNSIGNED NOT NULL DEFAULT 0,
+			cost_per_reservation  DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
 			is_blocked            TINYINT(1)      NOT NULL DEFAULT 0,
 			block_reason          VARCHAR(255)    NOT NULL DEFAULT '',
 			block_from            DATETIME        DEFAULT NULL,
@@ -1316,6 +1317,12 @@ final class Schema {
 					$wpdb->query($alter); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				}
 			}
+		}
+
+		// Add cost_per_reservation to bm_resources if it doesn't exist
+		$res_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_resources");
+		if ( $res_cols && ! in_array('cost_per_reservation', $res_cols, true) ) {
+			$wpdb->query("ALTER TABLE {$p}bm_resources ADD COLUMN cost_per_reservation DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER max_reservations_per_camp"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 }

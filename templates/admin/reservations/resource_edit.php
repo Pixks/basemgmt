@@ -74,6 +74,17 @@ $rid = $resource ? (int) $resource->id : 0;
                     <p class="description"><?php esc_html_e('Min. ile godzin przed rezerwacją obóz może ją anulować. 0 = można zawsze.', 'basemgmt'); ?></p></td>
                     <th><label><?php esc_html_e('Max. akt. rezerwacji / obóz', 'basemgmt'); ?></label></th>
                     <td><input type="number" name="max_reservations_per_camp" value="<?php echo esc_attr($resource->max_reservations_per_camp ?? 0); ?>" min="0" style="width:80px;">
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="cost_per_reservation"><?php esc_html_e('Koszt rezerwacji (PLN)', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="number" id="cost_per_reservation" name="cost_per_reservation"
+                               value="<?php echo esc_attr($resource->cost_per_reservation ?? '0.00'); ?>"
+                               min="0" step="0.01" style="width:120px;">
+                        <p class="description"><?php esc_html_e('Po zatwierdzeniu rezerwacji zostanie automatycznie dodana pozycja w finansach obozu. Wpisz 0, aby nie naliczać kosztu.', 'basemgmt'); ?></p>
+                    </td>
+                </tr>
                     <p class="description"><?php esc_html_e('0 = bez limitu', 'basemgmt'); ?></p></td>
                 </tr>
                 <tr>

@@ -88,6 +88,7 @@ final class ReservationsPage {
 			'block_reason'         => sanitize_text_field($_POST['block_reason']         ?? ''),
 			'block_from'           => sanitize_text_field($_POST['block_from']           ?? ''),
 			'block_to'             => sanitize_text_field($_POST['block_to']             ?? ''),
+			'cost_per_reservation' => (float) str_replace(',', '.', wp_unslash($_POST['cost_per_reservation'] ?? '0')),
 		];
 
 		if ( $id ) {
@@ -154,7 +155,11 @@ final class ReservationsPage {
 		];
 
 		if ( $id && isset($status_map[$action]) ) {
-			ReservationRepository::update_status($id, $status_map[$action], $comment, get_current_user_id());
+			$new_status = $status_map[$action];
+			ReservationRepository::update_status($id, $new_status, $comment, get_current_user_id());
+			if ( $new_status === ReservationRepository::STATUS_APPROVED ) {
+				$this->maybe_add_reservation_finance_line($id);
+			}
 			AdminMenu::set_notice(__('Status rezerwacji zaktualizowany.', 'basemgmt'));
 		}
 
@@ -188,10 +193,44 @@ final class ReservationsPage {
 		} else {
 			// Auto-approve admin-created reservations.
 			ReservationRepository::update_status($result['id'], ReservationRepository::STATUS_APPROVED, '', get_current_user_id());
+			$this->maybe_add_reservation_finance_line($result['id']);
 			AdminMenu::set_notice(__('Rezerwacja dodana i zatwierdzona.', 'basemgmt'));
 		}
 
 		wp_safe_redirect(admin_url('admin.php?page=basemgmt-reservations'));
 		exit;
+	}
+
+	/**
+	 * If the reserved resource has a cost_per_reservation > 0, automatically
+	 * insert a payment-schedule line in the camp's finance tab.
+	 */
+	private function maybe_add_reservation_finance_line(int $reservation_id): void {
+		global $wpdb;
+		$res = ReservationRepository::get($reservation_id);
+		if ( ! $res ) {
+			return;
+		}
+		$resource = ResourceRepository::get((int) $res->resource_id);
+		if ( ! $resource || (float) $resource->cost_per_reservation <= 0 ) {
+			return;
+		}
+		$camp_id = (int) $res->camp_id;
+		$tbl     = \BaseMgmt\Database\Schema::table('camp_payment_schedules');
+
+		$wpdb->insert($tbl, [
+			'camp_id'      => $camp_id,
+			'payment_type' => 'extra_fee',
+			'label'        => sprintf(
+				// translators: %1$s = resource name, %2$s = reservation date
+				__('Rezerwacja: %1$s (%2$s)', 'basemgmt'),
+				$resource->name,
+				$res->res_date
+			),
+			'amount'       => (float) $resource->cost_per_reservation,
+			'due_date'     => $res->res_date,
+			'status'       => 'expected',
+			'description'  => sprintf('%s %s–%s', $res->res_date, $res->start_time, $res->end_time),
+		]);
 	}
 }
