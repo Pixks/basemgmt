@@ -301,68 +301,6 @@ wp_enqueue_style('wp-codemirror');
     </div>
 
 
-    <!-- Notifications: tasks and documents -->
-    <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
-        <h2 class="hndle" style="padding:0 0 10px;">📬 <?php esc_html_e('Powiadomienia – zadania i dokumenty', 'basemgmt'); ?></h2>
-        <p class="description" style="margin:0 0 14px;">
-            <?php esc_html_e('Skonfiguruj automatyczne powiadomienia email dla zdarzeń w obozach.', 'basemgmt'); ?>
-        </p>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-            <?php wp_nonce_field('bm_save_settings'); ?>
-            <input type="hidden" name="action" value="bm_save_settings">
-            <!-- Preserve existing values -->
-            <input type="hidden" name="from_name"          value="<?php echo esc_attr($s['from_name']); ?>">
-            <input type="hidden" name="from_email"         value="<?php echo esc_attr($s['from_email']); ?>">
-            <input type="hidden" name="admin_notify_email" value="<?php echo esc_attr($s['admin_notify_email']); ?>">
-            <input type="hidden" name="header_color"       value="<?php echo esc_attr($s['header_color']); ?>">
-            <input type="hidden" name="logo_url"           value="<?php echo esc_attr($s['logo_url']); ?>">
-            <input type="hidden" name="header_title"       value="<?php echo esc_attr($s['header_title']); ?>">
-            <input type="hidden" name="header_html"        value="<?php echo esc_attr($s['header_html']); ?>">
-            <input type="hidden" name="footer_text"        value="<?php echo esc_attr($s['footer_text']); ?>">
-            <table class="form-table" style="margin:0;">
-                <tr>
-                    <th><?php esc_html_e('Powiadomienie o zadaniach', 'basemgmt'); ?></th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="bm_notify_task_added" value="1"
-                                <?php checked(get_option('bm_notify_task_added', '0'), '1'); ?>>
-                            <?php esc_html_e('Wyślij email gdy zadanie jest dodane do obozu', 'basemgmt'); ?>
-                        </label>
-                    </td>
-                </tr>
-                <tr>
-                    <th><label for="bm-notify-task-email"><?php esc_html_e('Email do powiadomień o zadaniach', 'basemgmt'); ?></label></th>
-                    <td>
-                        <input type="email" id="bm-notify-task-email" name="bm_notify_task_email" class="regular-text"
-                               value="<?php echo esc_attr((string) get_option('bm_notify_task_email', '')); ?>"
-                               placeholder="<?php echo esc_attr(get_option('admin_email')); ?>">
-                        <p class="description"><?php esc_html_e('Zostaw puste, aby używać głównego adresu admina.', 'basemgmt'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th><?php esc_html_e('Powiadomienie o dokumentach', 'basemgmt'); ?></th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="bm_notify_doc_sent" value="1"
-                                <?php checked(get_option('bm_notify_doc_sent', '0'), '1'); ?>>
-                            <?php esc_html_e('Wyślij email gdy dokument jest wysłany do klienta', 'basemgmt'); ?>
-                        </label>
-                    </td>
-                </tr>
-                <tr>
-                    <th><label for="bm-notify-doc-email"><?php esc_html_e('Email do powiadomień o dokumentach', 'basemgmt'); ?></label></th>
-                    <td>
-                        <input type="email" id="bm-notify-doc-email" name="bm_notify_doc_email" class="regular-text"
-                               value="<?php echo esc_attr((string) get_option('bm_notify_doc_email', '')); ?>"
-                               placeholder="<?php esc_html_e('email organizatora (z karty obozu)', 'basemgmt'); ?>">
-                        <p class="description"><?php esc_html_e('Zostaw puste, aby używać emaila kontaktowego organizatora z karty obozu.', 'basemgmt'); ?></p>
-                    </td>
-                </tr>
-            </table>
-            <?php submit_button(__('Zapisz ustawienia powiadomień', 'basemgmt')); ?>
-        </form>
-    </div>
-
     <!-- Backup / Import / Clear -->
     <div class="postbox" id="backup" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
         <h2 class="hndle" style="padding:0 0 10px;">🗄 <?php esc_html_e('Zarządzanie danymi wtyczki', 'basemgmt'); ?></h2>

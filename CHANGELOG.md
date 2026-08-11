@@ -1,5 +1,52 @@
 # Changelog
 
+## [2.0.0-alpha.3] – 2026-08-13
+
+### Poprawki i ulepszenia
+
+- **Uproszczenie zakładki Panel** — usunięto oś faz workflow, pola uzasadnienia zmiany etapu, uwag gotowości, poziomu ryzyka i flagi pilnej reakcji; pozostały: 6 kart metryk, blokery + sugerowane działania, formularze „Podstawowe dane" i „Etap i odpowiedzialny".
+- **Napisy po angielsku → polskie** — `'Workflow'` w liście obozów zmienione na `'Teczka'`; `'Lead / zapytanie'` w `CampCaseRepository` zmienione na `'Zapytanie'`.
+- **Treści maili w szablonach zadań** — pole tematu (`email_subject`) i treści (`email_body`) dodane bezpośrednio do edytora szablonu zadania; osobny blok powiadomień w ustawieniach usunięty.
+- **Auto-dodawanie szablonów zadań do obozu** — przy tworzeniu nowego obozu system automatycznie dodaje zadania z szablonów z flagą `auto_add = 1` do checklisty obozu.
+- **Szkody w rozliczeniu** — blok „Szkody" w zakładce Finanse umożliwia dodawanie pozycji szkód z nazwą, opisem i kosztem; dedykowana tabela `bm_camp_damages`.
+- **Poprawki CSS/układu** — naprawiony wygląd postboxów (nagłówki, ikony, WP toggle buttons ukryte); wejściówki w `.bm-form-grid` używają `width: 100%; box-sizing: border-box` eliminując przepełnienie kolumn; dodane klasy `.bm-box` / `.bm-box__header` / `.bm-box__body` jako alternatywa bez ingerencji WP.
+- **Schemat bazy danych** — kolumny `email_subject` / `email_body` dodane do `bm_task_templates`; automatyczna migracja ALTER TABLE dla istniejących instalacji.
+
+---
+
+## [2.0.0-alpha.2] – 2026-08-12
+
+### Nowe funkcje
+
+- **Przeprojektowany interfejs teczki obozu** — zakładki: Panel, Centrum Pracy, Organizator, Dokumenty, Planowanie, Rozliczenie; nazwa obozu i status widoczne nad zakładkami.
+- **Kanban zadań w Centrum Pracy** — zadania prezentowane jako kafelki w kolumnach statusów (Do zrobienia / W toku / Gotowe); możliwość wejścia do zadania, ręczne dodawanie zadań i przypisywanie do osób; usunięte automatyczne generowanie zadań na podstawie statusu.
+- **Moduł Organizacja** — nowe podmenu w CampLink z zakładkami:
+  - *Szablony dokumentów* — tworzenie i edytowanie szablonów HTML, generowanie PDF, flaga auto-dodawania do obozu.
+  - *Dokumenty* — przechowywanie gotowych dokumentów z możliwością auto-dodawania.
+  - *Szablony zadań* — CRUD szablonów zadań (tytuł, opis, priorytet, flaga auto-dodawania).
+  - *Finanse* — definiowanie pakietów płatności (koszt osobodnia z rozbiciem na nocleg/wyżywienie/inne, podatki, zaliczki, własne pozycje z terminami płatności).
+  - *Typy noclegów* — CRUD typów noclegów z stawkami za dobę.
+- **Zakładka Organizator w teczce** — pola organizatora obejmują teraz dane rozliczeniowe (REGON, KRS, ulica, miasto, kod pocztowy, bank, numer konta) w dedykowanym bloku.
+- **Zakładka Dokumenty w teczce** — dodawanie dokumentów z pliku lub tworzenie z szablonu HTML → PDF; wysyłanie do klienta do podpisu (blokuje edycję admina, dodaje ikonę kłódki).
+- **Zakładka Finanse w teczce** — wybór pakietu płatności lub customowa edycja wartości; blok szkód.
+- **Deklaracja per dzień** — deklaracja obozu podzielona na dni pobytu z rozbiciem diet i noclegów na typy (spójne ze stawkami); stała deklaracja liczby osób/diet/godzin przyjazdu–wyjazdu pozostaje jako wbudowana i może być wyłączona, ale nie usunięta.
+- **Backup, import i czyszczenie danych** — nowa sekcja w Ustawieniach umożliwia pobranie backupu JSON, import z pliku, wyczyszczenie wszystkich danych wtyczki.
+- **Internacjonalizacja** — wtyczka ładuje pliki `.po`/`.mo`; dodano tłumaczenia angielskie (`en_US`) i polskie (`pl_PL`); w ustawieniach przycisk kompilacji plików językowych.
+- **Powiadomienia email** — konfigurowalne per-typ powiadomienia email przy dodawaniu zadań i dokumentów do obozu; szablony treści maili edytowalne w szablonach zadań.
+
+### Schemat bazy danych
+
+Nowe tabele:
+- `bm_document_templates` — szablony dokumentów HTML
+- `bm_documents` — gotowe dokumenty
+- `bm_task_templates` — szablony zadań (z `auto_add`, `email_subject`, `email_body`)
+- `bm_payment_packages` / `bm_payment_package_items` — pakiety płatności i ich pozycje
+- `bm_accommodation_types` — typy noclegów ze stawkami
+- `bm_camp_damages` — pozycje szkód powiązane z obozem
+- `bm_camp_declaration_days` / `bm_camp_declaration_diet_lines` / `bm_camp_declaration_accommodation_lines` — deklaracje per dzień z rozbiciem diet i noclegów
+
+---
+
 ## [2.0.0-alpha.1] – 2026-08-10
 
 ### Nowe funkcje

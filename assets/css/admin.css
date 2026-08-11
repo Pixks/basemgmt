@@ -613,15 +613,16 @@ margin-bottom: 16px;
 	border: 1px solid #c3c4c7;
 	border-radius: 4px;
 	margin-bottom: 16px;
-	overflow: hidden; /* clip header background to rounded corners */
+	overflow: hidden;
 }
 .postbox .postbox-header {
 	background: #f6f7f7;
 	border-bottom: 1px solid #dcdcde;
 	padding: 0;
 	display: flex;
-	align-items: stretch;
+	align-items: center;
 }
+/* Prevent WP JS toggle button from breaking our header layout */
 .postbox .postbox-header h2.hndle,
 .postbox .hndle {
 	font-size: 13px;
@@ -630,14 +631,81 @@ margin-bottom: 16px;
 	margin: 0;
 	padding: 10px 14px;
 	flex: 1;
-	display: flex;
-	align-items: center;
-	gap: 6px;
 	cursor: default;
+	/* Use plain display - NOT flex, to avoid WP JS injected buttons splitting content */
+	display: block;
+}
+.postbox .postbox-header .handlediv,
+.postbox .postbox-header .handle-actions {
+	display: none !important; /* hide WP toggle buttons in our custom postboxes */
 }
 .postbox .inside {
 	padding: 14px 16px;
 	background: #fff;
+}
+
+/* ── Custom box (like postbox but no WP JS interference) ─────────────────────── */
+.bm-box {
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	margin-bottom: 16px;
+	overflow: hidden;
+}
+.bm-box__header {
+	background: #f6f7f7;
+	border-bottom: 1px solid #dcdcde;
+	padding: 10px 14px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.bm-box__header h2,
+.bm-box__header h3 {
+	font-size: 13px;
+	font-weight: 600;
+	margin: 0;
+	line-height: 1.4;
+}
+.bm-box__body {
+	padding: 14px 16px;
+	background: #fff;
+}
+.bm-box__footer {
+	padding: 12px 16px;
+	background: #f9f9f9;
+	border-top: 1px solid #dcdcde;
+}
+
+/* ── Form grid: prevent regular-text overflow ────────────────────────────────── */
+.bm-form-grid {
+	gap: 12px 16px;
+}
+.bm-form-grid p {
+	margin: 0;
+}
+.bm-form-grid input[type="text"],
+.bm-form-grid input[type="email"],
+.bm-form-grid input[type="tel"],
+.bm-form-grid input[type="number"],
+.bm-form-grid input[type="date"],
+.bm-form-grid input[type="time"],
+.bm-form-grid select,
+.bm-form-grid textarea,
+.bm-form-grid .regular-text,
+.bm-form-grid .widefat {
+	width: 100%;
+	box-sizing: border-box;
+}
+.bm-form-grid label {
+	display: block;
+	font-weight: 600;
+	font-size: 12px;
+	color: #3c434a;
+	margin-bottom: 4px;
+}
+/* Full-width item spans all columns */
+.bm-form-grid .bm-form-full {
+	grid-column: 1 / -1;
 }
 
 /* ── Danger button ──────────────────────────────────────────────────────────── */

@@ -19,7 +19,7 @@ declare(strict_types=1);
 defined('ABSPATH') || exit;
 
 // ── Plugin constants ──────────────────────────────────────────────────────────
-define('BASEMGMT_VERSION',        '2.0.0-alpha.2');
+define('BASEMGMT_VERSION',        '2.0.0-alpha.3');
 define('BASEMGMT_FILE',           __FILE__);
 define('BASEMGMT_DIR',            plugin_dir_path(__FILE__));
 define('BASEMGMT_URL',            plugin_dir_url(__FILE__));

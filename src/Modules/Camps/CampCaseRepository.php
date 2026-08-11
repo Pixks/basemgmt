@@ -68,7 +68,7 @@ final class CampCaseRepository {
 	public static function workflow_phases(): array {
 		return [
 			'lead' => [
-				'label'  => __('Lead / zapytanie', 'basemgmt'),
+				'label'  => __('Zapytanie', 'basemgmt'),
 				'stages' => [
 					self::STAGE_INQUIRY,
 				],
@@ -864,7 +864,7 @@ final class CampCaseRepository {
 
 		return match ( $phase ) {
 			'lead' => [
-				'label'    => __('Lead / zapytanie', 'basemgmt'),
+				'label'    => __('Zapytanie', 'basemgmt'),
 				'sections' => ['process', 'organizer', 'checklist'],
 			],
 			'offer' => [

@@ -56,171 +56,160 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 		<!-- ── PANEL ─────────────────────────────────────────────────────────── -->
 		<div class="bm-tab-panel" data-tab="panel" id="bm-section-overview">
 
-			<div class="bm-case-grid bm-case-grid--metrics">
-				<div class="bm-case-card">
-					<span class="bm-stat-label"><?php esc_html_e('Faza workflow', 'basemgmt'); ?></span>
-					<strong><?php echo esc_html($workflow['current_phase_label']); ?></strong>
-				</div>
-				<div class="bm-case-card">
-					<span class="bm-stat-label"><?php esc_html_e('Aktualny etap', 'basemgmt'); ?></span>
-					<strong><?php echo esc_html($workflow['current_stage_label']); ?></strong>
-				</div>
-				<div class="bm-case-card">
-					<span class="bm-stat-label"><?php esc_html_e('Stan pracy', 'basemgmt'); ?></span>
-					<strong><?php echo esc_html($workflow['health_label']); ?></strong>
-				</div>
-				<div class="bm-case-card">
-					<span class="bm-stat-label"><?php esc_html_e('Gotowość', 'basemgmt'); ?></span>
-					<strong><?php echo esc_html($readiness_percent); ?>%</strong>
-				</div>
-				<div class="bm-case-card">
-					<span class="bm-stat-label"><?php esc_html_e('Następny termin', 'basemgmt'); ?></span>
-					<strong><?php echo esc_html($case->next_action_due_date ?? '—'); ?></strong>
-				</div>
-				<div class="bm-case-card">
-					<span class="bm-stat-label"><?php esc_html_e('Otwarte blokery', 'basemgmt'); ?></span>
-					<strong><?php echo esc_html((string) count($workflow['blockers'])); ?></strong>
-				</div>
-			</div>
+                        <!-- Quick stats row -->
+                        <div class="bm-case-grid bm-case-grid--metrics" style="margin-bottom:20px;">
+                                <div class="bm-case-card">
+                                        <span class="bm-stat-label"><?php esc_html_e('Aktualny etap', 'basemgmt'); ?></span>
+                                        <strong><?php echo esc_html($workflow['current_stage_label']); ?></strong>
+                                </div>
+                                <div class="bm-case-card">
+                                        <span class="bm-stat-label"><?php esc_html_e('Gotowość', 'basemgmt'); ?></span>
+                                        <strong><?php echo esc_html($readiness_percent); ?>%</strong>
+                                </div>
+                                <div class="bm-case-card">
+                                        <span class="bm-stat-label"><?php esc_html_e('Następny termin', 'basemgmt'); ?></span>
+                                        <strong><?php echo esc_html($case->next_action_due_date ?? '—'); ?></strong>
+                                </div>
+                                <div class="bm-case-card">
+                                        <span class="bm-stat-label"><?php esc_html_e('Otwarte blokery', 'basemgmt'); ?></span>
+                                        <strong><?php echo esc_html((string) count($workflow['blockers'])); ?></strong>
+                                </div>
+                                <div class="bm-case-card">
+                                        <span class="bm-stat-label"><?php esc_html_e('Zadania', 'basemgmt'); ?></span>
+                                        <strong><?php
+                                                $tasks_total = $wpdb->get_var($wpdb->prepare(
+                                                        "SELECT COUNT(*) FROM " . \BaseMgmt\Database\Schema::table('camp_checklist_items') . " WHERE camp_id = %d",
+                                                        $id
+                                                ));
+                                                $tasks_done = $wpdb->get_var($wpdb->prepare(
+                                                        "SELECT COUNT(*) FROM " . \BaseMgmt\Database\Schema::table('camp_checklist_items') . " WHERE camp_id = %d AND status = 'done'",
+                                                        $id
+                                                ));
+                                                echo esc_html(($tasks_done ?? 0) . ' / ' . ($tasks_total ?? 0));
+                                        ?></strong>
+                                </div>
+                                <div class="bm-case-card">
+                                        <span class="bm-stat-label"><?php esc_html_e('Dokumenty', 'basemgmt'); ?></span>
+                                        <strong><?php
+                                                echo esc_html((string) $wpdb->get_var($wpdb->prepare(
+                                                        "SELECT COUNT(*) FROM " . \BaseMgmt\Database\Schema::table('camp_documents') . " WHERE camp_id = %d",
+                                                        $id
+                                                )));
+                                        ?></strong>
+                                </div>
+                        </div>
 
-			<div class="bm-workflow-phase-list">
-				<?php foreach ( $workflow['phases'] as $phase ) : ?>
-					<div class="bm-workflow-phase bm-workflow-phase--<?php echo esc_attr($phase['state']); ?>">
-						<span class="bm-stat-label"><?php echo esc_html($phase['state'] === 'done' ? __('Domknięte', 'basemgmt') : ($phase['state'] === 'current' ? __('Teraz', 'basemgmt') : __('Dalej', 'basemgmt'))); ?></span>
-						<strong><?php echo esc_html($phase['label']); ?></strong>
-					</div>
-				<?php endforeach; ?>
-			</div>
+                        <!-- Blockers + Actions -->
+                        <div class="bm-case-grid" style="margin-bottom:20px;">
+                                <div class="bm-case-card">
+                                        <h3 style="margin-top:0;"><?php esc_html_e('Co blokuje przejście dalej', 'basemgmt'); ?></h3>
+                                        <?php if ( empty($workflow['blockers']) ) : ?>
+                                                <p class="bm-muted"><?php esc_html_e('Brak krytycznych blokerów na tym etapie.', 'basemgmt'); ?></p>
+                                        <?php else : ?>
+                                                <ul style="margin:0 0 0 18px;">
+                                                        <?php foreach ( $workflow['blockers'] as $item ) : ?>
+                                                                <li><?php echo esc_html($item); ?></li>
+                                                        <?php endforeach; ?>
+                                                </ul>
+                                        <?php endif; ?>
+                                </div>
+                                <div class="bm-case-card">
+                                        <h3 style="margin-top:0;"><?php esc_html_e('Sugerowane działania', 'basemgmt'); ?></h3>
+                                        <?php if ( empty($workflow['next_actions']) ) : ?>
+                                                <p class="bm-muted"><?php esc_html_e('Brak sugestii — etap kompletny.', 'basemgmt'); ?></p>
+                                        <?php else : ?>
+                                                <ol style="margin:0 0 0 18px;">
+                                                        <?php foreach ( $workflow['next_actions'] as $item ) : ?>
+                                                                <li><?php echo esc_html($item); ?></li>
+                                                        <?php endforeach; ?>
+                                                </ol>
+                                        <?php endif; ?>
+                                </div>
+                        </div>
 
-			<div class="bm-case-grid">
-				<div class="bm-case-card">
-					<h3 style="margin-top:0;"><?php esc_html_e('Co blokuje przejście dalej', 'basemgmt'); ?></h3>
-					<?php if ( empty($workflow['blockers']) ) : ?>
-						<p><?php esc_html_e('Brak krytycznych blokerów na tym etapie.', 'basemgmt'); ?></p>
-					<?php else : ?>
-						<ul>
-							<?php foreach ( $workflow['blockers'] as $item ) : ?>
-								<li><?php echo esc_html($item); ?></li>
-							<?php endforeach; ?>
-						</ul>
-					<?php endif; ?>
-				</div>
-				<div class="bm-case-card">
-					<h3 style="margin-top:0;"><?php esc_html_e('Sugerowane działania', 'basemgmt'); ?></h3>
-					<?php if ( empty($workflow['next_actions']) ) : ?>
-						<p><?php esc_html_e('Brak sugestii — workflow jest kompletny na tym etapie.', 'basemgmt'); ?></p>
-					<?php else : ?>
-						<ol style="margin:0 0 0 18px;">
-							<?php foreach ( $workflow['next_actions'] as $item ) : ?>
-								<li><?php echo esc_html($item); ?></li>
-							<?php endforeach; ?>
-						</ol>
-					<?php endif; ?>
-				</div>
-			</div>
+                        <!-- Basic data form -->
+                        <div class="bm-form-section">
+                                <h2 style="margin-top:0;"><?php esc_html_e('Podstawowe dane obozu', 'basemgmt'); ?></h2>
+                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                                        <?php wp_nonce_field('bm_save_camp_overview'); ?>
+                                        <input type="hidden" name="action" value="bm_save_camp_overview">
+                                        <input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
+                                        <div class="bm-form-grid">
+                                                <p>
+                                                        <label for="bm_name"><strong><?php esc_html_e('Nazwa obozu', 'basemgmt'); ?></strong></label><br>
+                                                        <input type="text" id="bm_name" name="name" class="regular-text" required value="<?php echo esc_attr($camp->name ?? ''); ?>">
+                                                </p>
+                                                <p>
+                                                        <label for="bm_status"><strong><?php esc_html_e('Status pobytu', 'basemgmt'); ?></strong></label><br>
+                                                        <select id="bm_status" name="status">
+                                                                <?php foreach ( ['active' => __('Aktywny', 'basemgmt'), 'ended' => __('Zakończony', 'basemgmt'), 'archived' => __('Archiwalny', 'basemgmt')] as $value => $label ) : ?>
+                                                                        <option value="<?php echo esc_attr($value); ?>" <?php selected($camp->status ?? 'active', $value); ?>><?php echo esc_html($label); ?></option>
+                                                                <?php endforeach; ?>
+                                                        </select>
+                                                </p>
+                                                <p>
+                                                        <label for="bm_start"><strong><?php esc_html_e('Data rozpoczęcia', 'basemgmt'); ?></strong></label><br>
+                                                        <input type="date" id="bm_start" name="start_date" required value="<?php echo esc_attr($camp->start_date ?? ''); ?>">
+                                                </p>
+                                                <p>
+                                                        <label for="bm_end"><strong><?php esc_html_e('Data zakończenia', 'basemgmt'); ?></strong></label><br>
+                                                        <input type="date" id="bm_end" name="end_date" required value="<?php echo esc_attr($camp->end_date ?? ''); ?>">
+                                                </p>
+                                        </div>
+                                        <p class="submit" style="margin-bottom:0;">
+                                                <button type="submit" class="button button-primary"><?php esc_html_e('Zapisz podstawowe dane', 'basemgmt'); ?></button>
+                                        </p>
+                                </form>
+                        </div>
 
-			<div class="bm-form-section" style="margin-top:24px;">
-				<h2 style="margin-top:0;"><?php esc_html_e('Podstawowe dane obozu', 'basemgmt'); ?></h2>
-				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-					<?php wp_nonce_field('bm_save_camp_overview'); ?>
-					<input type="hidden" name="action" value="bm_save_camp_overview">
-					<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
-					<div class="bm-form-grid">
-						<p>
-							<label for="bm_name"><strong><?php esc_html_e('Nazwa obozu', 'basemgmt'); ?></strong></label><br>
-							<input type="text" id="bm_name" name="name" class="regular-text" required value="<?php echo esc_attr($camp->name ?? ''); ?>">
-						</p>
-						<p>
-							<label for="bm_status"><strong><?php esc_html_e('Status pobytu', 'basemgmt'); ?></strong></label><br>
-							<select id="bm_status" name="status">
-								<?php foreach ( ['active' => __('Aktywny', 'basemgmt'), 'ended' => __('Zakończony', 'basemgmt'), 'archived' => __('Archiwalny', 'basemgmt')] as $value => $label ) : ?>
-									<option value="<?php echo esc_attr($value); ?>" <?php selected($camp->status ?? 'active', $value); ?>><?php echo esc_html($label); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</p>
-						<p>
-							<label for="bm_start"><strong><?php esc_html_e('Data rozpoczęcia', 'basemgmt'); ?></strong></label><br>
-							<input type="date" id="bm_start" name="start_date" required value="<?php echo esc_attr($camp->start_date ?? ''); ?>">
-						</p>
-						<p>
-							<label for="bm_end"><strong><?php esc_html_e('Data zakończenia', 'basemgmt'); ?></strong></label><br>
-							<input type="date" id="bm_end" name="end_date" required value="<?php echo esc_attr($camp->end_date ?? ''); ?>">
-						</p>
-					</div>
-					<p class="submit" style="margin-bottom:0;">
-						<button type="submit" class="button button-primary"><?php esc_html_e('Zapisz podstawowe dane', 'basemgmt'); ?></button>
-					</p>
-				</form>
-			</div>
+                        <!-- Process stage + owner form (simplified) -->
+                        <div class="bm-form-section" id="bm-section-process">
+                                <h2 style="margin-top:0;"><?php esc_html_e('Etap i odpowiedzialny', 'basemgmt'); ?></h2>
+                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                                        <?php wp_nonce_field('bm_save_camp_process'); ?>
+                                        <input type="hidden" name="action" value="bm_save_camp_process">
+                                        <input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
+                                        <input type="hidden" name="risk_level" value="<?php echo esc_attr($risk_level); ?>">
+                                        <input type="hidden" name="needs_attention" value="0">
+                                        <input type="hidden" name="readiness_notes" value="<?php echo esc_attr($case->readiness_notes ?? ''); ?>">
+                                        <div class="bm-form-grid">
+                                                <p>
+                                                        <label for="bm_process_stage"><strong><?php esc_html_e('Etap procesu', 'basemgmt'); ?></strong></label><br>
+                                                        <select id="bm_process_stage" name="process_stage">
+                                                                <?php foreach ( $process_stages as $value => $label ) : ?>
+                                                                        <?php $is_allowed = $value === $process_stage || in_array($value, $allowed_transitions, true); ?>
+                                                                        <option value="<?php echo esc_attr($value); ?>" <?php selected($process_stage, $value); ?> <?php disabled(! $is_allowed); ?>>
+                                                                                <?php echo esc_html($label . ($is_allowed ? '' : ' — ' . __('niedostępne', 'basemgmt'))); ?>
+                                                                        </option>
+                                                                <?php endforeach; ?>
+                                                        </select>
+                                                </p>
+                                                <p>
+                                                        <label for="bm_owner_user_id"><strong><?php esc_html_e('Odpowiedzialny', 'basemgmt'); ?></strong></label><br>
+                                                        <select id="bm_owner_user_id" name="owner_user_id">
+                                                                <option value="0"><?php esc_html_e('— nie przypisano —', 'basemgmt'); ?></option>
+                                                                <?php foreach ( $users as $user ) : ?>
+                                                                        <option value="<?php echo esc_attr($user->ID); ?>" <?php selected($owner_user_id, (int) $user->ID); ?>><?php echo esc_html($user->display_name); ?></option>
+                                                                <?php endforeach; ?>
+                                                        </select>
+                                                </p>
+                                                <p>
+                                                        <label for="bm_next_action"><strong><?php esc_html_e('Termin następnego działania', 'basemgmt'); ?></strong></label><br>
+                                                        <input type="date" id="bm_next_action" name="next_action_due_date" value="<?php echo esc_attr($case->next_action_due_date ?? ''); ?>">
+                                                </p>
+                                        </div>
+                                        <p>
+                                                <label for="bm_case_notes"><strong><?php esc_html_e('Notatki', 'basemgmt'); ?></strong></label><br>
+                                                <textarea id="bm_case_notes" name="case_notes" class="large-text" rows="4"><?php echo esc_textarea($case->notes ?? ''); ?></textarea>
+                                        </p>
+                                        <input type="hidden" name="stage_change_note" value="">
+                                        <p class="submit" style="margin-bottom:0;">
+                                                <button type="submit" class="button button-primary"><?php esc_html_e('Zapisz etap', 'basemgmt'); ?></button>
+                                        </p>
+                                </form>
+                        </div>
 
-			<div class="bm-form-section" id="bm-section-process">
-				<h2 style="margin-top:0;"><?php esc_html_e('Etap workflow i owner', 'basemgmt'); ?></h2>
-				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-					<?php wp_nonce_field('bm_save_camp_process'); ?>
-					<input type="hidden" name="action" value="bm_save_camp_process">
-					<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
-					<div class="bm-form-grid">
-						<p>
-							<label for="bm_process_stage"><strong><?php esc_html_e('Etap procesu', 'basemgmt'); ?></strong></label><br>
-							<select id="bm_process_stage" name="process_stage">
-								<?php foreach ( $process_stages as $value => $label ) : ?>
-									<?php $is_allowed = $value === $process_stage || in_array($value, $allowed_transitions, true); ?>
-									<option value="<?php echo esc_attr($value); ?>" <?php selected($process_stage, $value); ?> <?php disabled(! $is_allowed); ?>>
-										<?php echo esc_html($label . ($is_allowed ? '' : ' — ' . __('niedostępne', 'basemgmt'))); ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
-							<span class="description"><?php esc_html_e('Twarde przejścia workflow są wymuszane po stronie zapisu.', 'basemgmt'); ?></span>
-						</p>
-						<p>
-							<label for="bm_risk_level"><strong><?php esc_html_e('Poziom ryzyka', 'basemgmt'); ?></strong></label><br>
-							<select id="bm_risk_level" name="risk_level">
-								<?php foreach ( $risk_levels as $value => $label ) : ?>
-									<option value="<?php echo esc_attr($value); ?>" <?php selected($risk_level, $value); ?>><?php echo esc_html($label); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</p>
-						<p>
-							<label for="bm_owner_user_id"><strong><?php esc_html_e('Owner sprawy', 'basemgmt'); ?></strong></label><br>
-							<select id="bm_owner_user_id" name="owner_user_id">
-								<option value="0"><?php esc_html_e('— nie przypisano —', 'basemgmt'); ?></option>
-								<?php foreach ( $users as $user ) : ?>
-									<option value="<?php echo esc_attr($user->ID); ?>" <?php selected($owner_user_id, (int) $user->ID); ?>><?php echo esc_html($user->display_name); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</p>
-						<p>
-							<label for="bm_next_action"><strong><?php esc_html_e('Termin następnego działania', 'basemgmt'); ?></strong></label><br>
-							<input type="date" id="bm_next_action" name="next_action_due_date" value="<?php echo esc_attr($case->next_action_due_date ?? ''); ?>">
-						</p>
-						<p class="bm-inline-check">
-							<label>
-								<input type="checkbox" name="needs_attention" value="1" <?php checked($needs_attention); ?>>
-								<?php esc_html_e('Wymaga pilnej reakcji', 'basemgmt'); ?>
-							</label>
-						</p>
-					</div>
-					<p>
-						<label for="bm_stage_change_note"><strong><?php esc_html_e('Uzasadnienie zmiany etapu', 'basemgmt'); ?></strong></label><br>
-						<textarea id="bm_stage_change_note" name="stage_change_note" class="large-text" rows="2"></textarea>
-					</p>
-					<p>
-						<label for="bm_case_notes"><strong><?php esc_html_e('Notatki procesowe', 'basemgmt'); ?></strong></label><br>
-						<textarea id="bm_case_notes" name="case_notes" class="large-text" rows="4"><?php echo esc_textarea($case->notes ?? ''); ?></textarea>
-					</p>
-					<p>
-						<label for="bm_readiness_notes"><strong><?php esc_html_e('Uwagi do gotowości', 'basemgmt'); ?></strong></label><br>
-						<textarea id="bm_readiness_notes" name="readiness_notes" class="large-text" rows="3"><?php echo esc_textarea($case->readiness_notes ?? ''); ?></textarea>
-					</p>
-					<p class="submit" style="margin-bottom:0;">
-						<button type="submit" class="button button-primary"><?php esc_html_e('Zapisz etap i odśwież taski', 'basemgmt'); ?></button>
-					</p>
-				</form>
-			</div>
-
-		</div><!-- /panel -->
-
-		<!-- ── CENTRUM PRACY ─────────────────────────────────────────────────── -->
+                </div><!-- /panel --><!-- ── CENTRUM PRACY ─────────────────────────────────────────────────── -->
 		<div class="bm-tab-panel" data-tab="workcenter" id="bm-section-workcenter">
 
 			<?php
@@ -1162,5 +1151,6 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 })();
 </script>
 <?php endif; ?>
+
 
 

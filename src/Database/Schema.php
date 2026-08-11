@@ -1137,15 +1137,17 @@ final class Schema {
 		$task_tpl_sql = [];
 
 		$task_tpl_sql[] = "CREATE TABLE {$p}bm_task_templates (
-			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-			title        VARCHAR(255)    NOT NULL,
-			description  TEXT            DEFAULT NULL,
-			priority     VARCHAR(20)     NOT NULL DEFAULT 'normal',
-			auto_add     TINYINT(1)      NOT NULL DEFAULT 0,
-			sort_order   INT             NOT NULL DEFAULT 0,
-			created_by   BIGINT UNSIGNED DEFAULT NULL,
-			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			title         VARCHAR(255)    NOT NULL,
+			description   TEXT            DEFAULT NULL,
+			priority      VARCHAR(20)     NOT NULL DEFAULT 'normal',
+			auto_add      TINYINT(1)      NOT NULL DEFAULT 0,
+			sort_order    INT             NOT NULL DEFAULT 0,
+			email_subject VARCHAR(255)    DEFAULT NULL,
+			email_body    TEXT            DEFAULT NULL,
+			created_by    BIGINT UNSIGNED DEFAULT NULL,
+			created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
 			KEY idx_auto_add (auto_add),
 			KEY idx_order    (sort_order)
@@ -1235,6 +1237,20 @@ final class Schema {
 			];
 			foreach ( $new_doc_cols as $col => $alter ) {
 				if ( ! in_array($col, $doc_cols, true) ) {
+					$wpdb->query($alter); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				}
+			}
+		}
+
+		// Add email_subject / email_body to bm_task_templates if they don't exist
+		$tpl_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_task_templates");
+		if ( $tpl_cols ) {
+			$new_tpl_cols = [
+				'email_subject' => "ALTER TABLE {$p}bm_task_templates ADD COLUMN email_subject VARCHAR(255) DEFAULT NULL AFTER sort_order",
+				'email_body'    => "ALTER TABLE {$p}bm_task_templates ADD COLUMN email_body TEXT DEFAULT NULL AFTER email_subject",
+			];
+			foreach ( $new_tpl_cols as $col => $alter ) {
+				if ( ! in_array($col, $tpl_cols, true) ) {
 					$wpdb->query($alter); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				}
 			}

@@ -132,7 +132,7 @@
 						<td><span class="bm-badge bm-badge--<?php echo esc_attr($camp->risk_level); ?>"><?php echo esc_html($risk_label); ?></span></td>
 						<td class="bm-actions">
 							<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-camps&action=edit&id={$camp->id}")); ?>">
-								<?php esc_html_e('Workflow', 'basemgmt'); ?>
+								<?php esc_html_e('Teczka', 'basemgmt'); ?>
 							</a>
 							&nbsp;|&nbsp;
 							<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-staff&filter_camp={$camp->id}")); ?>">
