@@ -292,6 +292,7 @@ final class Schema {
 			payment_type    VARCHAR(30)     NOT NULL DEFAULT 'deposit',
 			label           VARCHAR(255)    NOT NULL,
 			amount          DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			amount_type     VARCHAR(10)     NOT NULL DEFAULT 'fixed',
 			due_date        DATE            DEFAULT NULL,
 			status          VARCHAR(20)     NOT NULL DEFAULT 'expected',
 			description     TEXT            DEFAULT NULL,
@@ -1323,6 +1324,12 @@ final class Schema {
 		$res_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_resources");
 		if ( $res_cols && ! in_array('cost_per_reservation', $res_cols, true) ) {
 			$wpdb->query("ALTER TABLE {$p}bm_resources ADD COLUMN cost_per_reservation DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER max_reservations_per_camp"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		// Add amount_type to bm_camp_payment_schedules if it doesn't exist
+		$sched_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_camp_payment_schedules");
+		if ( $sched_cols && ! in_array('amount_type', $sched_cols, true) ) {
+			$wpdb->query("ALTER TABLE {$p}bm_camp_payment_schedules ADD COLUMN amount_type VARCHAR(10) NOT NULL DEFAULT 'fixed' AFTER amount"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 }

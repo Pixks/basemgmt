@@ -1,4 +1,4 @@
-<?php defined('ABSPATH') || exit;
+﻿<?php defined('ABSPATH') || exit;
 $is_edit           = ! is_null($camp);
 $id                = $is_edit ? (int) $camp->id : 0;
 $process_stage     = $case->process_stage ?? \BaseMgmt\Modules\Camps\CampCaseRepository::STAGE_INQUIRY;
@@ -807,7 +807,7 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 													<td><input type="hidden" name="sched_id[]" value="<?php echo esc_attr($sched->id); ?>">
 													<input type="text" name="sched_label[]" class="widefat" value="<?php echo esc_attr($sched->label); ?>"></td>
 													<td>
-														<select name="sched_type[]" class="widefat">
+														<select name="sched_type[]" class="widefat bm-sched-type">
 															<option value="deposit" <?php selected($sched->payment_type, 'deposit'); ?>><?php esc_html_e('Zaliczka', 'basemgmt'); ?></option>
 															<option value="accommodation" <?php selected($sched->payment_type, 'accommodation'); ?>><?php esc_html_e('Nocleg', 'basemgmt'); ?></option>
 															<option value="food" <?php selected($sched->payment_type, 'food'); ?>><?php esc_html_e('Wyżywienie', 'basemgmt'); ?></option>
@@ -819,7 +819,7 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 															<option value="other" <?php selected($sched->payment_type, 'other'); ?>><?php esc_html_e('Inne', 'basemgmt'); ?></option>
 														</select>
 													</td>
-													<td><input type="number" name="sched_amount[]" class="widefat" step="0.01" value="<?php echo esc_attr($sched->amount); ?>"></td>
+													<td style="white-space:nowrap;"><input type="number" name="sched_amount[]" class="bm-sched-amount" style="width:72px;" step="0.01" value="<?php echo esc_attr($sched->amount); ?>"><select name="sched_amount_type[]" class="bm-amount-type" style="width:54px;"><option value="fixed" <?php selected($sched->amount_type ?? 'fixed', 'fixed'); ?>>PLN</option><option value="percent" <?php selected($sched->amount_type ?? 'fixed', 'percent'); ?>>%</option></select></td>
 													<td><input type="date" name="sched_due_date[]" class="widefat" value="<?php echo esc_attr($sched->due_date ?? ''); ?>"></td>
 													<td>
 														<select name="sched_status[]" class="widefat">
@@ -1035,30 +1035,83 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 		});
 	}
 
-	// ── Finance: add payment row ──────────────────────────────────────────────
+	// ── Finance: add payment row + live totals ──────────────────────────
+	var TYPE_OPTS = '<option value="deposit"><?php esc_js(esc_html_e(\'Zaliczka\',\'basemgmt\')); ?></option><option value="accommodation"><?php esc_js(esc_html_e(\'Nocleg\',\'basemgmt\')); ?></option><option value="food"><?php esc_js(esc_html_e(\'Wyżywienie\',\'basemgmt\')); ?></option><option value="tax"><?php esc_js(esc_html_e(\'Podatek\',\'basemgmt\')); ?></option><option value="extra_fee"><?php esc_js(esc_html_e(\'Opłata dodatkowa\',\'basemgmt\')); ?></option><option value="surcharge"><?php esc_js(esc_html_e(\'Dopłata\',\'basemgmt\')); ?></option><option value="discount"><?php esc_js(esc_html_e(\'Rabat\',\'basemgmt\')); ?></option><option value="penalty"><?php esc_js(esc_html_e(\'Kara umowna\',\'basemgmt\')); ?></option><option value="other"><?php esc_js(esc_html_e(\'Inne\',\'basemgmt\')); ?></option>';
+	var STATUS_OPTS = '<option value="expected"><?php esc_js(esc_html_e(\'Oczekiwana\',\'basemgmt\')); ?></option><option value="paid"><?php esc_js(esc_html_e(\'Zapłacona\',\'basemgmt\')); ?></option><option value="overdue"><?php esc_js(esc_html_e(\'Po terminie\',\'basemgmt\')); ?></option><option value="cancelled"><?php esc_js(esc_html_e(\'Anulowana\',\'basemgmt\')); ?></option>';
+	var AMT_OPTS = '<option value="fixed">PLN</option><option value="percent">%</option>';
+
+	function bmFmt(n) { return n.toFixed(2).replace('.', ',') + ' zł'; }
+
+	function bmRecalcFinance() {
+		var rows = document.querySelectorAll('#bm-payment-tbody tr');
+		var subtotal = 0, totalDiscount = 0, totalPaid = 0;
+		rows.forEach(function(row) {
+			var typeEl   = row.querySelector('[name="sched_type[]"]');
+			var amtEl    = row.querySelector('[name="sched_amount[]"]');
+			var statusEl = row.querySelector('[name="sched_status[]"]');
+			if (!typeEl || !amtEl) return;
+			var type = typeEl.value, amount = parseFloat(amtEl.value) || 0, status = statusEl ? statusEl.value : '';
+			if (status === 'cancelled') return;
+			if (type !== 'discount') subtotal += amount;
+		});
+		rows.forEach(function(row) {
+			var typeEl    = row.querySelector('[name="sched_type[]"]');
+			var amtEl     = row.querySelector('[name="sched_amount[]"]');
+			var amtTypeEl = row.querySelector('[name="sched_amount_type[]"]');
+			var statusEl  = row.querySelector('[name="sched_status[]"]');
+			if (!typeEl || !amtEl) return;
+			var type = typeEl.value, amtType = amtTypeEl ? amtTypeEl.value : 'fixed';
+			var amount = parseFloat(amtEl.value) || 0, status = statusEl ? statusEl.value : '';
+			if (status === 'cancelled') return;
+			if (type === 'discount') { totalDiscount += (amtType === 'percent') ? subtotal * amount / 100 : amount; }
+			if (status === 'paid' && type !== 'discount') { totalPaid += amount; }
+		});
+		var total = subtotal - totalDiscount, remaining = total - totalPaid;
+		var el = function(id) { return document.getElementById(id); };
+		if (el('bm-finance-subtotal'))  el('bm-finance-subtotal').textContent  = bmFmt(subtotal);
+		if (el('bm-finance-discount'))  el('bm-finance-discount').textContent  = '−' + bmFmt(totalDiscount);
+		if (el('bm-finance-total'))     el('bm-finance-total').textContent     = bmFmt(total);
+		if (el('bm-finance-paid'))      el('bm-finance-paid').textContent      = bmFmt(totalPaid);
+		if (el('bm-finance-remaining')) el('bm-finance-remaining').textContent = bmFmt(remaining);
+	}
+
+	document.addEventListener('change', function(e) {
+		if (e.target.closest && e.target.closest('#bm-payment-lines-table, #bm-payment-tbody')) bmRecalcFinance();
+	});
+	document.addEventListener('input', function(e) {
+		if (e.target.name === 'sched_amount[]') bmRecalcFinance();
+	});
+
 	var addPayBtn = document.getElementById('bm-add-payment-row');
 	if (addPayBtn) {
 		addPayBtn.addEventListener('click', function() {
 			var tbody = document.getElementById('bm-payment-tbody');
 			if (!tbody) {
-				// table doesn't exist yet — create it
 				var wrap = addPayBtn.closest('.inside');
 				var noRows = wrap.querySelector('.bm-muted');
 				if (noRows) noRows.remove();
 				var tbl = document.createElement('table');
+				tbl.id = 'bm-payment-lines-table';
 				tbl.className = 'widefat bm-table';
-				tbl.innerHTML = '<thead><tr><th><?php esc_js(esc_html_e('Nazwa','basemgmt')); ?></th><th style="width:120px;"><?php esc_js(esc_html_e('Typ','basemgmt')); ?></th><th style="width:100px;"><?php esc_js(esc_html_e('Kwota','basemgmt')); ?></th><th style="width:120px;"><?php esc_js(esc_html_e('Termin','basemgmt')); ?></th><th style="width:90px;"><?php esc_js(esc_html_e('Status','basemgmt')); ?></th><th style="width:40px;"></th></tr></thead><tbody id="bm-payment-tbody"></tbody>';
+				tbl.innerHTML = '<thead><tr><th><?php esc_js(esc_html_e(\'Nazwa\',\'basemgmt\')); ?></th><th style="width:120px;"><?php esc_js(esc_html_e(\'Typ\',\'basemgmt\')); ?></th><th style="width:130px;"><?php esc_js(esc_html_e(\'Kwota\',\'basemgmt\')); ?></th><th style="width:120px;"><?php esc_js(esc_html_e(\'Termin\',\'basemgmt\')); ?></th><th style="width:90px;"><?php esc_js(esc_html_e(\'Status\',\'basemgmt\')); ?></th><th style="width:40px;"></th></tr></thead><tbody id="bm-payment-tbody"></tbody>';
 				wrap.insertBefore(tbl, addPayBtn.parentElement);
 				tbody = document.getElementById('bm-payment-tbody');
 			}
 			var tr = document.createElement('tr');
-			tr.innerHTML = '<td><input type="hidden" name="sched_id[]" value="0"><input type="text" name="sched_label[]" class="widefat" placeholder="<?php esc_js(esc_attr_e('Nazwa','basemgmt')); ?>"></td><td><select name="sched_type[]" class="widefat"><option value="deposit"><?php esc_js(esc_html_e('Zaliczka','basemgmt')); ?></option><option value="accommodation"><?php esc_js(esc_html_e('Nocleg','basemgmt')); ?></option><option value="food"><?php esc_js(esc_html_e('Wyżywienie','basemgmt')); ?></option><option value="tax"><?php esc_js(esc_html_e('Podatek','basemgmt')); ?></option><option value="extra_fee"><?php esc_js(esc_html_e('Opłata dodatkowa','basemgmt')); ?></option><option value="surcharge"><?php esc_js(esc_html_e('Dopłata','basemgmt')); ?></option><option value="discount"><?php esc_js(esc_html_e('Rabat','basemgmt')); ?></option><option value="penalty"><?php esc_js(esc_html_e('Kara umowna','basemgmt')); ?></option><option value="other"><?php esc_js(esc_html_e('Inne','basemgmt')); ?></option></select></td><td><input type="number" name="sched_amount[]" class="widefat" step="0.01" value="0.00"></td><td><input type="date" name="sched_due_date[]" class="widefat"></td><td><select name="sched_status[]" class="widefat"><option value="expected"><?php esc_js(esc_html_e('Oczekiwana','basemgmt')); ?></option><option value="paid"><?php esc_js(esc_html_e('Zapłacona','basemgmt')); ?></option><option value="overdue"><?php esc_js(esc_html_e('Po terminie','basemgmt')); ?></option><option value="cancelled"><?php esc_js(esc_html_e('Anulowana','basemgmt')); ?></option></select></td><td><button type="button" class="button-link bm-remove-sched-row">✕</button></td>';
+			tr.innerHTML = '<td><input type="hidden" name="sched_id[]" value="0"><input type="text" name="sched_label[]" class="widefat" placeholder="<?php esc_js(esc_attr_e(\'Nazwa\',\'basemgmt\')); ?>"></td>'
+				+ '<td><select name="sched_type[]" class="widefat bm-sched-type">' + TYPE_OPTS + '</select></td>'
+				+ '<td style="white-space:nowrap;"><input type="number" name="sched_amount[]" class="bm-sched-amount" style="width:72px;" step="0.01" value="0.00"><select name="sched_amount_type[]" class="bm-amount-type" style="width:54px;">' + AMT_OPTS + '</select></td>'
+				+ '<td><input type="date" name="sched_due_date[]" class="widefat"></td>'
+				+ '<td><select name="sched_status[]" class="widefat">' + STATUS_OPTS + '</select></td>'
+				+ '<td><button type="button" class="button-link bm-remove-sched-row">✕</button></td>';
 			tbody.appendChild(tr);
+			bmRecalcFinance();
 		});
 		document.addEventListener('click', function(e) {
-			if (e.target.classList.contains('bm-remove-sched-row')) e.target.closest('tr').remove();
+			if (e.target.classList.contains('bm-remove-sched-row')) { e.target.closest('tr').remove(); bmRecalcFinance(); }
 		});
 	}
+	bmRecalcFinance();
 })();
 </script>
 <?php endif; ?>

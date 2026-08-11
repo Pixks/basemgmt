@@ -782,12 +782,13 @@ final class CampsPage {
 		}
 
 		// Manual save.
-		$ids       = (array) ($_POST['sched_id'] ?? []);
-		$labels    = (array) ($_POST['sched_label'] ?? []);
-		$types     = (array) ($_POST['sched_type'] ?? []);
-		$amounts   = (array) ($_POST['sched_amount'] ?? []);
-		$due_dates = (array) ($_POST['sched_due_date'] ?? []);
-		$statuses  = (array) ($_POST['sched_status'] ?? []);
+		$ids         = (array) ($_POST['sched_id']          ?? []);
+		$labels      = (array) ($_POST['sched_label']       ?? []);
+		$types       = (array) ($_POST['sched_type']        ?? []);
+		$amounts     = (array) ($_POST['sched_amount']      ?? []);
+		$amount_types = (array) ($_POST['sched_amount_type'] ?? []);
+		$due_dates   = (array) ($_POST['sched_due_date']    ?? []);
+		$statuses    = (array) ($_POST['sched_status']      ?? []);
 
 		// Delete removed rows.
 		$existing_ids = array_filter(array_map('intval', $ids));
@@ -812,6 +813,7 @@ final class CampsPage {
 				'payment_type' => sanitize_key($types[$i] ?? 'other'),
 				'label'        => $label,
 				'amount'       => (float) str_replace(',', '.', $amounts[$i] ?? '0'),
+				'amount_type'  => in_array(sanitize_key($amount_types[$i] ?? 'fixed'), ['fixed', 'percent'], true) ? sanitize_key($amount_types[$i] ?? 'fixed') : 'fixed',
 				'due_date'     => sanitize_text_field($due_dates[$i] ?? '') ?: null,
 				'status'       => sanitize_key($statuses[$i] ?? 'expected'),
 			];
