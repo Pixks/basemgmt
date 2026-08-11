@@ -1036,8 +1036,8 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 	}
 
 	// ── Finance: add payment row + live totals ──────────────────────────
-	var TYPE_OPTS = '<option value="deposit"><?php esc_js(esc_html_e(\'Zaliczka\',\'basemgmt\')); ?></option><option value="accommodation"><?php esc_js(esc_html_e(\'Nocleg\',\'basemgmt\')); ?></option><option value="food"><?php esc_js(esc_html_e(\'Wyżywienie\',\'basemgmt\')); ?></option><option value="tax"><?php esc_js(esc_html_e(\'Podatek\',\'basemgmt\')); ?></option><option value="extra_fee"><?php esc_js(esc_html_e(\'Opłata dodatkowa\',\'basemgmt\')); ?></option><option value="surcharge"><?php esc_js(esc_html_e(\'Dopłata\',\'basemgmt\')); ?></option><option value="discount"><?php esc_js(esc_html_e(\'Rabat\',\'basemgmt\')); ?></option><option value="penalty"><?php esc_js(esc_html_e(\'Kara umowna\',\'basemgmt\')); ?></option><option value="other"><?php esc_js(esc_html_e(\'Inne\',\'basemgmt\')); ?></option>';
-	var STATUS_OPTS = '<option value="expected"><?php esc_js(esc_html_e(\'Oczekiwana\',\'basemgmt\')); ?></option><option value="paid"><?php esc_js(esc_html_e(\'Zapłacona\',\'basemgmt\')); ?></option><option value="overdue"><?php esc_js(esc_html_e(\'Po terminie\',\'basemgmt\')); ?></option><option value="cancelled"><?php esc_js(esc_html_e(\'Anulowana\',\'basemgmt\')); ?></option>';
+	var TYPE_OPTS = '<option value="deposit"><?php esc_js(esc_html_e('Zaliczka','basemgmt')); ?></option><option value="accommodation"><?php esc_js(esc_html_e('Nocleg','basemgmt')); ?></option><option value="food"><?php esc_js(esc_html_e('Wyżywienie','basemgmt')); ?></option><option value="tax"><?php esc_js(esc_html_e('Podatek','basemgmt')); ?></option><option value="extra_fee"><?php esc_js(esc_html_e('Opłata dodatkowa','basemgmt')); ?></option><option value="surcharge"><?php esc_js(esc_html_e('Dopłata','basemgmt')); ?></option><option value="discount"><?php esc_js(esc_html_e('Rabat','basemgmt')); ?></option><option value="penalty"><?php esc_js(esc_html_e('Kara umowna','basemgmt')); ?></option><option value="other"><?php esc_js(esc_html_e('Inne','basemgmt')); ?></option>';
+	var STATUS_OPTS = '<option value="expected"><?php esc_js(esc_html_e('Oczekiwana','basemgmt')); ?></option><option value="paid"><?php esc_js(esc_html_e('Zapłacona','basemgmt')); ?></option><option value="overdue"><?php esc_js(esc_html_e('Po terminie','basemgmt')); ?></option><option value="cancelled"><?php esc_js(esc_html_e('Anulowana','basemgmt')); ?></option>';
 	var AMT_OPTS = '<option value="fixed">PLN</option><option value="percent">%</option>';
 
 	function bmFmt(n) { return n.toFixed(2).replace('.', ',') + ' zł'; }
@@ -1093,12 +1093,12 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 				var tbl = document.createElement('table');
 				tbl.id = 'bm-payment-lines-table';
 				tbl.className = 'widefat bm-table';
-				tbl.innerHTML = '<thead><tr><th><?php esc_js(esc_html_e(\'Nazwa\',\'basemgmt\')); ?></th><th style="width:120px;"><?php esc_js(esc_html_e(\'Typ\',\'basemgmt\')); ?></th><th style="width:130px;"><?php esc_js(esc_html_e(\'Kwota\',\'basemgmt\')); ?></th><th style="width:120px;"><?php esc_js(esc_html_e(\'Termin\',\'basemgmt\')); ?></th><th style="width:90px;"><?php esc_js(esc_html_e(\'Status\',\'basemgmt\')); ?></th><th style="width:40px;"></th></tr></thead><tbody id="bm-payment-tbody"></tbody>';
+				tbl.innerHTML = '<thead><tr><th><?php esc_js(esc_html_e('Nazwa','basemgmt')); ?></th><th style="width:120px;"><?php esc_js(esc_html_e('Typ','basemgmt')); ?></th><th style="width:130px;"><?php esc_js(esc_html_e('Kwota','basemgmt')); ?></th><th style="width:120px;"><?php esc_js(esc_html_e('Termin','basemgmt')); ?></th><th style="width:90px;"><?php esc_js(esc_html_e('Status','basemgmt')); ?></th><th style="width:40px;"></th></tr></thead><tbody id="bm-payment-tbody"></tbody>';
 				wrap.insertBefore(tbl, addPayBtn.parentElement);
 				tbody = document.getElementById('bm-payment-tbody');
 			}
 			var tr = document.createElement('tr');
-			tr.innerHTML = '<td><input type="hidden" name="sched_id[]" value="0"><input type="text" name="sched_label[]" class="widefat" placeholder="<?php esc_js(esc_attr_e(\'Nazwa\',\'basemgmt\')); ?>"></td>'
+			tr.innerHTML = '<td><input type="hidden" name="sched_id[]" value="0"><input type="text" name="sched_label[]" class="widefat" placeholder="<?php esc_js(esc_attr_e('Nazwa','basemgmt')); ?>"></td>'
 				+ '<td><select name="sched_type[]" class="widefat bm-sched-type">' + TYPE_OPTS + '</select></td>'
 				+ '<td style="white-space:nowrap;"><input type="number" name="sched_amount[]" class="bm-sched-amount" style="width:72px;" step="0.01" value="0.00"><select name="sched_amount_type[]" class="bm-amount-type" style="width:54px;">' + AMT_OPTS + '</select></td>'
 				+ '<td><input type="date" name="sched_due_date[]" class="widefat"></td>'
