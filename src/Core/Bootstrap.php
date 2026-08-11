@@ -88,10 +88,21 @@ final class Bootstrap {
 		$this->loader->add_action('admin_enqueue_scripts', $menu, 'enqueue_assets');
 		$this->loader->add_action('admin_notices',         $menu, 'render_notices');
 
+		// Run DB migrations when plugin version changes (column additions etc.).
+		$this->loader->add_action('admin_init', $this, 'maybe_run_migrations');
+
 		// Register admin-post handlers from AdminMenu's action map.
 		// Done directly with add_action (not via Loader) because we have object references.
 		foreach ( $menu->post_actions() as $action => [$obj, $method] ) {
 			add_action( "admin_post_{$action}", [ $obj, $method ] );
+		}
+	}
+
+	public function maybe_run_migrations(): void {
+		$stored = get_option('basemgmt_db_version', '');
+		if ( $stored !== BASEMGMT_VERSION ) {
+			\BaseMgmt\Database\Schema::create_tables();
+			update_option('basemgmt_db_version', BASEMGMT_VERSION);
 		}
 	}
 
