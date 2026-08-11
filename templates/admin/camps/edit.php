@@ -837,6 +837,17 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 										</tbody>
 									</table>
 								<?php endif; ?>
+								<!-- Live finance summary -->
+								<div id="bm-finance-summary" style="margin-top:14px;padding:12px 16px;background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;">
+									<table style="width:100%;max-width:380px;margin-left:auto;border-collapse:collapse;font-size:13px;">
+										<tr><td style="padding:3px 8px;"><?php esc_html_e('Suma (brutto):', 'basemgmt'); ?></td><td style="text-align:right;padding:3px 8px;"><span id="bm-finance-subtotal">0,00 zł</span></td></tr>
+										<tr><td style="padding:3px 8px;color:#d63638;"><?php esc_html_e('Rabaty:', 'basemgmt'); ?></td><td style="text-align:right;padding:3px 8px;color:#d63638;"><span id="bm-finance-discount">−0,00 zł</span></td></tr>
+										<tr style="font-weight:600;border-top:1px solid #c3c4c7;"><td style="padding:6px 8px 3px;"><?php esc_html_e('Do zapłaty:', 'basemgmt'); ?></td><td style="text-align:right;padding:6px 8px 3px;"><span id="bm-finance-total">0,00 zł</span></td></tr>
+										<tr><td style="padding:3px 8px;color:#00a32a;"><?php esc_html_e('Zapłacono:', 'basemgmt'); ?></td><td style="text-align:right;padding:3px 8px;color:#00a32a;"><span id="bm-finance-paid">0,00 zł</span></td></tr>
+										<tr style="font-weight:600;"><td style="padding:3px 8px;"><?php esc_html_e('Pozostało:', 'basemgmt'); ?></td><td style="text-align:right;padding:3px 8px;"><span id="bm-finance-remaining">0,00 zł</span></td></tr>
+									</table>
+								</div>
+
 
 								<p style="margin-top:10px;">
 									<button type="button" class="button" id="bm-add-payment-row">+ <?php esc_html_e('Dodaj pozycję', 'basemgmt'); ?></button>

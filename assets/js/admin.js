@@ -9,8 +9,8 @@
         'bm-section-workcenter'  : 'workcenter',
         'bm-section-checklist'   : 'workcenter',
         'bm-section-organizer'   : 'organizer',
-        'bm-section-prearrival'  : 'planning',
-        'bm-section-settlement'  : 'settlement',
+        'bm-section-documents'   : 'documents',
+        'bm-section-finance'     : 'finance',
     };
 
     function activateCampTab(tabName) {
