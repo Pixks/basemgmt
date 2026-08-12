@@ -36,8 +36,6 @@ final class OrgDietsPage {
 
 		if ( in_array($action, ['new', 'edit'], true) ) {
 			$diet  = $id ? $this->get_one($id) : null;
-			$costs = $id ? $this->get_costs($id) : [];
-			$slots = self::meal_slots();
 			include BASEMGMT_DIR . 'templates/admin/org/diets/edit.php';
 		} else {
 			$diets = $this->get_all();
@@ -72,29 +70,6 @@ final class OrgDietsPage {
 			$wpdb->update($diet_table, $data, ['id' => $id]);
 		} else {
 			$wpdb->insert($diet_table, $data);
-			$id = (int) $wpdb->insert_id;
-		}
-
-		// Save per-slot costs.
-		$cost_table = Schema::table('meal_diet_costs');
-		$slot_prices = (array) ($_POST['slot_price'] ?? []);
-		$slot_vats   = (array) ($_POST['slot_vat'] ?? []);
-
-		foreach ( self::meal_slots() as $slot_key => $slot_label ) {
-			$netto = (float) str_replace(',', '.', $slot_prices[$slot_key] ?? '0');
-			$vat   = (float) str_replace(',', '.', $slot_vats[$slot_key]   ?? '0');
-
-			// Use INSERT … ON DUPLICATE KEY UPDATE via wpdb replace.
-			$existing = $wpdb->get_var($wpdb->prepare(
-				"SELECT id FROM {$cost_table} WHERE diet_id = %d AND meal_slot = %s",
-				$id, $slot_key
-			));
-
-			if ( $existing ) {
-				$wpdb->update($cost_table, ['cost_netto' => $netto, 'vat_rate' => $vat], ['id' => (int) $existing]);
-			} else {
-				$wpdb->insert($cost_table, ['diet_id' => $id, 'meal_slot' => $slot_key, 'cost_netto' => $netto, 'vat_rate' => $vat]);
-			}
 		}
 
 		AdminMenu::set_notice(__('Dieta zapisana.', 'basemgmt'));
