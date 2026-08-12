@@ -152,7 +152,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Organizacja – Dokumenty', 'basemgmt'),
-			' ↳ ' . __('Dokumenty', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Dokumenty', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org-documents',
 			[$this->org_documents, 'render']
@@ -170,7 +170,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Organizacja – Finanse', 'basemgmt'),
-			' ↳ ' . __('Finanse', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Finanse', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org-finance',
 			[$this->org_finance, 'render']
@@ -179,7 +179,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Organizacja – Zadania', 'basemgmt'),
-			' ↳ ' . __('Zadania', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Zadania', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org-tasks',
 			[$this->org_tasks, 'render']
@@ -188,7 +188,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Organizacja – Noclegi', 'basemgmt'),
-			' ↳ ' . __('Noclegi', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Noclegi', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org-accommodations',
 			[$this->org_accommodations, 'render']
@@ -233,7 +233,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Szablony planów dnia', 'basemgmt'),
-			' ↳ ' . __('Szablony', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Szablony', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-plan-templates',
 			[$this->plan_templates, 'render']
@@ -260,7 +260,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Szablony jadłospisów', 'basemgmt'),
-			' ↳ ' . __('Szablony', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Szablony', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-meal-templates',
 			[$this->meal_templates, 'render']
@@ -269,7 +269,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Opcje jadłospisu', 'basemgmt'),
-			' ↳ ' . __('Opcje', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Opcje', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-meal-options',
 			[$this->meal_options, 'render']
