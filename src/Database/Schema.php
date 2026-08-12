@@ -1258,6 +1258,7 @@ final class Schema {
 			id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			name           VARCHAR(255)    NOT NULL,
 			rate_per_night DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			default_vat    DECIMAL(5,2)    NOT NULL DEFAULT 0.00,
 			description    TEXT            DEFAULT NULL,
 			sort_order     INT             NOT NULL DEFAULT 0,
 			created_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,

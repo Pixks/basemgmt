@@ -31,7 +31,36 @@ $item_id = $item->id ?? 0;
                     value="<?php echo esc_attr($item->sort_order ?? 0); ?>">
             </p>
 
-            <p class="submit">
+            <hr style="margin:16px 0;">
+            <h3 style="margin-bottom:8px;"><?php esc_html_e('Domyślne koszty (do pakietów finansowych)', 'basemgmt'); ?></h3>
+            <p class="description" style="margin-bottom:10px;"><?php esc_html_e('Te wartości będą domyślnie podstawiane przy dodawaniu tego noclegu do pakietu finansowego.', 'basemgmt'); ?></p>
+            <table class="widefat bm-table" style="max-width:400px;">
+                <thead><tr>
+                    <th><?php esc_html_e('Cena netto / os. / noc', 'basemgmt'); ?></th>
+                    <th style="width:100px;"><?php esc_html_e('VAT %', 'basemgmt'); ?></th>
+                    <th style="width:120px;"><?php esc_html_e('Cena brutto', 'basemgmt'); ?></th>
+                </tr></thead>
+                <tbody><tr>
+                    <td><input type="number" id="accom_rate" name="rate_per_night" class="widefat" step="0.01" min="0"
+                        value="<?php echo esc_attr(number_format((float)($item->rate_per_night ?? 0), 2, '.', '')); ?>"></td>
+                    <td><input type="number" id="accom_vat" name="default_vat" class="widefat" step="0.01" min="0" max="100"
+                        value="<?php echo esc_attr(number_format((float)($item->default_vat ?? 0), 2, '.', '')); ?>"></td>
+                    <td id="accom_brutto" style="font-weight:600;padding:6px 8px;"><?php
+                        $b = (float)($item->rate_per_night ?? 0) * (1 + (float)($item->default_vat ?? 0)/100);
+                        echo number_format($b, 2, ',', ' ');
+                    ?></td>
+                </tr></tbody>
+            </table>
+            <script>
+            (function(){
+                var n = document.getElementById('accom_rate'), v = document.getElementById('accom_vat'), b = document.getElementById('accom_brutto');
+                function calc(){ if(n&&v&&b) b.textContent = (parseFloat(n.value)||0)*(1+(parseFloat(v.value)||0)/100).toFixed(2).replace('.',','); }
+                if(n) n.addEventListener('input', calc);
+                if(v) v.addEventListener('input', calc);
+            })();
+            </script>
+
+            <p class="submit" style="margin-top:16px;">
                 <button type="submit" class="button button-primary">
                     <?php echo $is_new ? esc_html__('Dodaj typ noclegu', 'basemgmt') : esc_html__('Zapisz zmiany', 'basemgmt'); ?>
                 </button>

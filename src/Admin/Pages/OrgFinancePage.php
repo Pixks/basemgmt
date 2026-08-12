@@ -88,6 +88,13 @@ final class OrgFinancePage {
 		$all_diets       = \BaseMgmt\Admin\Pages\OrgDietsPage::get_all();
 		$meal_slots      = \BaseMgmt\Admin\Pages\OrgDietsPage::meal_slots();
 
+		// Pre-load default diet slot costs for JS pre-fill
+		$diet_default_costs = [];
+		foreach ( $all_diets as $d ) {
+			$costs = \BaseMgmt\Admin\Pages\OrgDietsPage::get_costs((int)$d->id);
+			$diet_default_costs[(int)$d->id] = $costs;
+		}
+
 		$line_types = self::line_types();
 		$units      = self::units();
 		include BASEMGMT_DIR . 'templates/admin/org/finance/edit.php';

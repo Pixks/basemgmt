@@ -35,7 +35,8 @@ final class OrgDietsPage {
 		$id     = (int) ($_GET['id'] ?? 0);
 
 		if ( in_array($action, ['new', 'edit'], true) ) {
-			$diet  = $id ? $this->get_one($id) : null;
+			$diet       = $id ? $this->get_one($id) : null;
+			$diet_costs = $id ? self::get_costs($id) : [];
 			include BASEMGMT_DIR . 'templates/admin/org/diets/edit.php';
 		} else {
 			$diets = $this->get_all();
@@ -70,6 +71,22 @@ final class OrgDietsPage {
 			$wpdb->update($diet_table, $data, ['id' => $id]);
 		} else {
 			$wpdb->insert($diet_table, $data);
+			$id = (int) $wpdb->insert_id;
+		}
+
+		// Save per-meal-slot default costs.
+		$costs_table = Schema::table('meal_diet_costs');
+		foreach ( self::meal_slots() as $slot_key => $_ ) {
+			$netto = round((float) str_replace(',', '.', $_POST['slot_price'][$slot_key] ?? '0'), 2);
+			$vat   = round((float) str_replace(',', '.', $_POST['slot_vat'][$slot_key] ?? '0'), 2);
+			$existing = $wpdb->get_var($wpdb->prepare(
+				"SELECT id FROM {$costs_table} WHERE diet_id = %d AND meal_slot = %s", $id, $slot_key
+			));
+			if ( $existing ) {
+				$wpdb->update($costs_table, ['cost_netto' => $netto, 'vat_rate' => $vat], ['id' => $existing]);
+			} else {
+				$wpdb->insert($costs_table, ['diet_id' => $id, 'meal_slot' => $slot_key, 'cost_netto' => $netto, 'vat_rate' => $vat]);
+			}
 		}
 
 		AdminMenu::set_notice(__('Dieta zapisana.', 'basemgmt'));

@@ -44,9 +44,11 @@ final class OrgAccommodationsPage {
 		}
 
 		$data = [
-			'name'        => $name,
-			'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
-			'sort_order'  => (int) ($_POST['sort_order'] ?? 0),
+			'name'          => $name,
+			'description'   => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+			'rate_per_night'=> round((float) str_replace(',', '.', $_POST['rate_per_night'] ?? '0'), 2),
+			'default_vat'   => round((float) str_replace(',', '.', $_POST['default_vat'] ?? '0'), 2),
+			'sort_order'    => (int) ($_POST['sort_order'] ?? 0),
 		];
 
 		if ( $id > 0 ) {

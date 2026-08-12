@@ -90,7 +90,10 @@ echo number_format($brutto, 2, ',', ' ');
 		<select id="bm-accom-select" class="bm-add-select">
 			<option value=""><?php esc_html_e('— wybierz typ noclegu —', 'basemgmt'); ?></option>
 			<?php foreach ($all_accom_types as $at): ?>
-				<option value="<?php echo esc_attr($at->id); ?>" data-name="<?php echo esc_attr($at->name); ?>">
+				<option value="<?php echo esc_attr($at->id); ?>"
+					data-name="<?php echo esc_attr($at->name); ?>"
+					data-price="<?php echo esc_attr(number_format((float)($at->rate_per_night ?? 0), 2, '.', '')); ?>"
+					data-vat="<?php echo esc_attr(number_format((float)($at->default_vat ?? 0), 2, '.', '')); ?>">
 					<?php echo esc_html($at->name); ?>
 				</option>
 			<?php endforeach; ?>
@@ -140,8 +143,20 @@ echo number_format($brutto, 2, ',', ' ');
 	<div style="margin-right:12px;display:flex;align-items:center;gap:8px;">
 		<select id="bm-diet-select" class="bm-add-select">
 			<option value=""><?php esc_html_e('— wybierz dietę —', 'basemgmt'); ?></option>
-			<?php foreach ($all_diets as $d): ?>
-				<option value="<?php echo esc_attr($d->id); ?>" data-name="<?php echo esc_attr($d->name); ?>">
+			<?php foreach ($all_diets as $d):
+				$def_costs = $diet_default_costs[(int)$d->id] ?? [];
+				$slots_data = [];
+				foreach ($meal_slots as $sk => $sl) {
+					$sc = $def_costs[$sk] ?? null;
+					$slots_data[$sk] = [
+						'netto' => $sc ? number_format((float)$sc->cost_netto, 2, '.', '') : '0.00',
+						'vat'   => $sc ? number_format((float)$sc->vat_rate, 2, '.', '')   : '0.00',
+					];
+				}
+			?>
+				<option value="<?php echo esc_attr($d->id); ?>"
+					data-name="<?php echo esc_attr($d->name); ?>"
+					data-slots="<?php echo esc_attr(wp_json_encode($slots_data)); ?>">
 					<?php echo esc_html($d->name); ?>
 				</option>
 			<?php endforeach; ?>
@@ -357,13 +372,16 @@ document.getElementById('bm-add-accom').addEventListener('click', function() {
 		alert('Ten typ noclegu jest już dodany.');
 		return;
 	}
+	var defPrice = opt.dataset.price || '0.00';
+	var defVat   = opt.dataset.vat   || '0';
+	var defBrutto = (parseFloat(defPrice)*(1+parseFloat(defVat)/100)).toFixed(2).replace('.',',');
 	var tr = document.createElement('tr');
 	tr.className = 'bm-accom-row';
 	tr.innerHTML =
 		'<td><input type="hidden" name="accom_type_id[]" value="'+typeId+'">'+typeName+'</td>' +
-		'<td><input type="number" name="accom_price[]" class="widefat bm-accom-netto" step="0.01" min="0" value="0.00"></td>' +
-		'<td><input type="number" name="accom_vat[]" class="widefat bm-accom-vat" step="0.01" min="0" max="100" value="0"></td>' +
-		'<td class="bm-accom-brutto" style="font-weight:600;padding-right:6px;">0,00</td>' +
+		'<td><input type="number" name="accom_price[]" class="widefat bm-accom-netto" step="0.01" min="0" value="'+defPrice+'"></td>' +
+		'<td><input type="number" name="accom_vat[]" class="widefat bm-accom-vat" step="0.01" min="0" max="100" value="'+defVat+'"></td>' +
+		'<td class="bm-accom-brutto" style="font-weight:600;padding-right:6px;">'+defBrutto+'</td>' +
 		'<td><input type="number" name="accom_days_before[]" class="widefat" min="0" value="30"></td>' +
 		'<td><button type="button" class="button-link bm-remove-accom">✕</button></td>';
 	accomTbody.appendChild(tr);
@@ -402,14 +420,19 @@ document.getElementById('bm-add-diet').addEventListener('click', function() {
 		alert('Ta dieta jest już dodana.');
 		return;
 	}
+	var defSlots = {};
+	try { defSlots = JSON.parse(opt.dataset.slots || '{}'); } catch(e) {}
 	var rows = '';
 	for (var slotKey in mealSlots) {
+		var sn = (defSlots[slotKey] && defSlots[slotKey].netto) ? defSlots[slotKey].netto : '0.00';
+		var sv = (defSlots[slotKey] && defSlots[slotKey].vat)   ? defSlots[slotKey].vat   : '0';
+		var sb = (parseFloat(sn)*(1+parseFloat(sv)/100)).toFixed(2).replace('.',',');
 		rows += '<tr class="bm-diet-slot-row">' +
 			'<td style="text-align:center;"><input type="checkbox" name="diet_slot_enabled['+dietId+']['+slotKey+']" value="1" class="bm-slot-toggle" checked></td>' +
 			'<td>'+mealSlots[slotKey]+'</td>' +
-			'<td><input type="number" name="diet_slot_price['+dietId+']['+slotKey+']" class="widefat bm-slot-netto" step="0.01" min="0" value="0.00"></td>' +
-			'<td><input type="number" name="diet_slot_vat['+dietId+']['+slotKey+']" class="widefat bm-slot-vat" step="0.01" min="0" max="100" value="0"></td>' +
-			'<td class="bm-slot-brutto" style="font-weight:600;padding-right:6px;">0,00</td>' +
+			'<td><input type="number" name="diet_slot_price['+dietId+']['+slotKey+']" class="widefat bm-slot-netto" step="0.01" min="0" value="'+sn+'"></td>' +
+			'<td><input type="number" name="diet_slot_vat['+dietId+']['+slotKey+']" class="widefat bm-slot-vat" step="0.01" min="0" max="100" value="'+sv+'"></td>' +
+			'<td class="bm-slot-brutto" style="font-weight:600;padding-right:6px;">'+sb+'</td>' +
 		'</tr>';
 	}
 	var block = document.createElement('div');
