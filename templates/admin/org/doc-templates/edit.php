@@ -5,7 +5,7 @@ $tpl_id  = $is_new ? 0 : (int) $template->id;
 <div class="wrap bm-admin-wrap">
 	<div class="bm-page-header">
 		<h1>
-			<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-org')); ?>" class="bm-back-link">← <?php esc_html_e('Szablony', 'basemgmt'); ?></a>
+			<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-org-doc-templates')); ?>" class="bm-back-link">← <?php esc_html_e('Szablony', 'basemgmt'); ?></a>
 		</h1>
 		<h1 style="margin-top:8px;">
 			<?php echo $is_new ? esc_html__('Nowy szablon', 'basemgmt') : esc_html($template->title); ?>
@@ -81,7 +81,7 @@ $tpl_id  = $is_new ? 0 : (int) $template->id;
 					<button type="submit" class="button button-primary button-large" style="width:100%;">
 						<?php echo $is_new ? esc_html__('Utwórz szablon', 'basemgmt') : esc_html__('Zapisz zmiany', 'basemgmt'); ?>
 					</button>
-					<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-org')); ?>" class="button button-large" style="width:100%;margin-top:6px;text-align:center;">
+					<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-org-doc-templates')); ?>" class="button button-large" style="width:100%;margin-top:6px;text-align:center;">
 						<?php esc_html_e('Anuluj', 'basemgmt'); ?>
 					</a>
 					<?php if ( ! $is_new ) : ?>

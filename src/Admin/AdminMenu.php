@@ -139,19 +139,23 @@ final class AdminMenu {
 		);
 
 		// ── Organizacja (under CampLink) ─────────────────────────────────────
+		// Parent entry: redirects immediately to Dokumenty – no standalone content.
 		add_submenu_page(
 			'basemgmt',
-			__('Organizacja – Szablony', 'basemgmt'),
+			__('Organizacja', 'basemgmt'),
 			__('Organizacja', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org',
-			[$this->org_doc_templates, 'render']
+			static function (): void {
+				wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-org-documents' ) );
+				exit;
+			}
 		);
 
 		add_submenu_page(
 			'basemgmt',
 			__('Organizacja – Dokumenty', 'basemgmt'),
-			'&nbsp;&nbsp;↳ ' . __('Dokumenty', 'basemgmt'),
+			' ↳ ' . __('Dokumenty', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org-documents',
 			[$this->org_documents, 'render']
@@ -159,8 +163,17 @@ final class AdminMenu {
 
 		add_submenu_page(
 			'basemgmt',
+			__('Organizacja – Szablony dokumentów', 'basemgmt'),
+			' &nbsp;↳ ' . __('Szablony', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-org-doc-templates',
+			[$this->org_doc_templates, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
 			__('Organizacja – Finanse', 'basemgmt'),
-			'&nbsp;&nbsp;↳ ' . __('Finanse', 'basemgmt'),
+			' ↳ ' . __('Finanse', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org-finance',
 			[$this->org_finance, 'render']
@@ -169,7 +182,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Organizacja – Zadania', 'basemgmt'),
-			'&nbsp;&nbsp;↳ ' . __('Zadania', 'basemgmt'),
+			' ↳ ' . __('Zadania', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org-tasks',
 			[$this->org_tasks, 'render']
@@ -178,7 +191,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Organizacja – Noclegi', 'basemgmt'),
-			'&nbsp;&nbsp;↳ ' . __('Noclegi', 'basemgmt'),
+			' ↳ ' . __('Noclegi', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org-accommodations',
 			[$this->org_accommodations, 'render']
@@ -223,7 +236,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Szablony planów dnia', 'basemgmt'),
-			'↳ ' . __('Szablony', 'basemgmt'),
+			' ↳ ' . __('Szablony', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-plan-templates',
 			[$this->plan_templates, 'render']
@@ -250,7 +263,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Szablony jadłospisów', 'basemgmt'),
-			'↳ ' . __('Szablony', 'basemgmt'),
+			' ↳ ' . __('Szablony', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-meal-templates',
 			[$this->meal_templates, 'render']
@@ -259,7 +272,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Opcje jadłospisu', 'basemgmt'),
-			'↳ ' . __('Opcje', 'basemgmt'),
+			' ↳ ' . __('Opcje', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-meal-options',
 			[$this->meal_options, 'render']
@@ -358,7 +371,7 @@ final class AdminMenu {
 		$page = sanitize_key($_GET['page'] ?? '');
 
 		// WP media uploader – on Org documents page.
-		if ( $page === 'basemgmt-org-documents' || $page === 'basemgmt-org' ) {
+		if ( $page === 'basemgmt-org-documents' || $page === 'basemgmt-org-doc-templates' ) {
 			wp_enqueue_media();
 		}
 

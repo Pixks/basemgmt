@@ -91,7 +91,7 @@ final class OrgDocTemplatesPage {
 			AdminMenu::set_notice(__('Szablon utworzony.', 'basemgmt'));
 		}
 
-		wp_safe_redirect(admin_url("admin.php?page=basemgmt-org-templates&action=edit&id={$id}"));
+		wp_safe_redirect(admin_url("admin.php?page=basemgmt-org-doc-templates&action=edit&id={$id}"));
 		exit;
 	}
 
@@ -103,15 +103,15 @@ final class OrgDocTemplatesPage {
 		global $wpdb;
 		$wpdb->delete(Schema::table('doc_templates'), ['id' => $id]);
 		AdminMenu::set_notice(__('Szablon usunięty.', 'basemgmt'));
-		wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-templates'));
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-doc-templates'));
 		exit;
 	}
 
 	private function redirect_back(int $id): void {
 		if ( $id > 0 ) {
-			wp_safe_redirect(admin_url("admin.php?page=basemgmt-org-templates&action=edit&id={$id}"));
+			wp_safe_redirect(admin_url("admin.php?page=basemgmt-org-doc-templates&action=edit&id={$id}"));
 		} else {
-			wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-templates&action=new'));
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-doc-templates&action=new'));
 		}
 		exit;
 	}
