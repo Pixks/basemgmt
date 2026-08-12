@@ -81,7 +81,6 @@ echo number_format($brutto, 2, ',', ' ');
 </button>
 </div>
 </div>
-</div>
 
 <!-- ── Noclegi ─────────────────────────────────────────────────────────── -->
 <div class="postbox">
@@ -217,6 +216,7 @@ echo number_format($brutto, 2, ',', ' ');
 	<?php endforeach; ?>
 </div>
 </div>
+</div><!-- /bm-task-main -->
 
 <div class="bm-task-sidebar">
 <div class="postbox">
