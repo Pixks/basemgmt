@@ -23,21 +23,19 @@ final class OrgFinancePage {
 
 	public static function line_types(): array {
 		return [
-			self::LINE_ACCOMMODATION => __('Nocleg (osobodzień)', 'basemgmt'),
-			self::LINE_FOOD          => __('Wyżywienie (osobodzień)', 'basemgmt'),
-			self::LINE_OTHER         => __('Inne koszty (osobodzień)', 'basemgmt'),
-			self::LINE_TAX           => __('Podatek / opłata', 'basemgmt'),
-			self::LINE_DEPOSIT       => __('Zaliczka', 'basemgmt'),
-			self::LINE_CUSTOM        => __('Pozycja własna', 'basemgmt'),
+			self::LINE_ACCOMMODATION => __('Nocleg', 'basemgmt'),
+			self::LINE_FOOD          => __('Wyżywienie', 'basemgmt'),
+			self::LINE_OTHER         => __('Inne koszty', 'basemgmt'),
+			self::LINE_TAX           => __('Podatek', 'basemgmt'),
+			self::LINE_CUSTOM        => __('Inne', 'basemgmt'),
 		];
 	}
 
 	public static function units(): array {
 		return [
-			'person_night' => __('za osobodzień', 'basemgmt'),
-			'person'       => __('za osobę', 'basemgmt'),
+			'person_night' => __('za osobę', 'basemgmt'),
+			'days'         => __('liczba dni', 'basemgmt'),
 			'flat'         => __('ryczałt', 'basemgmt'),
-			'percent'      => __('% od sumy', 'basemgmt'),
 		];
 	}
 
@@ -90,7 +88,6 @@ final class OrgFinancePage {
 			'name'        => sanitize_text_field($_POST['name'] ?? ''),
 			'description' => sanitize_textarea_field($_POST['description'] ?? ''),
 			'currency'    => strtoupper(sanitize_text_field($_POST['currency'] ?? 'PLN')),
-			'is_default'  => (int) ! empty($_POST['is_default']),
 			'created_by'  => get_current_user_id(),
 		];
 
@@ -98,11 +95,6 @@ final class OrgFinancePage {
 			AdminMenu::set_notice(__('Podaj nazwę pakietu.', 'basemgmt'), 'error');
 			wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-finance&action=' . ($id > 0 ? "edit&id={$id}" : 'new')));
 			exit;
-		}
-
-		// If setting as default, clear other defaults first.
-		if ( $pkg_data['is_default'] ) {
-			$wpdb->update($pkg_table, ['is_default' => 0], ['is_default' => 1]);
 		}
 
 		if ( $id > 0 ) {
@@ -115,28 +107,30 @@ final class OrgFinancePage {
 
 		// Save lines.
 		$wpdb->delete($line_table, ['package_id' => $id]);
-		$labels      = (array) ($_POST['line_label'] ?? []);
-		$types       = (array) ($_POST['line_type'] ?? []);
-		$prices      = (array) ($_POST['line_price'] ?? []);
-		$vat_rates   = (array) ($_POST['line_vat'] ?? []);
-		$units       = (array) ($_POST['line_unit'] ?? []);
-		$days_before = (array) ($_POST['line_days_before'] ?? []);
-		$is_deposits = (array) ($_POST['line_is_deposit'] ?? []);
+		$labels       = (array) ($_POST['line_label'] ?? []);
+		$types        = (array) ($_POST['line_type'] ?? []);
+		$custom_types = (array) ($_POST['line_custom_type'] ?? []);
+		$prices       = (array) ($_POST['line_price'] ?? []);
+		$vat_rates    = (array) ($_POST['line_vat'] ?? []);
+		$units        = (array) ($_POST['line_unit'] ?? []);
+		$days_before  = (array) ($_POST['line_days_before'] ?? []);
 
 		foreach ( $labels as $i => $label ) {
 			$label = sanitize_text_field($label);
 			if ( empty($label) ) {
 				continue;
 			}
+			$type = sanitize_key($types[$i] ?? self::LINE_CUSTOM);
+			// For custom type, use the typed label as line_type stored as 'custom', label stays as-is.
 			$wpdb->insert($line_table, [
 				'package_id'  => $id,
-				'line_type'   => sanitize_key($types[$i] ?? self::LINE_CUSTOM),
+				'line_type'   => $type,
 				'label'       => $label,
 				'unit_price'  => (float) str_replace(',', '.', $prices[$i] ?? '0'),
 				'vat_rate'    => (float) str_replace(',', '.', $vat_rates[$i] ?? '0'),
 				'unit'        => sanitize_key($units[$i] ?? 'person_night'),
 				'days_before' => (int) ($days_before[$i] ?? 0),
-				'is_deposit'  => isset($is_deposits[$i]) ? 1 : 0,
+				'is_deposit'  => 0,
 				'sort_order'  => $i,
 			]);
 		}
