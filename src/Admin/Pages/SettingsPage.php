@@ -99,9 +99,10 @@ final class SettingsPage {
 		Capabilities::require_admin();
 		check_admin_referer('bm_save_email_template');
 
-		$slug     = sanitize_key($_POST['template_slug'] ?? '');
-		$subject  = sanitize_text_field(wp_unslash($_POST['template_subject'] ?? ''));
+		$slug      = sanitize_key($_POST['template_slug'] ?? '');
+		$subject   = sanitize_text_field(wp_unslash($_POST['template_subject'] ?? ''));
 		$html_body = wp_unslash($_POST['template_html'] ?? '');
+		$enabled   = ! empty($_POST['template_enabled']);
 
 		if ( ! $slug ) {
 			AdminMenu::set_notice(__('Nieprawidłowy szablon.', 'basemgmt'), 'error');
@@ -109,6 +110,7 @@ final class SettingsPage {
 			exit;
 		}
 
+		EmailTemplateRepository::set_enabled($slug, $enabled);
 		$saved = EmailTemplateRepository::save($slug, $subject, $html_body);
 
 		AdminMenu::set_notice(
@@ -265,12 +267,13 @@ final class SettingsPage {
 			wp_die(esc_html__('Nieznany szablon emaila.', 'basemgmt'));
 		}
 
-		$tpl_def = $registry[$slug];
-		$saved   = EmailTemplateRepository::get_saved($slug);
+		$tpl_def     = $registry[$slug];
+		$saved       = EmailTemplateRepository::get_saved($slug);
 
 		$current_subject = $saved['subject']   ?? $tpl_def['default_subject'];
 		$current_html    = $saved['html_body']  ?? $tpl_def['default_html'];
 		$is_customised   = $saved !== null;
+		$is_enabled      = EmailTemplateRepository::is_enabled($slug);
 
 		include BASEMGMT_DIR . 'templates/admin/settings/email_template.php';
 	}

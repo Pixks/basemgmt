@@ -58,6 +58,17 @@ wp_enqueue_style('wp-codemirror');
             <input type="hidden" name="action"        value="bm_save_email_template">
             <input type="hidden" name="template_slug" value="<?php echo esc_attr($slug); ?>">
 
+            <!-- Enabled toggle -->
+            <div style="margin-bottom:18px;padding:12px 16px;background:<?php echo $is_enabled ? '#f0fdf4' : '#fff8f8'; ?>;border:1px solid <?php echo $is_enabled ? '#86efac' : '#fca5a5'; ?>;border-radius:4px;display:flex;align-items:center;gap:12px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;">
+                    <input type="checkbox" name="template_enabled" value="1" <?php checked($is_enabled, true); ?> style="width:16px;height:16px;">
+                    <?php esc_html_e('Powiadomienie aktywne', 'basemgmt'); ?>
+                </label>
+                <span style="font-size:12px;color:#6b7280;">
+                    <?php $is_enabled ? esc_html_e('Email będzie wysyłany', 'basemgmt') : esc_html_e('Email nie będzie wysyłany', 'basemgmt'); ?>
+                </span>
+            </div>
+
             <!-- Subject -->
             <div style="margin-bottom:14px;">
                 <label for="bm_tpl_subject" style="display:block;font-weight:600;margin-bottom:4px;">
@@ -121,6 +132,7 @@ wp_enqueue_style('wp-codemirror');
                 <ul style="margin:0;padding:0;list-style:none;">
                     <?php foreach ($registry as $s => $def): ?>
                     <li style="margin-bottom:6px;">
+                        <?php $s_enabled = EmailTemplateRepository::is_enabled($s); ?>
                         <?php if ($s === $slug): ?>
                             <strong><?php echo esc_html($def['label']); ?></strong>
                         <?php else: ?>
@@ -130,6 +142,9 @@ wp_enqueue_style('wp-codemirror');
                         <?php endif; ?>
                         <?php if (EmailTemplateRepository::get_saved($s)): ?>
                             <span style="font-size:10px;color:#2271b1;">●</span>
+                        <?php endif; ?>
+                        <?php if (!$s_enabled): ?>
+                            <span style="font-size:10px;color:#ef4444;" title="<?php esc_attr_e('Wyłączone', 'basemgmt'); ?>">⊘</span>
                         <?php endif; ?>
                     </li>
                     <?php endforeach; ?>

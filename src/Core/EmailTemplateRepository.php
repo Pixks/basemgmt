@@ -19,7 +19,8 @@ defined('ABSPATH') || exit;
  */
 final class EmailTemplateRepository {
 
-	private const OPTION_PREFIX = 'basemgmt_email_tpl_';
+	private const OPTION_PREFIX  = 'basemgmt_email_tpl_';
+	private const ENABLED_PREFIX = 'basemgmt_email_tpl_enabled_';
 
 	// ── Registry ──────────────────────────────────────────────────────────────
 
@@ -78,7 +79,30 @@ final class EmailTemplateRepository {
 				'variables'       => self::periodic_staff_report_vars(),
 				'default_html'    => self::default_periodic_staff_report(),
 			],
+			'task_assigned' => [
+				'label'           => __('Zadanie – powiadomienie o nowym zadaniu', 'basemgmt'),
+				'default_subject' => __('Nowe zadanie: {{zadanie}} – {{oboz}}', 'basemgmt'),
+				'variables'       => self::task_vars(),
+				'default_html'    => self::default_task_assigned(),
+			],
 		];
+	}
+
+	// ── Enabled / disabled toggle ─────────────────────────────────────────────
+
+	/**
+	 * Returns true if the notification type is enabled (default: true).
+	 */
+	public static function is_enabled(string $slug): bool {
+		$val = get_option(self::ENABLED_PREFIX . sanitize_key($slug), null);
+		return $val === null || (bool) $val;
+	}
+
+	/**
+	 * Enables or disables a notification type.
+	 */
+	public static function set_enabled(string $slug, bool $enabled): void {
+		update_option(self::ENABLED_PREFIX . sanitize_key($slug), (int) $enabled, false);
 	}
 
 	// ── Storage ───────────────────────────────────────────────────────────────
@@ -184,6 +208,10 @@ final class EmailTemplateRepository {
 			'{{suma_uczestnikow}}'  => esc_html((string) ($data['total_participants'] ?? '0')),
 			'{{suma_kadra}}'        => esc_html((string) ($data['total_staff'] ?? '0')),
 			'{{suma_pracownikow}}'  => esc_html((string) ($data['total_workers'] ?? '0')),
+			'{{zadanie}}'          => esc_html((string) ($data['task_title']       ?? '')),
+			'{{opis}}'             => nl2br(esc_html((string) ($data['task_description'] ?? ''))),
+			'{{data_przyjazdu}}'   => esc_html((string) ($data['camp_arrival_date'] ?? '')),
+			'{{priorytet}}'        => esc_html((string) ($data['task_priority']    ?? '')),
 		];
 
 		return $vars;
@@ -353,5 +381,41 @@ final class EmailTemplateRepository {
 <p><strong>' . esc_html__('Data:', 'basemgmt') . '</strong> {{raport_data}}<br><strong>' . esc_html__('Godzina:', 'basemgmt') . '</strong> {{raport_godzina}}</p>
 {{lista_stanow_html}}
 <p style="margin-top:16px;"><strong>' . esc_html__('Suma:', 'basemgmt') . '</strong> {{suma_uczestnikow}} / {{suma_kadra}} / {{suma_pracownikow}}</p>';
+	}
+
+	/** @return array<string, string> */
+	private static function task_vars(): array {
+		return [
+			'{{zadanie}}'        => __('Tytuł zadania', 'basemgmt'),
+			'{{opis}}'           => __('Opis zadania', 'basemgmt'),
+			'{{oboz}}'           => __('Nazwa obozu', 'basemgmt'),
+			'{{data_przyjazdu}}' => __('Data przyjazdu (dd.mm.rrrr)', 'basemgmt'),
+			'{{priorytet}}'      => __('Priorytet zadania', 'basemgmt'),
+			'{{nazwa_systemu}}'  => __('Nazwa strony / systemu', 'basemgmt'),
+		];
+	}
+
+	private static function default_task_assigned(): string {
+		return '<h2>' . esc_html__('Nowe zadanie do realizacji', 'basemgmt') . '</h2>
+<p>' . esc_html__('Do obozu zostało przypisane nowe zadanie:', 'basemgmt') . '</p>
+<table border="0" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:520px;">
+  <tr>
+    <th align="left" style="border-bottom:1px solid #e5e7eb;padding:6px 16px 6px 0;color:#6b7280;font-weight:600;">' . esc_html__('Zadanie', 'basemgmt') . '</th>
+    <td style="border-bottom:1px solid #e5e7eb;padding:6px;"><strong>{{zadanie}}</strong></td>
+  </tr>
+  <tr>
+    <th align="left" style="border-bottom:1px solid #e5e7eb;padding:6px 16px 6px 0;color:#6b7280;font-weight:600;">' . esc_html__('Obóz', 'basemgmt') . '</th>
+    <td style="border-bottom:1px solid #e5e7eb;padding:6px;">{{oboz}}</td>
+  </tr>
+  <tr>
+    <th align="left" style="border-bottom:1px solid #e5e7eb;padding:6px 16px 6px 0;color:#6b7280;font-weight:600;">' . esc_html__('Przyjazd', 'basemgmt') . '</th>
+    <td style="border-bottom:1px solid #e5e7eb;padding:6px;">{{data_przyjazdu}}</td>
+  </tr>
+  <tr>
+    <th align="left" style="border-bottom:1px solid #e5e7eb;padding:6px 16px 6px 0;color:#6b7280;font-weight:600;">' . esc_html__('Priorytet', 'basemgmt') . '</th>
+    <td style="border-bottom:1px solid #e5e7eb;padding:6px;">{{priorytet}}</td>
+  </tr>
+</table>
+<p style="margin-top:12px;color:#6b7280;font-size:13px;">{{opis}}</p>';
 	}
 }

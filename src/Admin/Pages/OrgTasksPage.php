@@ -32,8 +32,6 @@ final class OrgTasksPage {
             'priority'      => sanitize_key($_POST['priority'] ?? 'normal'),
             'auto_add'      => (int) ($_POST['auto_add'] ?? 0),
             'sort_order'    => (int) ($_POST['sort_order'] ?? 0),
-            'email_subject' => sanitize_text_field(wp_unslash($_POST['email_subject'] ?? '')),
-            'email_body'    => sanitize_textarea_field(wp_unslash($_POST['email_body'] ?? '')),
         ];
         if (empty($data['title'])) {
             AdminMenu::set_notice(__('Tytuł jest wymagany.', 'basemgmt'), 'error');
