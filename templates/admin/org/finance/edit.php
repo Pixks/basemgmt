@@ -352,6 +352,11 @@ document.getElementById('bm-add-accom').addEventListener('click', function() {
 	var opt = accomSel.options[accomSel.selectedIndex];
 	if (!opt || !opt.value) return;
 	var typeId = opt.value, typeName = opt.dataset.name || opt.text;
+	// Prevent duplicates
+	if (accomTbody.querySelector('[name="accom_type_id[]"][value="'+typeId+'"]')) {
+		alert('Ten typ noclegu jest już dodany.');
+		return;
+	}
 	var tr = document.createElement('tr');
 	tr.className = 'bm-accom-row';
 	tr.innerHTML =
