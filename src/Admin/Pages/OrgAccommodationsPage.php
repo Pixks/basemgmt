@@ -73,7 +73,7 @@ final class OrgAccommodationsPage {
 		$this->redirect('basemgmt-org-accommodations');
 	}
 
-	public function get_all(): array {
+	public static function get_all(): array {
 		global $wpdb;
 		return $wpdb->get_results(
 			"SELECT * FROM " . Schema::table('accommodation_types') . " ORDER BY sort_order ASC, id ASC"
