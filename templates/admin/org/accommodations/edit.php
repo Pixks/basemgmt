@@ -54,7 +54,7 @@ $item_id = $item->id ?? 0;
             <script>
             (function(){
                 var n = document.getElementById('accom_rate'), v = document.getElementById('accom_vat'), b = document.getElementById('accom_brutto');
-                function calc(){ if(n&&v&&b) b.textContent = (parseFloat(n.value)||0)*(1+(parseFloat(v.value)||0)/100).toFixed(2).replace('.',','); }
+                function calc(){ if(n&&v&&b) b.textContent = ((parseFloat(n.value)||0)*(1+(parseFloat(v.value)||0)/100)).toFixed(2).replace('.',','); }
                 if(n) n.addEventListener('input', calc);
                 if(v) v.addEventListener('input', calc);
             })();
