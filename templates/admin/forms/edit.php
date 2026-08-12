@@ -157,7 +157,7 @@ $back_url  = add_query_arg(['page' => 'basemgmt-forms'], admin_url('admin.php'))
 						<input type="hidden" name="field_id" value="<?php echo esc_attr($fld->id); ?>">
 						<input type="hidden" name="form_id"  value="<?php echo esc_attr($form->id); ?>">
 						<button type="submit" class="button button-small"
-							onclick="return confirm('<?php esc_attr_e('Usunąć to pole?', 'basemgmt'); ?>')"
+							data-bm-confirm="<?php esc_attr_e('Usunąć to pole?', 'basemgmt'); ?>"
 							style="color:#d63638"><?php esc_html_e('Usuń', 'basemgmt'); ?></button>
 					</form>
 				</td>

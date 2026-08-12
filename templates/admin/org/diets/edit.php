@@ -96,7 +96,7 @@ value="<?php echo esc_attr($diet->sort_order ?? 0); ?>">
 <?php if ( ! $is_new ) : ?>
 <a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_org_diet&id={$diet_id}"), "bm_delete_diet_{$diet_id}")); ?>"
 class="button bm-danger" style="float:right;"
-onclick="return confirm('<?php esc_attr_e('Usunąć dietę?', 'basemgmt'); ?>')">
+data-bm-confirm="<?php esc_attr_e('Usunąć dietę?', 'basemgmt'); ?>">
 <?php esc_html_e('Usuń dietę', 'basemgmt'); ?>
 </a>
 <?php endif; ?>

@@ -379,9 +379,17 @@ final class AdminMenu {
 		);
 
 		wp_enqueue_script(
+			'basemgmt-modal',
+			BASEMGMT_URL . 'assets/js/bm-modal.js',
+			[],
+			BASEMGMT_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
 			'basemgmt-admin',
 			BASEMGMT_URL . 'assets/js/admin.js',
-			['jquery'],
+			['jquery', 'basemgmt-modal'],
 			BASEMGMT_VERSION,
 			true
 		);

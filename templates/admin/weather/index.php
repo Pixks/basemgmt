@@ -274,7 +274,7 @@ $intervals = [
                     <td>
                         <?php if (!$is_imgw): ?>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-weather&bm_action=edit_alert&id=' . $a->id)); ?>" class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
-                        <a href="<?php echo esc_url($delete_url); ?>" class="button button-small" onclick="return confirm('<?php esc_attr_e('Usunąć komunikat?', 'basemgmt'); ?>')"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
+                        <a href="<?php echo esc_url($delete_url); ?>" class="button button-small" data-bm-confirm="<?php esc_attr_e('Usunąć komunikat?', 'basemgmt'); ?>"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
                         <?php else: ?>
                         <span style="color:#888;font-size:12px;"><?php esc_html_e('Zarządzany przez IMGW', 'basemgmt'); ?></span>
                         <?php endif; ?>

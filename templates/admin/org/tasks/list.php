@@ -64,7 +64,7 @@
                         </a>
                         <a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_task_template&id={$tpl->id}"), "bm_delete_task_template_{$tpl->id}")); ?>"
                             class="button button-small bm-danger"
-                            onclick="return confirm('<?php esc_attr_e('Usunąć szablon?', 'basemgmt'); ?>')">
+                            data-bm-confirm="<?php esc_attr_e('Usunąć szablon?', 'basemgmt'); ?>">
                             <?php esc_html_e('Usuń', 'basemgmt'); ?>
                         </a>
                     </td>

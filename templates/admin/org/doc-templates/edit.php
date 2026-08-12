@@ -88,7 +88,7 @@ $tpl_id  = $is_new ? 0 : (int) $template->id;
 						<hr style="margin:12px 0;">
 						<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_doc_template&id={$tpl_id}"), "bm_delete_doc_template_{$tpl_id}")); ?>"
 							class="button bm-danger" style="width:100%;text-align:center;"
-							onclick="return confirm('<?php esc_attr_e('Usunąć szablon?', 'basemgmt'); ?>')">
+							data-bm-confirm="<?php esc_attr_e('Usunąć szablon?', 'basemgmt'); ?>">
 							<?php esc_html_e('Usuń szablon', 'basemgmt'); ?>
 						</a>
 					<?php endif; ?>

@@ -266,7 +266,7 @@ value="<?php echo esc_attr($package->currency ?? 'PLN'); ?>">
 <hr style="margin:12px 0;">
 <a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_payment_package&id={$pkg_id}"), "bm_delete_payment_package_{$pkg_id}")); ?>"
 class="button bm-danger" style="width:100%;text-align:center;"
-onclick="return confirm('<?php esc_attr_e('Usunąć pakiet?', 'basemgmt'); ?>')">
+data-bm-confirm="<?php esc_attr_e('Usunąć pakiet?', 'basemgmt'); ?>">
 <?php esc_html_e('Usuń pakiet', 'basemgmt'); ?>
 </a>
 <?php endif; ?>
@@ -369,7 +369,7 @@ document.getElementById('bm-add-accom').addEventListener('click', function() {
 	var typeId = opt.value, typeName = opt.dataset.name || opt.text;
 	// Prevent duplicates
 	if (accomTbody.querySelector('[name="accom_type_id[]"][value="'+typeId+'"]')) {
-		alert('Ten typ noclegu jest już dodany.');
+		bmModal.alert('Ten typ noclegu jest już dodany.');
 		return;
 	}
 	var defPrice = opt.dataset.price || '0.00';
@@ -417,7 +417,7 @@ document.getElementById('bm-add-diet').addEventListener('click', function() {
 	var dietId = opt.value, dietName = opt.dataset.name || opt.text;
 	// Prevent duplicates
 	if (dietsWrap.querySelector('[name="diet_id_entry[]"][value="'+dietId+'"]')) {
-		alert('Ta dieta jest już dodana.');
+		bmModal.alert('Ta dieta jest już dodana.');
 		return;
 	}
 	var defSlots = {};

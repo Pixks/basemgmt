@@ -42,7 +42,7 @@
                            class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
                         <a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_accommodation_type&id={$item->id}"), "bm_delete_accommodation_type_{$item->id}")); ?>"
                            class="button button-small bm-danger"
-                           onclick="return confirm('<?php esc_attr_e('Usunąć typ noclegu?', 'basemgmt'); ?>')">
+                           data-bm-confirm="<?php esc_attr_e('Usunąć typ noclegu?', 'basemgmt'); ?>">
                             <?php esc_html_e('Usuń', 'basemgmt'); ?>
                         </a>
                     </td>

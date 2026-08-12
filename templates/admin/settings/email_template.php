@@ -43,7 +43,7 @@ wp_enqueue_style('wp-codemirror');
             <input type="hidden" name="action" value="bm_reset_email_template">
             <input type="hidden" name="slug"   value="<?php echo esc_attr($slug); ?>">
             <button type="submit" class="button-link" style="color:#b32d2e;"
-                    onclick="return confirm('<?php esc_attr_e('Przywrócić domyślny szablon? Twoje zmiany zostaną usunięte.', 'basemgmt'); ?>')">
+                    data-bm-confirm="<?php esc_attr_e('Przywrócić domyślny szablon? Twoje zmiany zostaną usunięte.', 'basemgmt'); ?>">
                 <?php esc_html_e('Przywróć domyślny', 'basemgmt'); ?>
             </button>
         </form>

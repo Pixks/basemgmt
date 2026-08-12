@@ -124,7 +124,7 @@ $rid = $resource ? (int) $resource->id : 0;
                     <td><?php echo esc_html(date_i18n('d.m.Y H:i', strtotime($block->block_from))); ?></td>
                     <td><?php echo esc_html(date_i18n('d.m.Y H:i', strtotime($block->block_to))); ?></td>
                     <td><?php echo esc_html($block->reason ?: '—'); ?></td>
-                    <td><a href="<?php echo esc_url($del_url); ?>" class="button button-small" onclick="return confirm('<?php esc_attr_e('Usunąć blokadę?', 'basemgmt'); ?>')"><?php esc_html_e('Usuń', 'basemgmt'); ?></a></td>
+                    <td><a href="<?php echo esc_url($del_url); ?>" class="button button-small" data-bm-confirm="<?php esc_attr_e('Usunąć blokadę?', 'basemgmt'); ?>"><?php esc_html_e('Usuń', 'basemgmt'); ?></a></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

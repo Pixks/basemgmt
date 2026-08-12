@@ -99,7 +99,7 @@ $is_new = ! $template;
 			<td>
 				<a href="#bm-item-form" onclick="bmFillItem(<?php echo esc_js(wp_json_encode($item)); ?>)" class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
 				<a href="<?php echo esc_url($del_url); ?>" class="button button-small"
-				   onclick="return confirm('<?php esc_attr_e('Usunąć pozycję?', 'basemgmt'); ?>')"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
+				   data-bm-confirm="<?php esc_attr_e('Usunąć pozycję?', 'basemgmt'); ?>"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
 			</td>
 		</tr>
 		<?php endforeach; ?>

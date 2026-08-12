@@ -60,7 +60,7 @@
 							&nbsp;|&nbsp;
 							<a class="bm-danger"
 							   href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_announcement&id={$ann->id}"), "bm_delete_ann_{$ann->id}")); ?>"
-							   onclick="return confirm('<?php esc_attr_e('Czy na pewno usunąć to ogłoszenie?', 'basemgmt'); ?>')">
+							   data-bm-confirm="<?php esc_attr_e('Czy na pewno usunąć to ogłoszenie?', 'basemgmt'); ?>">
 								<?php esc_html_e('Usuń', 'basemgmt'); ?>
 							</a>
 						</td>

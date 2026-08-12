@@ -93,7 +93,7 @@ $table_exists = (bool) $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}bm_help_
 			<td><?php echo esc_html((string) $art->sort_order); ?></td>
 			<td>
 				<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-help&bm_action=edit&id=' . $art->id)); ?>" class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
-				<a href="<?php echo esc_url($del_url); ?>" class="button button-small" onclick="return confirm('<?php esc_attr_e('Usunąć wpis?', 'basemgmt'); ?>')"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
+				<a href="<?php echo esc_url($del_url); ?>" class="button button-small" data-bm-confirm="<?php esc_attr_e('Usunąć wpis?', 'basemgmt'); ?>"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
 			</td>
 		</tr>
 		<?php endforeach; ?>

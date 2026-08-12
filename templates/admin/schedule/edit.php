@@ -140,7 +140,7 @@ $plan_id = $header ? (int) $header->id : 0;
             <div style="display:flex;gap:8px;">
                 <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=bm_reset_plan_flags&plan_id=' . $plan_id), 'bm_reset_flags_' . $plan_id)); ?>"
                    class="button button-small"
-                   onclick="return confirm('<?php esc_attr_e('Zresetować flagi zmian na dziś?', 'basemgmt'); ?>')">
+                   data-bm-confirm="<?php esc_attr_e('Zresetować flagi zmian na dziś?', 'basemgmt'); ?>">
                     <?php esc_html_e('Resetuj flagi zmian', 'basemgmt'); ?>
                 </a>
             </div>
@@ -190,7 +190,7 @@ $plan_id = $header ? (int) $header->id : 0;
                     <td>
                         <a href="#edit-item-<?php echo esc_attr($item->id); ?>" class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
                         <a href="<?php echo esc_url($del_url); ?>" class="button button-small"
-                           onclick="return confirm('<?php esc_attr_e('Usunąć pozycję?', 'basemgmt'); ?>')"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
+                           data-bm-confirm="<?php esc_attr_e('Usunąć pozycję?', 'basemgmt'); ?>"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
                     </td>
                 </tr>
                 <?php endforeach; ?>

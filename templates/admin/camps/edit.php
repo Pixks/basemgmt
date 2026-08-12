@@ -1,4 +1,4 @@
-﻿<?php defined('ABSPATH') || exit;
+<?php defined('ABSPATH') || exit;
 $is_edit           = ! is_null($camp);
 $id                = $is_edit ? (int) $camp->id : 0;
 $process_stage     = $case->process_stage ?? \BaseMgmt\Modules\Camps\CampCaseRepository::STAGE_INQUIRY;
@@ -50,7 +50,7 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 			<a href="#" class="nav-tab" data-tab="documents"><?php esc_html_e('Dokumenty', 'basemgmt'); ?></a>
 			<a href="#" class="nav-tab" data-tab="finance"><?php esc_html_e('Finanse', 'basemgmt'); ?></a>
 			<span style="flex:1;"></span>
-			<button type="button" class="button button-primary" style="margin:4px 0 4px 8px;" onclick="alert('<?php esc_attr_e('Funkcja rozliczenia zostanie wkrótce uruchomiona.', 'basemgmt'); ?>')">
+			<button type="button" class="button button-primary" style="margin:4px 0 4px 8px;" data-bm-alert="<?php esc_attr_e('Funkcja rozliczenia zostanie wkrótce uruchomiona.', 'basemgmt'); ?>">
 				<?php esc_html_e('Rozlicz', 'basemgmt'); ?>
 			</button>
 		</nav>
@@ -680,12 +680,12 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 									<?php if ( empty($doc->locked) ) : ?>
 										<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_send_camp_doc&id={$id}&doc_id={$doc->id}"), "bm_send_camp_doc_{$doc->id}")); ?>"
 											class="button button-small"
-											onclick="return confirm('<?php esc_attr_e('Wygenerować link do wysłania do klienta?', 'basemgmt'); ?>')">
+											data-bm-confirm="<?php esc_attr_e('Wygenerować link do wysłania do klienta?', 'basemgmt'); ?>">
 											<?php echo esc_html($doc->document_type === 'declaration' ? __('Wyślij do akceptacji', 'basemgmt') : __('Wyślij do podpisu', 'basemgmt')); ?>
 										</a>
 										<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_doc&id={$id}&doc_id={$doc->id}"), "bm_delete_camp_doc_{$doc->id}")); ?>"
 											class="button button-small bm-danger"
-											onclick="return confirm('<?php esc_attr_e('Usunąć dokument?', 'basemgmt'); ?>')">
+											data-bm-confirm="<?php esc_attr_e('Usunąć dokument?', 'basemgmt'); ?>">
 											<?php esc_html_e('Usuń', 'basemgmt'); ?>
 										</a>
 									<?php endif; ?>
@@ -927,7 +927,7 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 									<td>
 										<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_damage&id={$id}&damage_id={$dmg->id}"), "bm_delete_camp_damage_{$dmg->id}")); ?>"
 											class="button-link bm-danger"
-											onclick="return confirm('<?php esc_attr_e('Usunąć szkodę?', 'basemgmt'); ?>')">✕</a>
+											data-bm-confirm="<?php esc_attr_e('Usunąć szkodę?', 'basemgmt'); ?>">✕</a>
 									</td>
 								</tr>
 								<?php endforeach; ?>

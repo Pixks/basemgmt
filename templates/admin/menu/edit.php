@@ -44,7 +44,7 @@ $is_new = !$day;
 	<?php if (!$is_new): ?>
 	<!-- Actions -->
 	<div style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-		<a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=bm_reset_menu_flags&day_id=' . $day->id), 'bm_reset_menu_flags_' . $day->id)); ?>" class="button" onclick="return confirm('<?php esc_attr_e('Zresetować flagi zmian?', 'basemgmt'); ?>')"><?php esc_html_e('Resetuj flagi zmian', 'basemgmt'); ?></a>
+		<a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=bm_reset_menu_flags&day_id=' . $day->id), 'bm_reset_menu_flags_' . $day->id)); ?>" class="button" data-bm-confirm="<?php esc_attr_e('Zresetować flagi zmian?', 'basemgmt'); ?>"><?php esc_html_e('Resetuj flagi zmian', 'basemgmt'); ?></a>
 
 		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-flex;">
 			<?php wp_nonce_field('bm_import_day_to_plan'); ?>
@@ -112,7 +112,7 @@ $is_new = !$day;
 			</td>
 			<td>
 				<a href="#bm-item-form" onclick="bmFillItem(<?php echo esc_js(wp_json_encode($item)); ?>)" class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
-				<a href="<?php echo esc_url($del_url); ?>" class="button button-small" onclick="return confirm('<?php esc_attr_e('Usunąć posiłek?', 'basemgmt'); ?>')"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
+				<a href="<?php echo esc_url($del_url); ?>" class="button button-small" data-bm-confirm="<?php esc_attr_e('Usunąć posiłek?', 'basemgmt'); ?>"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
 			</td>
 		</tr>
 		<?php endforeach; ?>

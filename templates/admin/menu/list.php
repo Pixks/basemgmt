@@ -84,7 +84,7 @@ $table_exists = (bool) $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}bm_meal_
 				<td><?php echo esc_html((string) $items_count); ?></td>
 				<td>
 					<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-menu&bm_action=edit&id=' . $day->id)); ?>" class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
-					<a href="<?php echo esc_url($del_url); ?>" class="button button-small" onclick="return confirm('<?php esc_attr_e('Usunąć jadłospis?', 'basemgmt'); ?>')"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
+					<a href="<?php echo esc_url($del_url); ?>" class="button button-small" data-bm-confirm="<?php esc_attr_e('Usunąć jadłospis?', 'basemgmt'); ?>"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
 				</td>
 			</tr>
 			<?php endforeach; ?>

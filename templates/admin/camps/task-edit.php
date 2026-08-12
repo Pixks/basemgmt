@@ -133,7 +133,7 @@ $status_labels = [
 						<hr style="margin:12px 0;">
 						<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_task&id={$camp->id}&task_id={$task_id}"), "bm_delete_task_{$task_id}")); ?>"
 							class="button bm-danger" style="width:100%;text-align:center;"
-							onclick="return confirm('<?php esc_attr_e('Usunąć to zadanie?', 'basemgmt'); ?>')">
+							data-bm-confirm="<?php esc_attr_e('Usunąć to zadanie?', 'basemgmt'); ?>">
 							<?php esc_html_e('Usuń zadanie', 'basemgmt'); ?>
 						</a>
 					<?php endif; ?>

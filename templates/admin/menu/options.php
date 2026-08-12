@@ -32,7 +32,7 @@ defined('ABSPATH') || exit;
 <td>
 <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=bm_delete_meal_location&id=' . $l->id), 'bm_delete_location_' . $l->id)); ?>"
    class="button button-small"
-   onclick="return confirm('<?php esc_attr_e('Usunąć miejsce?', 'basemgmt'); ?>')"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
+   data-bm-confirm="<?php esc_attr_e('Usunąć miejsce?', 'basemgmt'); ?>"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
 </td>
 </tr>
 <?php endforeach; ?>

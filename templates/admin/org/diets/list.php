@@ -35,7 +35,7 @@
 </a>
 <a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_org_diet&id={$diet->id}"), "bm_delete_diet_{$diet->id}")); ?>"
 class="button button-small bm-danger"
-onclick="return confirm('<?php esc_attr_e('Usunąć dietę?', 'basemgmt'); ?>')">
+data-bm-confirm="<?php esc_attr_e('Usunąć dietę?', 'basemgmt'); ?>">
 <?php esc_html_e('Usuń', 'basemgmt'); ?>
 </a>
 </td>

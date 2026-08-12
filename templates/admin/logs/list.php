@@ -77,7 +77,7 @@ $action_labels = [
 		<?php printf(esc_html__('Łącznie: %d wpisów.', 'basemgmt'), $total); ?>
 		<a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=basemgmt-logs&bm_action=clear&days=90'), 'bm_clear_logs_90')); ?>"
 		   class="button button-small"
-		   onclick="return confirm('<?php esc_attr_e('Usunąć wpisy starsze niż 90 dni?', 'basemgmt'); ?>')">
+		   data-bm-confirm="<?php esc_attr_e('Usunąć wpisy starsze niż 90 dni?', 'basemgmt'); ?>">
 			<?php esc_html_e('Wyczyść logi >90 dni', 'basemgmt'); ?>
 		</a>
 	</p>

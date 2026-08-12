@@ -50,7 +50,7 @@ $day_names   = PlanTemplateRepository::DAY_NAMES;
 			<td>
 				<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-plan-templates&bm_action=edit&id=' . $tpl->id)); ?>" class="button button-small"><?php esc_html_e('Edytuj', 'basemgmt'); ?></a>
 				<a href="<?php echo esc_url($del_url); ?>" class="button button-small"
-				   onclick="return confirm('<?php esc_attr_e('Usunąć szablon?', 'basemgmt'); ?>')"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
+				   data-bm-confirm="<?php esc_attr_e('Usunąć szablon?', 'basemgmt'); ?>"><?php esc_html_e('Usuń', 'basemgmt'); ?></a>
 			</td>
 		</tr>
 		<?php endforeach; ?>

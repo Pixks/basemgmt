@@ -60,7 +60,7 @@ $table_exists = (bool) $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}bm_forms
 								<input type="hidden" name="action" value="bm_delete_form">
 								<input type="hidden" name="form_id" value="<?php echo esc_attr($form->id); ?>">
 								<button type="submit" class="button-link"
-									onclick="return confirm('<?php esc_attr_e('Usunąć formularz?', 'basemgmt'); ?>')"
+									data-bm-confirm="<?php esc_attr_e('Usunąć formularz?', 'basemgmt'); ?>"
 									style="color:#d63638"><?php esc_html_e('Usuń', 'basemgmt'); ?></button>
 							</form>
 						</span>

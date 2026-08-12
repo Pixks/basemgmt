@@ -332,7 +332,7 @@ wp_enqueue_style('wp-codemirror');
                 <input type="hidden" name="action" value="bm_import_data">
                 <input type="file" name="backup_file" accept=".json" required style="margin-right:8px;">
                 <button type="submit" class="button button-secondary"
-                    onclick="return confirm('<?php esc_attr_e('Czy na pewno chcesz importować dane? Istniejące dane zostaną nadpisane.', 'basemgmt'); ?>')">
+                    data-bm-confirm="<?php esc_attr_e('Czy na pewno chcesz importować dane? Istniejące dane zostaną nadpisane.', 'basemgmt'); ?>">
                     ⬆ <?php esc_html_e('Importuj backup', 'basemgmt'); ?>
                 </button>
             </form>
@@ -348,7 +348,7 @@ wp_enqueue_style('wp-codemirror');
                 <?php wp_nonce_field('bm_clear_data'); ?>
                 <input type="hidden" name="action" value="bm_clear_data">
                 <button type="submit" class="button bm-danger"
-                    onclick="return confirm('<?php esc_attr_e('UWAGA! Ta operacja jest nieodwracalna i usunie WSZYSTKIE dane wtyczki. Czy na pewno chcesz kontynuować?', 'basemgmt'); ?>')">
+                    data-bm-confirm="<?php esc_attr_e('UWAGA! Ta operacja jest nieodwracalna i usunie WSZYSTKIE dane wtyczki. Czy na pewno chcesz kontynuować?', 'basemgmt'); ?>">
                     🗑 <?php esc_html_e('Wyczyść wszystkie dane', 'basemgmt'); ?>
                 </button>
             </form>

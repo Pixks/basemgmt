@@ -150,7 +150,7 @@ defined('ABSPATH') || exit;
                         <?php esc_html_e('Edytuj', 'basemgmt'); ?>
                     </a>
                     <a href="<?php echo esc_url($del_url); ?>" class="button button-small"
-                       onclick="return confirm('<?php esc_attr_e('Usunąć plan i wszystkie pozycje?', 'basemgmt'); ?>')">
+                       data-bm-confirm="<?php esc_attr_e('Usunąć plan i wszystkie pozycje?', 'basemgmt'); ?>">
                         <?php esc_html_e('Usuń', 'basemgmt'); ?>
                     </a>
                 </td>

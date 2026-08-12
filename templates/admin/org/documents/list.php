@@ -102,7 +102,7 @@
 								<td>
 									<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_doc_library&id={$doc->id}"), "bm_delete_doc_library_{$doc->id}")); ?>"
 										class="button button-small bm-danger"
-										onclick="return confirm('<?php esc_attr_e('Usunąć dokument z biblioteki?', 'basemgmt'); ?>')">
+										data-bm-confirm="<?php esc_attr_e('Usunąć dokument z biblioteki?', 'basemgmt'); ?>">
 										<?php esc_html_e('Usuń', 'basemgmt'); ?>
 									</a>
 								</td>

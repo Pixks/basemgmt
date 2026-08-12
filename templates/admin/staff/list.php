@@ -78,7 +78,7 @@
 							<?php if ($is_perm || $is_temp): ?>
 							<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_unlock_staff&id={$m->id}"), "bm_unlock_staff_{$m->id}")); ?>"
 							   style="color:#c0392b;font-weight:bold;"
-							   onclick="return confirm('<?php esc_attr_e('Odblokować konto? Wymagany reset kodu bezpieczeństwa.', 'basemgmt'); ?>')">
+							   data-bm-confirm="<?php esc_attr_e('Odblokować konto? Wymagany reset kodu bezpieczeństwa.', 'basemgmt'); ?>">
 								<?php esc_html_e('Odblokuj', 'basemgmt'); ?>
 							</a>
 							&nbsp;|&nbsp;
@@ -89,7 +89,7 @@
 							&nbsp;|&nbsp;
 							<a class="bm-danger"
 							   href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_staff&id={$m->id}"), "bm_delete_staff_{$m->id}")); ?>"
-							   onclick="return confirm('<?php esc_attr_e('Czy na pewno usunąć tę osobę?', 'basemgmt'); ?>')">
+							   data-bm-confirm="<?php esc_attr_e('Czy na pewno usunąć tę osobę?', 'basemgmt'); ?>">
 								<?php esc_html_e('Usuń', 'basemgmt'); ?>
 							</a>
 						</td>
