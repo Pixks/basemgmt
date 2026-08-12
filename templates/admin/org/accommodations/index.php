@@ -20,7 +20,6 @@
             <thead>
                 <tr>
                     <th><?php esc_html_e('Nazwa', 'basemgmt'); ?></th>
-                    <th style="width:160px;"><?php esc_html_e('Stawka za noc (PLN)', 'basemgmt'); ?></th>
                     <th><?php esc_html_e('Opis', 'basemgmt'); ?></th>
                     <th style="width:80px;"><?php esc_html_e('Kolejność', 'basemgmt'); ?></th>
                     <th style="width:130px;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
@@ -36,7 +35,6 @@
                             </a>
                         </strong>
                     </td>
-                    <td><?php echo esc_html(number_format((float)$item->rate_per_night, 2, ',', ' ')); ?> zł</td>
                     <td class="bm-muted"><?php echo esc_html($item->description ?: '—'); ?></td>
                     <td><?php echo esc_html($item->sort_order); ?></td>
                     <td>
