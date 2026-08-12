@@ -1013,6 +1013,7 @@ final class Schema {
 		$mopts_sql[] = "CREATE TABLE {$p}bm_meal_diets (
 			id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			name       VARCHAR(255)    NOT NULL,
+			diet_info  TEXT            DEFAULT NULL,
 			sort_order INT             NOT NULL DEFAULT 0,
 			created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id)
