@@ -7,6 +7,7 @@ namespace BaseMgmt\Admin\Pages;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Database\Schema;
+// OrgAccommodationsPage and OrgDietsPage are referenced via FQCN in render_edit()
 
 defined('ABSPATH') || exit;
 
@@ -68,6 +69,25 @@ final class OrgFinancePage {
 		$lines      = $id > 0
 			? $wpdb->get_results($wpdb->prepare("SELECT * FROM {$line_table} WHERE package_id = %d ORDER BY sort_order ASC, id ASC", $id))
 			: [];
+
+		// Accommodations in package
+		$pkg_accom = $id > 0
+			? $wpdb->get_results($wpdb->prepare("SELECT * FROM " . Schema::table('payment_pkg_accom') . " WHERE package_id = %d ORDER BY sort_order ASC", $id))
+			: [];
+
+		// Diet slots in package — indexed by diet_id → slot → row
+		$pkg_diet_slots_raw = $id > 0
+			? $wpdb->get_results($wpdb->prepare("SELECT * FROM " . Schema::table('payment_pkg_diet_slots') . " WHERE package_id = %d", $id))
+			: [];
+		$pkg_diet_slots = [];
+		foreach ( $pkg_diet_slots_raw as $row ) {
+			$pkg_diet_slots[(int)$row->diet_id][$row->meal_slot] = $row;
+		}
+
+		$all_accom_types = \BaseMgmt\Admin\Pages\OrgAccommodationsPage::get_all();
+		$all_diets       = \BaseMgmt\Admin\Pages\OrgDietsPage::get_all();
+		$meal_slots      = \BaseMgmt\Admin\Pages\OrgDietsPage::meal_slots();
+
 		$line_types = self::line_types();
 		$units      = self::units();
 		include BASEMGMT_DIR . 'templates/admin/org/finance/edit.php';
@@ -136,6 +156,48 @@ final class OrgFinancePage {
 		}
 
 		AdminMenu::set_notice(__('Pakiet zapisany.', 'basemgmt'));
+
+		// Save accommodation rates.
+		$wpdb->delete(Schema::table('payment_pkg_accom'), ['package_id' => $id]);
+		$accom_type_ids  = (array) ($_POST['accom_type_id']  ?? []);
+		$accom_prices    = (array) ($_POST['accom_price']    ?? []);
+		$accom_vats      = (array) ($_POST['accom_vat']      ?? []);
+		$accom_days      = (array) ($_POST['accom_days_before'] ?? []);
+		foreach ( $accom_type_ids as $ai => $type_id ) {
+			$type_id = (int) $type_id;
+			if ( ! $type_id ) continue;
+			$wpdb->insert(Schema::table('payment_pkg_accom'), [
+				'package_id'            => $id,
+				'accommodation_type_id' => $type_id,
+				'price_netto'           => (float) str_replace(',', '.', $accom_prices[$ai] ?? '0'),
+				'vat_rate'              => (float) str_replace(',', '.', $accom_vats[$ai]   ?? '0'),
+				'days_before'           => (int) ($accom_days[$ai] ?? 30),
+				'sort_order'            => $ai,
+			]);
+		}
+
+		// Save diet slot rates.
+		$wpdb->delete(Schema::table('payment_pkg_diet_slots'), ['package_id' => $id]);
+		$diet_ids       = array_unique(array_filter(array_map('intval', (array) ($_POST['diet_id_entry'] ?? []))));
+		$diet_slot_en   = (array) ($_POST['diet_slot_enabled']     ?? []);
+		$diet_slot_pr   = (array) ($_POST['diet_slot_price']       ?? []);
+		$diet_slot_vat  = (array) ($_POST['diet_slot_vat']         ?? []);
+		$diet_days      = (array) ($_POST['diet_days_before']      ?? []);
+		foreach ( $diet_ids as $diet_id ) {
+			$slots_for_diet = $diet_slot_pr[$diet_id] ?? [];
+			foreach ( $slots_for_diet as $slot_key => $price ) {
+				$wpdb->insert(Schema::table('payment_pkg_diet_slots'), [
+					'package_id' => $id,
+					'diet_id'    => $diet_id,
+					'meal_slot'  => sanitize_key($slot_key),
+					'cost_netto' => (float) str_replace(',', '.', $price),
+					'vat_rate'   => (float) str_replace(',', '.', $diet_slot_vat[$diet_id][$slot_key] ?? '0'),
+					'enabled'    => isset($diet_slot_en[$diet_id][$slot_key]) ? 1 : 0,
+					'days_before'=> (int) ($diet_days[$diet_id] ?? 30),
+				]);
+			}
+		}
+
 		wp_safe_redirect(admin_url("admin.php?page=basemgmt-org-finance&action=edit&id={$id}"));
 		exit;
 	}
@@ -146,7 +208,9 @@ final class OrgFinancePage {
 		check_admin_referer("bm_delete_payment_package_{$id}");
 
 		global $wpdb;
-		$wpdb->delete(Schema::table('payment_package_lines'), ['package_id' => $id]);
+		$wpdb->delete(Schema::table('payment_package_lines'),   ['package_id' => $id]);
+		$wpdb->delete(Schema::table('payment_pkg_accom'),       ['package_id' => $id]);
+		$wpdb->delete(Schema::table('payment_pkg_diet_slots'),  ['package_id' => $id]);
 		$wpdb->delete(Schema::table('payment_packages'), ['id' => $id]);
 		AdminMenu::set_notice(__('Pakiet usunięty.', 'basemgmt'));
 		wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-finance'));

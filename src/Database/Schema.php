@@ -83,6 +83,8 @@ final class Schema {
 			'doc_library'            => $wpdb->prefix . 'bm_doc_library',
 			'payment_packages'       => $wpdb->prefix . 'bm_payment_packages',
 			'payment_package_lines'  => $wpdb->prefix . 'bm_payment_package_lines',
+			'payment_pkg_accom'      => $wpdb->prefix . 'bm_payment_pkg_accom',
+			'payment_pkg_diet_slots' => $wpdb->prefix . 'bm_payment_pkg_diet_slots',
 			// Task & declaration tables
 			'task_templates'                    => $wpdb->prefix . 'bm_task_templates',
 			'camp_declarations'                 => $wpdb->prefix . 'bm_camp_declarations',
@@ -1145,6 +1147,32 @@ final class Schema {
 			PRIMARY KEY (id),
 			KEY idx_package (package_id),
 			KEY idx_type    (line_type)
+		) $charset;";
+
+		$org_sql[] = "CREATE TABLE {$p}bm_payment_pkg_accom (
+			id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			package_id            BIGINT UNSIGNED NOT NULL,
+			accommodation_type_id BIGINT UNSIGNED NOT NULL,
+			price_netto           DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			vat_rate              DECIMAL(5,2)    NOT NULL DEFAULT 0.00,
+			days_before           INT             NOT NULL DEFAULT 30,
+			sort_order            INT             NOT NULL DEFAULT 0,
+			PRIMARY KEY (id),
+			KEY idx_package (package_id)
+		) $charset;";
+
+		$org_sql[] = "CREATE TABLE {$p}bm_payment_pkg_diet_slots (
+			id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			package_id  BIGINT UNSIGNED NOT NULL,
+			diet_id     BIGINT UNSIGNED NOT NULL,
+			meal_slot   VARCHAR(40)     NOT NULL DEFAULT 'sniadanie',
+			cost_netto  DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			vat_rate    DECIMAL(5,2)    NOT NULL DEFAULT 0.00,
+			enabled     TINYINT(1)      NOT NULL DEFAULT 1,
+			days_before INT             NOT NULL DEFAULT 30,
+			PRIMARY KEY (id),
+			UNIQUE KEY idx_pkg_diet_slot (package_id, diet_id, meal_slot),
+			KEY idx_package (package_id)
 		) $charset;";
 
 		foreach ( $org_sql as $statement ) {
