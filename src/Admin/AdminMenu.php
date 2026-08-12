@@ -164,7 +164,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Organizacja – Szablony dokumentów', 'basemgmt'),
-			' &nbsp;↳ ' . __('Szablony', 'basemgmt'),
+			' ↳ ' . __('Szablony', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org-doc-templates',
 			[$this->org_doc_templates, 'render']
