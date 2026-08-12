@@ -233,7 +233,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Szablony planów dnia', 'basemgmt'),
-			'&nbsp;&nbsp;&nbsp;&nbsp; ↳ ' . __('Szablony', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Szablony', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-plan-templates',
 			[$this->plan_templates, 'render']
@@ -260,7 +260,7 @@ final class AdminMenu {
 		add_submenu_page(
 			'basemgmt',
 			__('Szablony jadłospisów', 'basemgmt'),
-			'&nbsp;&nbsp;&nbsp;&nbsp; ↳ ' . __('Szablony', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Szablony', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-meal-templates',
 			[$this->meal_templates, 'render']
