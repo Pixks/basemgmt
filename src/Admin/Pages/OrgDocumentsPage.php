@@ -38,6 +38,8 @@ final class OrgDocumentsPage {
 		$table     = Schema::table('doc_library');
 		$documents = $wpdb->get_results("SELECT * FROM {$table} ORDER BY sort_order ASC, id DESC");
 		$doc_types = self::doc_types();
+		$tpl_table = Schema::table('doc_templates');
+		$templates = $wpdb->get_results("SELECT id, title, doc_type, auto_add FROM {$tpl_table} ORDER BY sort_order ASC, id ASC");
 		include BASEMGMT_DIR . 'templates/admin/org/documents/list.php';
 	}
 

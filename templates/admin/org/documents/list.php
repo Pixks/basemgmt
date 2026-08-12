@@ -4,6 +4,39 @@
 		<h1><?php esc_html_e('Biblioteka dokumentów', 'basemgmt'); ?></h1>
 	</div>
 
+	<?php if ( ! empty($templates) ) : ?>
+	<div class="notice notice-info inline" style="margin:0 0 16px;padding:10px 14px;">
+		<p style="margin:0;">
+			<span class="dashicons dashicons-media-document" style="vertical-align:middle;margin-right:4px;"></span>
+			<?php esc_html_e('Dostępne szablony dokumentów (zakładka Szablony):', 'basemgmt'); ?>
+			<strong>
+			<?php
+			$labels = array_map( static function ( $tpl ) use ( $doc_types ): string {
+				$type = $doc_types[ $tpl->doc_type ] ?? $tpl->doc_type;
+				$auto = $tpl->auto_add ? ' ★' : '';
+				return esc_html( $tpl->title . ' (' . $type . ')' . $auto );
+			}, $templates );
+			echo implode( ', ', $labels );
+			?>
+			</strong>
+			&nbsp;—&nbsp;
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=basemgmt-org-doc-templates' ) ); ?>">
+				<?php esc_html_e('zarządzaj szablonami', 'basemgmt'); ?> →
+			</a>
+			<br><small class="bm-muted"><?php esc_html_e('★ = automatycznie dodawany do nowego obozu', 'basemgmt'); ?></small>
+		</p>
+	</div>
+	<?php else : ?>
+	<div class="notice notice-warning inline" style="margin:0 0 16px;padding:10px 14px;">
+		<p style="margin:0;">
+			<?php esc_html_e('Brak zdefiniowanych szablonów dokumentów.', 'basemgmt'); ?>
+			&nbsp;<a href="<?php echo esc_url( admin_url( 'admin.php?page=basemgmt-org-doc-templates&action=new' ) ); ?>">
+				<?php esc_html_e('Utwórz pierwszy szablon →', 'basemgmt'); ?>
+			</a>
+		</p>
+	</div>
+	<?php endif; ?>
+
 	<div class="bm-two-col-layout">
 		<!-- ── Add/Edit form ──────────────────────────────────────────────────── -->
 		<div class="bm-col-sidebar">
