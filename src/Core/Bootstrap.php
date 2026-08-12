@@ -85,6 +85,7 @@ final class Bootstrap {
 	private function register_admin(): void {
 		$menu = new AdminMenu();
 		$this->loader->add_action('admin_menu',            $menu, 'register_menus');
+		$this->loader->add_action('admin_init',            $menu, 'redirect_parent_pages');
 		$this->loader->add_action('admin_enqueue_scripts', $menu, 'enqueue_assets');
 		$this->loader->add_action('admin_notices',         $menu, 'render_notices');
 

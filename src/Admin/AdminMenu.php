@@ -146,10 +146,7 @@ final class AdminMenu {
 			__('Organizacja', 'basemgmt'),
 			'manage_basemgmt',
 			'basemgmt-org',
-			static function (): void {
-				wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-org-documents' ) );
-				exit;
-			}
+			'__return_null'
 		);
 
 		add_submenu_page(
@@ -343,6 +340,16 @@ final class AdminMenu {
 			[$this->logs, 'render']
 		);
 		remove_submenu_page('basemgmt', 'basemgmt-logs');
+	}
+
+	// ── Redirect parent-only menu pages before output ────────────────────────
+
+	public function redirect_parent_pages(): void {
+		$page = sanitize_key( $_GET['page'] ?? '' );
+		if ( $page === 'basemgmt-org' ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-org-documents' ) );
+			exit;
+		}
 	}
 
 	// ── Asset enqueueing ──────────────────────────────────────────────────────
