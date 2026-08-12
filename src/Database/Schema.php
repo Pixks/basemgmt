@@ -73,6 +73,7 @@ final class Schema {
 			'plan_template_items'    => $wpdb->prefix . 'bm_plan_template_items',
 			// Meal Options
 			'meal_diets'             => $wpdb->prefix . 'bm_meal_diets',
+			'meal_diet_costs'        => $wpdb->prefix . 'bm_meal_diet_costs',
 			'meal_locations'         => $wpdb->prefix . 'bm_meal_locations',
 			// Meal Templates
 			'meal_templates'         => $wpdb->prefix . 'bm_meal_templates',
@@ -1021,6 +1022,17 @@ final class Schema {
 			sort_order INT             NOT NULL DEFAULT 0,
 			created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id)
+		) $charset;";
+
+		$mopts_sql[] = "CREATE TABLE {$p}bm_meal_diet_costs (
+			id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			diet_id    BIGINT UNSIGNED NOT NULL,
+			meal_slot  VARCHAR(40)     NOT NULL DEFAULT 'sniadanie',
+			cost_netto DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			vat_rate   DECIMAL(5,2)    NOT NULL DEFAULT 0.00,
+			PRIMARY KEY (id),
+			UNIQUE KEY idx_diet_slot (diet_id, meal_slot),
+			KEY idx_diet (diet_id)
 		) $charset;";
 
 		foreach ( $mopts_sql as $statement ) {

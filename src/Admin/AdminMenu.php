@@ -16,6 +16,7 @@ use BaseMgmt\Admin\Pages\MealTemplatesPage;
 use BaseMgmt\Admin\Pages\MenuPage;
 use BaseMgmt\Admin\Pages\LicensePage;
 use BaseMgmt\Admin\Pages\OrgAccommodationsPage;
+use BaseMgmt\Admin\Pages\OrgDietsPage;
 use BaseMgmt\Admin\Pages\OrgDocTemplatesPage;
 use BaseMgmt\Admin\Pages\OrgDocumentsPage;
 use BaseMgmt\Admin\Pages\OrgFinancePage;
@@ -64,6 +65,7 @@ final class AdminMenu {
 	private OrgFinancePage      $org_finance;
 	private OrgTasksPage        $org_tasks;
 	private OrgAccommodationsPage $org_accommodations;
+	private OrgDietsPage          $org_diets;
 
 	public function __construct() {
 		$this->dashboard       = new DashboardPage();
@@ -90,6 +92,7 @@ final class AdminMenu {
 		$this->org_finance       = new OrgFinancePage();
 		$this->org_tasks         = new OrgTasksPage();
 		$this->org_accommodations = new OrgAccommodationsPage();
+		$this->org_diets          = new OrgDietsPage();
 	}
 
 	// ── admin_menu hook ───────────────────────────────────────────────────────
@@ -192,6 +195,15 @@ final class AdminMenu {
 			'manage_basemgmt',
 			'basemgmt-org-accommodations',
 			[$this->org_accommodations, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Organizacja – Diety', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Diety', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-org-diets',
+			[$this->org_diets, 'render']
 		);
 
 		add_submenu_page(
@@ -547,6 +559,8 @@ final class AdminMenu {
 			'bm_delete_task_template'           => [$this->org_tasks,          'handle_delete'],
 			'bm_save_accommodation_type'        => [$this->org_accommodations,  'handle_save'],
 			'bm_delete_accommodation_type'      => [$this->org_accommodations,  'handle_delete'],
+			'bm_save_org_diet'                  => [$this->org_diets,            'handle_save'],
+			'bm_delete_org_diet'                => [$this->org_diets,            'handle_delete'],
 			'bm_add_task_from_template'         => [$this->camps,      'handle_add_task_from_template'],
 			'bm_save_camp_declaration'          => [$this->camps,      'handle_save_camp_declaration'],
 			'bm_add_camp_damage'                => [$this->camps,      'handle_add_camp_damage'],

@@ -22,12 +22,6 @@ $item_id = $item->id ?? 0;
                     value="<?php echo esc_attr($item->name ?? ''); ?>">
             </p>
             <p>
-                <label for="accom_rate"><strong><?php esc_html_e('Stawka za noc (PLN)', 'basemgmt'); ?></strong></label><br>
-                <input type="text" id="accom_rate" name="rate_per_night" class="regular-text"
-                    value="<?php echo esc_attr(number_format((float)($item->rate_per_night ?? 0), 2, '.', '')); ?>">
-                <span class="description"><?php esc_html_e('Stawka za jedną dobę noclegową dla jednej osoby.', 'basemgmt'); ?></span>
-            </p>
-            <p>
                 <label for="accom_desc"><strong><?php esc_html_e('Opis', 'basemgmt'); ?></strong></label><br>
                 <textarea id="accom_desc" name="description" class="large-text" rows="3"><?php echo esc_textarea($item->description ?? ''); ?></textarea>
             </p>
