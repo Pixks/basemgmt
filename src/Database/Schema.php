@@ -1467,5 +1467,33 @@ final class Schema {
 		if ( $resv_cols && ! in_array('reserved_units', $resv_cols, true) ) {
 			$wpdb->query("ALTER TABLE {$p}bm_resource_reservations ADD COLUMN reserved_units INT UNSIGNED NOT NULL DEFAULT 1 AFTER purpose"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
+
+		// ── ALTER: approved_by + approved_at on bm_camp_decl_docs ────────────────
+		$decl_doc_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_camp_decl_docs");
+		if ( $decl_doc_cols ) {
+			if ( ! in_array('approved_by', $decl_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_decl_docs ADD COLUMN approved_by BIGINT UNSIGNED DEFAULT NULL AFTER status"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('approved_at', $decl_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_decl_docs ADD COLUMN approved_at DATETIME DEFAULT NULL AFTER approved_by"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+		}
+
+		// ── ALTER: signing fields on bm_camp_documents ───────────────────────────
+		$camp_doc_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_camp_documents");
+		if ( $camp_doc_cols ) {
+			if ( ! in_array('signed_method', $camp_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_documents ADD COLUMN signed_method VARCHAR(20) NOT NULL DEFAULT '' AFTER status"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('signed_at', $camp_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_documents ADD COLUMN signed_at DATETIME DEFAULT NULL AFTER signed_method"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('signed_by', $camp_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_documents ADD COLUMN signed_by BIGINT UNSIGNED DEFAULT NULL AFTER signed_at"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('signed_file_url', $camp_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_documents ADD COLUMN signed_file_url VARCHAR(500) NOT NULL DEFAULT '' AFTER signed_by"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+		}
 	}
 }

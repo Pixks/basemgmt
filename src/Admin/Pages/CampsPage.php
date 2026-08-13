@@ -1366,10 +1366,10 @@ final class CampsPage {
 
 	public function handle_return_camp_equipment(): void {
 		Capabilities::require_admin();
-		$camp_id  = (int) ($_GET['id'] ?? 0);
-		$equip_id = (int) ($_GET['equip_id'] ?? 0);
-		check_admin_referer("bm_return_equipment_{$equip_id}");
-		$qty = max(0, (int) ($_GET['qty'] ?? 0));
+		check_admin_referer('bm_return_camp_equipment');
+		$camp_id  = (int) ($_POST['camp_id'] ?? 0);
+		$equip_id = (int) ($_POST['equip_id'] ?? 0);
+		$qty      = max(0, (int) ($_POST['qty'] ?? 0));
 		if ( $equip_id <= 0 || $camp_id <= 0 ) {
 			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
 			return;
@@ -1452,15 +1452,55 @@ final class CampsPage {
 		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
 	}
 
-	/**
-	 * Handle declaration document signing — either qualified electronic signature (PDF upload + validation)
-	 * or manual scan upload.
-	 */
-	public function handle_sign_camp_decl_doc(): void {
+	public function handle_approve_camp_decl_doc(): void {
 		Capabilities::require_admin();
-		check_admin_referer('bm_sign_camp_decl_doc');
+		check_admin_referer('bm_approve_camp_decl_doc');
 		$camp_id = (int) ($_POST['camp_id'] ?? 0);
 		$doc_id  = (int) ($_POST['decl_doc_id'] ?? 0);
+		if ( $camp_id <= 0 || $doc_id <= 0 ) {
+			AdminMenu::set_notice(__('Nieprawidłowe dane.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		global $wpdb;
+		$wpdb->update(Schema::table('camp_decl_docs'), [
+			'status'      => 'approved',
+			'approved_by' => get_current_user_id(),
+			'approved_at' => current_time('mysql'),
+		], ['id' => $doc_id, 'camp_id' => $camp_id]);
+		AdminMenu::set_notice(__('Deklaracja zatwierdzona.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+	}
+
+	// ── Damage handlers ───────────────────────────────────────────────────────
+
+	public function handle_edit_camp_damage(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_edit_camp_damage');
+		$camp_id   = (int) ($_POST['camp_id'] ?? 0);
+		$damage_id = (int) ($_POST['damage_id'] ?? 0);
+		if ( $camp_id <= 0 || $damage_id <= 0 ) {
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-finance");
+			return;
+		}
+		global $wpdb;
+		$wpdb->update(Schema::table('camp_damages'), [
+			'name'        => sanitize_text_field(wp_unslash($_POST['damage_name'] ?? '')),
+			'description' => sanitize_textarea_field(wp_unslash($_POST['damage_description'] ?? '')),
+			'cost'        => (float) str_replace(',', '.', $_POST['damage_cost'] ?? '0'),
+			'status'      => sanitize_key($_POST['damage_status'] ?? 'reported'),
+		], ['id' => $damage_id, 'camp_id' => $camp_id]);
+		AdminMenu::set_notice(__('Szkoda zaktualizowana.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-finance");
+	}
+
+	// ── Document signing handler ──────────────────────────────────────────────
+
+	public function handle_sign_camp_doc(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_sign_camp_doc');
+		$camp_id = (int) ($_POST['camp_id'] ?? 0);
+		$doc_id  = (int) ($_POST['doc_id'] ?? 0);
 		$method  = sanitize_key($_POST['sign_method'] ?? '');
 
 		if ( $camp_id <= 0 || $doc_id <= 0 || ! in_array($method, ['qualified', 'scan'], true) ) {
@@ -1475,12 +1515,8 @@ final class CampsPage {
 			return;
 		}
 
-		// Validate file type
-		$allowed_types = ['application/pdf', 'image/jpeg', 'image/png'];
-		if ( $method === 'qualified' ) {
-			$allowed_types = ['application/pdf'];
-		}
-		$file_type = $_FILES['signed_file']['type'] ?? '';
+		$allowed_types = $method === 'qualified' ? ['application/pdf'] : ['application/pdf', 'image/jpeg', 'image/png'];
+		$file_type     = $_FILES['signed_file']['type'] ?? '';
 		if ( ! in_array($file_type, $allowed_types, true) ) {
 			AdminMenu::set_notice(
 				$method === 'qualified'
@@ -1492,7 +1528,6 @@ final class CampsPage {
 			return;
 		}
 
-		// For qualified signature: basic heuristic check for digital signature in PDF
 		if ( $method === 'qualified' ) {
 			$tmp_path = $_FILES['signed_file']['tmp_name'] ?? '';
 			$content  = file_get_contents($tmp_path, false, null, 0, 65536);
@@ -1507,7 +1542,6 @@ final class CampsPage {
 			}
 		}
 
-		// Upload via WP media library
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/media.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -1520,15 +1554,15 @@ final class CampsPage {
 		}
 
 		global $wpdb;
-		$wpdb->update(Schema::table('camp_decl_docs'), [
-			'status'        => 'signed',
-			'signed_method' => $method,
-			'signed_at'     => current_time('mysql'),
-			'file_url'      => $upload['url'],
-			'uploaded_at'   => current_time('mysql'),
+		$wpdb->update(Schema::table('camp_documents'), [
+			'status'          => 'signed',
+			'signed_method'   => $method,
+			'signed_at'       => current_time('mysql'),
+			'signed_by'       => get_current_user_id(),
+			'signed_file_url' => $upload['url'],
 		], ['id' => $doc_id, 'camp_id' => $camp_id]);
 
-		AdminMenu::set_notice(__('Deklaracja oznaczona jako podpisana.', 'basemgmt'));
+		AdminMenu::set_notice(__('Dokument oznaczony jako podpisany.', 'basemgmt'));
 		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
 	}
 }

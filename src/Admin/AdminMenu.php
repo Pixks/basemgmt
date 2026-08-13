@@ -596,11 +596,15 @@ final class AdminMenu {
 			// Camp declaration docs
 			'bm_add_camp_decl_doc'              => [$this->camps, 'handle_add_camp_decl_doc'],
 			'bm_delete_camp_decl_doc'           => [$this->camps, 'handle_delete_camp_decl_doc'],
-			'bm_sign_camp_decl_doc'             => [$this->camps, 'handle_sign_camp_decl_doc'],
+			'bm_approve_camp_decl_doc'          => [$this->camps, 'handle_approve_camp_decl_doc'],
 			// Camp equipment
 			'bm_add_camp_equipment'             => [$this->camps, 'handle_add_camp_equipment'],
 			'bm_return_camp_equipment'          => [$this->camps, 'handle_return_camp_equipment'],
 			'bm_delete_camp_equipment'          => [$this->camps, 'handle_delete_camp_equipment'],
+			// Camp damages
+			'bm_edit_camp_damage'               => [$this->camps, 'handle_edit_camp_damage'],
+			// Camp documents – signing
+			'bm_sign_camp_doc'                  => [$this->camps, 'handle_sign_camp_doc'],
 			// Camp finance
 			'bm_save_camp_finance'              => [$this->camps, 'handle_save_camp_finance'],
 		];

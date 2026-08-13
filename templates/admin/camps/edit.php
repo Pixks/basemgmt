@@ -613,8 +613,8 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 							<th><?php esc_html_e('Tytuł', 'basemgmt'); ?></th>
 							<th style="width:120px;"><?php esc_html_e('Typ', 'basemgmt'); ?></th>
 							<th style="width:100px;"><?php esc_html_e('Status', 'basemgmt'); ?></th>
-							<th style="width:140px;"><?php esc_html_e('Data wysłania', 'basemgmt'); ?></th>
-							<th style="width:160px;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
+							<th style="width:140px;"><?php esc_html_e('Podpisano', 'basemgmt'); ?></th>
+							<th style="width:200px;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -635,7 +635,15 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 									<?php $ds = $doc_status_map[$doc->status] ?? ['label' => $doc->status, 'class' => 'bm-badge--normal']; ?>
 									<span class="bm-badge <?php echo esc_attr($ds['class']); ?>"><?php echo esc_html($ds['label']); ?></span>
 								</td>
-								<td class="bm-muted"><?php echo esc_html($doc->sent_at ?: '—'); ?></td>
+								<td class="bm-muted" style="font-size:11px;">
+									<?php if ( ! empty($doc->signed_at) ) : ?>
+										<?php echo esc_html(substr($doc->signed_at, 0, 10)); ?><br>
+										<span><?php echo esc_html($doc->signed_method === 'qualified' ? __('kwalifikowany', 'basemgmt') : __('skan', 'basemgmt')); ?></span>
+										<?php if ( ! empty($doc->signed_file_url) ) : ?>
+											<br><a href="<?php echo esc_url($doc->signed_file_url); ?>" target="_blank"><?php esc_html_e('Pobierz podpisany', 'basemgmt'); ?></a>
+										<?php endif; ?>
+									<?php else : ?>—<?php endif; ?>
+								</td>
 								<td>
 									<?php if ( ! empty($doc->html_content) ) : ?>
 										<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-camps&action=doc_view&id={$id}&doc_id={$doc->id}")); ?>" class="button button-small" target="_blank">
@@ -646,11 +654,19 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 											<?php esc_html_e('Pobierz', 'basemgmt'); ?>
 										</a>
 									<?php endif; ?>
+									<?php if ( $doc->status !== 'signed' ) : ?>
+										<button type="button" class="button button-small bm-modal-open"
+											data-modal="bm-modal-sign-doc"
+											data-doc-id="<?php echo esc_attr($doc->id); ?>"
+											data-doc-title="<?php echo esc_attr($doc->title); ?>">
+											<?php esc_html_e('Prześlij podpisany', 'basemgmt'); ?>
+										</button>
+									<?php endif; ?>
 									<?php if ( empty($doc->locked) ) : ?>
 										<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_send_camp_doc&id={$id}&doc_id={$doc->id}"), "bm_send_camp_doc_{$doc->id}")); ?>"
 											class="button button-small"
 											data-bm-confirm="<?php esc_attr_e('Wygenerować link do wysłania do klienta?', 'basemgmt'); ?>">
-											<?php echo esc_html($doc->document_type === 'declaration' ? __('Wyślij do akceptacji', 'basemgmt') : __('Wyślij do podpisu', 'basemgmt')); ?>
+											<?php esc_html_e('Wyślij', 'basemgmt'); ?>
 										</a>
 										<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_doc&id={$id}&doc_id={$doc->id}"), "bm_delete_camp_doc_{$doc->id}")); ?>"
 											class="button button-small bm-danger"
@@ -674,6 +690,7 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 					</button>
 				</div>
 				<div class="inside">
+					<p class="description"><?php esc_html_e('Deklaracje wymagają jedynie kliknięcia „Zatwierdź" przez upoważnioną osobę — system rejestruje, kto i kiedy zatwierdził.', 'basemgmt'); ?></p>
 					<?php if ( empty($camp_decl_docs) ) : ?>
 						<p class="bm-muted"><?php esc_html_e('Brak deklaracji przypisanych do obozu.', 'basemgmt'); ?></p>
 					<?php else : ?>
@@ -682,47 +699,39 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 								<tr>
 									<th><?php esc_html_e('Tytuł', 'basemgmt'); ?></th>
 									<th style="width:110px;"><?php esc_html_e('Status', 'basemgmt'); ?></th>
-									<th style="width:130px;"><?php esc_html_e('Podpisano', 'basemgmt'); ?></th>
-									<th style="width:210px;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
+									<th style="width:200px;"><?php esc_html_e('Zatwierdzone przez', 'basemgmt'); ?></th>
+									<th style="width:160px;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
 								</tr>
 							</thead>
 							<tbody>
 								<?php
 								$decl_status_map = [
-									'draft'  => ['label' => __('Szkic', 'basemgmt'),     'class' => 'bm-badge--normal'],
-									'sent'   => ['label' => __('Wysłana', 'basemgmt'),   'class' => 'bm-badge--high'],
-									'signed' => ['label' => __('Podpisana', 'basemgmt'), 'class' => 'bm-badge--success'],
+									'draft'    => ['label' => __('Oczekuje', 'basemgmt'),     'class' => 'bm-badge--normal'],
+									'approved' => ['label' => __('Zatwierdzona', 'basemgmt'),  'class' => 'bm-badge--success'],
 								];
 								foreach ( $camp_decl_docs as $ddoc ) :
 									$ds = $decl_status_map[$ddoc->status] ?? ['label' => $ddoc->status, 'class' => 'bm-badge--normal'];
+									$approver = ! empty($ddoc->approved_by) ? get_user_by('id', (int) $ddoc->approved_by) : null;
 								?>
 									<tr>
 										<td><strong><?php echo esc_html($ddoc->title); ?></strong></td>
 										<td><span class="bm-badge <?php echo esc_attr($ds['class']); ?>"><?php echo esc_html($ds['label']); ?></span></td>
-										<td class="bm-muted">
-											<?php if ( ! empty($ddoc->signed_at) ) : ?>
-												<?php echo esc_html(substr($ddoc->signed_at, 0, 10)); ?>
-												<small>(<?php echo esc_html($ddoc->signed_method === 'qualified' ? __('kwalifikowany', 'basemgmt') : __('skan', 'basemgmt')); ?>)</small>
+										<td class="bm-muted" style="font-size:11px;">
+											<?php if ( $approver && ! empty($ddoc->approved_at) ) : ?>
+												<?php echo esc_html($approver->display_name); ?><br>
+												<?php echo esc_html(substr($ddoc->approved_at, 0, 16)); ?>
 											<?php else : ?>—<?php endif; ?>
 										</td>
 										<td>
 											<?php if ( ! empty($ddoc->html_content) ) : ?>
-												<a href="#" class="button button-small" target="_blank"
-													onclick="event.preventDefault(); bm_preview_decl(<?php echo (int) $ddoc->id; ?>);">
-													<?php esc_html_e('Podgląd', 'basemgmt'); ?>
-												</a>
+												<a href="#" class="button button-small" onclick="event.preventDefault();"><?php esc_html_e('Podgląd', 'basemgmt'); ?></a>
 											<?php endif; ?>
-											<?php if ( ! empty($ddoc->file_url) ) : ?>
-												<a href="<?php echo esc_url($ddoc->file_url); ?>" class="button button-small" target="_blank">
-													<?php esc_html_e('Pobierz podpisany', 'basemgmt'); ?>
-												</a>
-											<?php endif; ?>
-											<?php if ( $ddoc->status !== 'signed' ) : ?>
-												<button type="button" class="button button-small bm-modal-open"
-													data-modal="bm-modal-sign-decl"
+											<?php if ( $ddoc->status !== 'approved' ) : ?>
+												<button type="button" class="button button-small button-primary bm-modal-open"
+													data-modal="bm-modal-approve-decl"
 													data-decl-id="<?php echo esc_attr($ddoc->id); ?>"
 													data-decl-title="<?php echo esc_attr($ddoc->title); ?>">
-													<?php esc_html_e('Podpisz', 'basemgmt'); ?>
+													<?php esc_html_e('Zatwierdź', 'basemgmt'); ?>
 												</button>
 											<?php endif; ?>
 											<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_decl_doc&id={$id}&decl_doc_id={$ddoc->id}"), "bm_delete_camp_decl_doc_{$ddoc->id}")); ?>"
@@ -736,6 +745,71 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 							</tbody>
 						</table>
 					<?php endif; ?>
+				</div>
+			</div>
+
+			<!-- Modal: Zatwierdź deklarację -->
+			<div id="bm-modal-approve-decl" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Zatwierdź deklarację', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+						<?php wp_nonce_field('bm_approve_camp_decl_doc'); ?>
+						<input type="hidden" name="action" value="bm_approve_camp_decl_doc">
+						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
+						<input type="hidden" name="decl_doc_id" id="bm-approve-decl-id" value="">
+						<div class="bm-modal-body">
+							<p id="bm-approve-decl-title" style="font-weight:600;"></p>
+							<p><?php esc_html_e('Potwierdzam zapoznanie się z treścią deklaracji i wyrażam zgodę na jej warunki. System zapisze Twoje imię i godzinę zatwierdzenia.', 'basemgmt'); ?></p>
+						</div>
+						<div class="bm-modal-footer">
+							<button type="submit" class="button button-primary"><?php esc_html_e('Zatwierdź deklarację', 'basemgmt'); ?></button>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<!-- Modal: Prześlij podpisany dokument -->
+			<div id="bm-modal-sign-doc" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Prześlij podpisany dokument', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data">
+						<?php wp_nonce_field('bm_sign_camp_doc'); ?>
+						<input type="hidden" name="action" value="bm_sign_camp_doc">
+						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
+						<input type="hidden" name="doc_id" id="bm-sign-doc-id" value="">
+						<div class="bm-modal-body">
+							<p id="bm-sign-doc-title" style="font-weight:600;margin-bottom:12px;"></p>
+							<p>
+								<label><strong><?php esc_html_e('Metoda podpisu:', 'basemgmt'); ?></strong></label><br>
+								<label style="display:block;margin:4px 0;">
+									<input type="radio" name="sign_method" value="qualified" checked>
+									<?php esc_html_e('Podpis kwalifikowany (PDF z podpisem cyfrowym)', 'basemgmt'); ?>
+								</label>
+								<label style="display:block;margin:4px 0;">
+									<input type="radio" name="sign_method" value="scan">
+									<?php esc_html_e('Skan podpisanego dokumentu (PDF, JPG, PNG)', 'basemgmt'); ?>
+								</label>
+							</p>
+							<p>
+								<label><strong><?php esc_html_e('Plik:', 'basemgmt'); ?></strong></label><br>
+								<input type="file" name="signed_file" accept=".pdf,.jpg,.jpeg,.png" required>
+							</p>
+							<p class="bm-muted" style="font-size:12px;">
+								<?php esc_html_e('Podpis kwalifikowany: wymagany plik PDF z osadzonym podpisem cyfrowym. System wykryje podpis automatycznie.', 'basemgmt'); ?>
+							</p>
+						</div>
+						<div class="bm-modal-footer">
+							<button type="submit" class="button button-primary"><?php esc_html_e('Prześlij', 'basemgmt'); ?></button>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
+					</form>
 				</div>
 			</div>
 
@@ -767,47 +841,6 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 							<?php if ( ! empty($decl_tpl_options) ) : ?>
 								<button type="submit" class="button button-primary"><?php esc_html_e('Dodaj', 'basemgmt'); ?></button>
 							<?php endif; ?>
-							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
-						</div>
-					</form>
-				</div>
-			</div>
-
-			<!-- Modal: Podpisz deklarację -->
-			<div id="bm-modal-sign-decl" style="display:none;" class="bm-modal-overlay">
-				<div class="bm-modal">
-					<div class="bm-modal-header">
-						<h3><?php esc_html_e('Prześlij podpisaną deklarację', 'basemgmt'); ?></h3>
-						<button type="button" class="bm-modal-close">✕</button>
-					</div>
-					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data">
-						<?php wp_nonce_field('bm_sign_camp_decl_doc'); ?>
-						<input type="hidden" name="action" value="bm_sign_camp_decl_doc">
-						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
-						<input type="hidden" name="decl_doc_id" id="bm-sign-decl-id" value="">
-						<div class="bm-modal-body">
-							<p id="bm-sign-decl-title" style="font-weight:600;"></p>
-							<p>
-								<label><strong><?php esc_html_e('Metoda podpisu:', 'basemgmt'); ?></strong></label><br>
-								<label style="display:block;margin:4px 0;">
-									<input type="radio" name="sign_method" value="qualified" checked>
-									<?php esc_html_e('Podpis kwalifikowany (PDF z podpisem cyfrowym)', 'basemgmt'); ?>
-								</label>
-								<label style="display:block;margin:4px 0;">
-									<input type="radio" name="sign_method" value="scan">
-									<?php esc_html_e('Skan podpisanego dokumentu (PDF, JPG, PNG)', 'basemgmt'); ?>
-								</label>
-							</p>
-							<p>
-								<label><strong><?php esc_html_e('Plik:', 'basemgmt'); ?></strong></label><br>
-								<input type="file" name="signed_file" accept=".pdf,.jpg,.jpeg,.png" required>
-							</p>
-							<p class="bm-muted" style="font-size:12px;">
-								<?php esc_html_e('Podpis kwalifikowany: wymagany plik PDF z osadzonym podpisem cyfrowym. System wykryje podpis automatycznie.', 'basemgmt'); ?>
-							</p>
-						</div>
-						<div class="bm-modal-footer">
-							<button type="submit" class="button button-primary"><?php esc_html_e('Prześlij', 'basemgmt'); ?></button>
 							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
 						</div>
 					</form>
@@ -992,22 +1025,28 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 				</div>
 			</div>
 
-			<!-- Modal: Zwrot sprzętu -->
+			<!-- Modal: Zwrot sprzętu (POST form, no nonce-in-URL issue) -->
 			<div id="bm-modal-return-equipment" style="display:none;" class="bm-modal-overlay">
 				<div class="bm-modal">
 					<div class="bm-modal-header">
 						<h3><?php esc_html_e('Zwrot sprzętu', 'basemgmt'); ?></h3>
 						<button type="button" class="bm-modal-close">✕</button>
 					</div>
-					<div class="bm-modal-body">
-						<p id="bm-return-equip-desc"></p>
-						<label><strong><?php esc_html_e('Ilość zwracana', 'basemgmt'); ?></strong></label><br>
-						<input type="number" id="bm-return-qty-input" min="1" value="1" class="small-text">
-					</div>
-					<div class="bm-modal-footer">
-						<a id="bm-return-equip-link" href="#" class="button button-primary"><?php esc_html_e('Zarejestruj zwrot', 'basemgmt'); ?></a>
-						<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
-					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+						<?php wp_nonce_field('bm_return_camp_equipment'); ?>
+						<input type="hidden" name="action" value="bm_return_camp_equipment">
+						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
+						<input type="hidden" name="equip_id" id="bm-return-equip-id-input" value="">
+						<div class="bm-modal-body">
+							<p id="bm-return-equip-desc"></p>
+							<label><strong><?php esc_html_e('Ilość zwracana', 'basemgmt'); ?></strong></label><br>
+							<input type="number" name="qty" id="bm-return-qty-input" min="1" value="1" class="small-text">
+						</div>
+						<div class="bm-modal-footer">
+							<button type="submit" class="button button-primary"><?php esc_html_e('Zarejestruj zwrot', 'basemgmt'); ?></button>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
+					</form>
 				</div>
 			</div>
 		</div><!-- /equipment -->
@@ -1236,7 +1275,7 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 								<th style="width:200px;"><?php esc_html_e('Opis', 'basemgmt'); ?></th>
 								<th style="width:100px;"><?php esc_html_e('Koszt (PLN)', 'basemgmt'); ?></th>
 								<th style="width:100px;"><?php esc_html_e('Status', 'basemgmt'); ?></th>
-								<th style="width:60px;"></th>
+								<th style="width:90px;"></th>
 							</tr></thead>
 							<tbody>
 								<?php $damage_status_labels = [
@@ -1254,6 +1293,13 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 										<?php echo esc_html($damage_status_labels[$dmg->status] ?? $dmg->status); ?>
 									</span></td>
 									<td>
+										<button type="button" class="button-link bm-modal-open"
+											data-modal="bm-modal-edit-damage"
+											data-damage-id="<?php echo esc_attr($dmg->id); ?>"
+											data-name="<?php echo esc_attr($dmg->name); ?>"
+											data-description="<?php echo esc_attr($dmg->description); ?>"
+											data-cost="<?php echo esc_attr($dmg->cost); ?>"
+											data-status="<?php echo esc_attr($dmg->status); ?>">✎</button>
 										<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_damage&id={$id}&damage_id={$dmg->id}"), "bm_delete_camp_damage_{$dmg->id}")); ?>"
 											class="button-link bm-danger"
 											data-bm-confirm="<?php esc_attr_e('Usunąć szkodę?', 'basemgmt'); ?>">✕</a>
@@ -1300,6 +1346,51 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 						<p>
 							<button type="submit" class="button button-secondary"><?php esc_html_e('Dodaj szkodę', 'basemgmt'); ?></button>
 						</p>
+					</form>
+				</div>
+			</div>
+
+			<!-- Modal: Edytuj szkodę -->
+			<div id="bm-modal-edit-damage" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Edytuj szkodę', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+						<?php wp_nonce_field('bm_edit_camp_damage'); ?>
+						<input type="hidden" name="action" value="bm_edit_camp_damage">
+						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
+						<input type="hidden" name="damage_id" id="bm-edit-damage-id" value="">
+						<div class="bm-modal-body">
+							<div class="bm-form-grid">
+								<p>
+									<label><strong><?php esc_html_e('Nazwa szkody', 'basemgmt'); ?></strong></label><br>
+									<input type="text" name="damage_name" id="bm-edit-damage-name" class="widefat" required>
+								</p>
+								<p>
+									<label><strong><?php esc_html_e('Koszt (PLN)', 'basemgmt'); ?></strong></label><br>
+									<input type="text" name="damage_cost" id="bm-edit-damage-cost" class="widefat">
+								</p>
+								<p>
+									<label><strong><?php esc_html_e('Status', 'basemgmt'); ?></strong></label><br>
+									<select name="damage_status" id="bm-edit-damage-status" class="widefat">
+										<option value="reported"><?php esc_html_e('Zgłoszona', 'basemgmt'); ?></option>
+										<option value="investigating"><?php esc_html_e('W ocenie', 'basemgmt'); ?></option>
+										<option value="settled"><?php esc_html_e('Rozliczona', 'basemgmt'); ?></option>
+										<option value="dismissed"><?php esc_html_e('Odrzucona', 'basemgmt'); ?></option>
+									</select>
+								</p>
+							</div>
+							<p>
+								<label><strong><?php esc_html_e('Opis', 'basemgmt'); ?></strong></label><br>
+								<textarea name="damage_description" id="bm-edit-damage-desc" class="widefat" rows="3"></textarea>
+							</p>
+						</div>
+						<div class="bm-modal-footer">
+							<button type="submit" class="button button-primary"><?php esc_html_e('Zapisz zmiany', 'basemgmt'); ?></button>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
 					</form>
 				</div>
 			</div>
@@ -1465,43 +1556,50 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 		});
 	});
 
-	// ── Return equipment modal ────────────────────────────────────────────
+	// ── Return equipment modal (POST form — just populate hidden equip_id) ──
 	document.querySelectorAll('[data-modal="bm-modal-return-equipment"]').forEach(function(btn) {
 		btn.addEventListener('click', function() {
 			var equipId   = btn.getAttribute('data-equip-id');
 			var equipName = btn.getAttribute('data-equip-name');
 			var pending   = parseInt(btn.getAttribute('data-pending'), 10) || 1;
-			var desc = document.getElementById('bm-return-equip-desc');
+			var desc   = document.getElementById('bm-return-equip-desc');
 			var qtyInp = document.getElementById('bm-return-qty-input');
-			var link = document.getElementById('bm-return-equip-link');
-			if (desc)   desc.textContent = '<?php esc_js(esc_html_e('Sprzęt:', 'basemgmt')); ?> ' + equipName + ' (<?php esc_js(esc_html_e('do zwrotu:', 'basemgmt')); ?> ' + pending + ')';
+			var idInp  = document.getElementById('bm-return-equip-id-input');
+			if (desc)   desc.textContent = equipName + ' (<?php esc_js(esc_html_e('do zwrotu:', 'basemgmt')); ?> ' + pending + ')';
 			if (qtyInp) { qtyInp.max = pending; qtyInp.value = pending; }
-			var nonce = '';
-			<?php
-			// Pre-generate nonces for all equipment items
-			if ( ! empty($camp_equipment) ) :
-				foreach ( $camp_equipment as $eq ) :
-			?>
-			if (equipId == '<?php echo (int) $eq->id; ?>') nonce = '<?php echo wp_create_nonce("bm_return_equipment_{$eq->id}"); ?>';
-			<?php endforeach; endif; ?>
-			if (link) {
-				qtyInp.addEventListener('input', function() {
-					link.href = '<?php echo esc_url(admin_url("admin-post.php?action=bm_return_camp_equipment&id={$id}")); ?>&equip_id=' + equipId + '&qty=' + qtyInp.value + '&_wpnonce=' + nonce;
-				});
-				link.href = '<?php echo esc_url(admin_url("admin-post.php?action=bm_return_camp_equipment&id={$id}")); ?>&equip_id=' + equipId + '&qty=' + pending + '&_wpnonce=' + nonce;
-			}
+			if (idInp)  idInp.value = equipId;
 		});
 	});
 
-	// ── Sign decl modal ───────────────────────────────────────────────────
-	document.querySelectorAll('[data-modal="bm-modal-sign-decl"]').forEach(function(btn) {
+	// ── Damage edit modal ─────────────────────────────────────────────────
+	document.querySelectorAll('[data-modal="bm-modal-edit-damage"]').forEach(function(btn) {
 		btn.addEventListener('click', function() {
-			var declId    = btn.getAttribute('data-decl-id');
-			var declTitle = btn.getAttribute('data-decl-title');
-			var idInp  = document.getElementById('bm-sign-decl-id');
-			var titleEl = document.getElementById('bm-sign-decl-title');
-			if (idInp) idInp.value = declId;
-			if (titleEl) titleEl.textContent = declTitle;
+			document.getElementById('bm-edit-damage-id').value      = btn.getAttribute('data-damage-id');
+			document.getElementById('bm-edit-damage-name').value    = btn.getAttribute('data-name');
+			document.getElementById('bm-edit-damage-cost').value    = btn.getAttribute('data-cost');
+			document.getElementById('bm-edit-damage-desc').value    = btn.getAttribute('data-description');
+			var statusSel = document.getElementById('bm-edit-damage-status');
+			if (statusSel) statusSel.value = btn.getAttribute('data-status');
+		});
+	});
+
+	// ── Sign document modal ───────────────────────────────────────────────
+	document.querySelectorAll('[data-modal="bm-modal-sign-doc"]').forEach(function(btn) {
+		btn.addEventListener('click', function() {
+			var idInp   = document.getElementById('bm-sign-doc-id');
+			var titleEl = document.getElementById('bm-sign-doc-title');
+			if (idInp)   idInp.value = btn.getAttribute('data-doc-id');
+			if (titleEl) titleEl.textContent = btn.getAttribute('data-doc-title');
+		});
+	});
+
+	// ── Approve declaration modal ─────────────────────────────────────────
+	document.querySelectorAll('[data-modal="bm-modal-approve-decl"]').forEach(function(btn) {
+		btn.addEventListener('click', function() {
+			var idInp   = document.getElementById('bm-approve-decl-id');
+			var titleEl = document.getElementById('bm-approve-decl-title');
+			if (idInp)   idInp.value = btn.getAttribute('data-decl-id');
+			if (titleEl) titleEl.textContent = btn.getAttribute('data-decl-title');
 		});
 	});
 })();
