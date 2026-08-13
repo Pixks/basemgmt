@@ -51,13 +51,8 @@ final class CampCaseRepository {
 	public static function process_stages(): array {
 		return [
 			self::STAGE_INQUIRY          => __('Nowe zapytanie', 'basemgmt'),
-			self::STAGE_OFFER            => __('Oferta przygotowana', 'basemgmt'),
-			self::STAGE_NEGOTIATION      => __('Negocjacje', 'basemgmt'),
-			self::STAGE_TENTATIVE        => __('Rezerwacja wstępna', 'basemgmt'),
-			self::STAGE_CONTRACT_DRAFT   => __('Umowa do podpisu', 'basemgmt'),
+			self::STAGE_OFFER            => __('Oferta', 'basemgmt'),
 			self::STAGE_CONTRACT_SIGNED  => __('Umowa podpisana', 'basemgmt'),
-			self::STAGE_AWAITING_PAYMENT => __('Oczekiwanie na płatność', 'basemgmt'),
-			self::STAGE_READY            => __('Gotowe do przyjazdu', 'basemgmt'),
 			self::STAGE_ON_SITE          => __('Pobyt', 'basemgmt'),
 			self::STAGE_SETTLEMENT       => __('Rozliczenie', 'basemgmt'),
 			self::STAGE_CLOSED           => __('Zamknięte', 'basemgmt'),
@@ -74,29 +69,19 @@ final class CampCaseRepository {
 				],
 			],
 			'offer' => [
-				'label'  => __('Oferta i ustalenia', 'basemgmt'),
+				'label'  => __('Oferta', 'basemgmt'),
 				'stages' => [
 					self::STAGE_OFFER,
-					self::STAGE_NEGOTIATION,
-					self::STAGE_TENTATIVE,
 				],
 			],
 			'contract' => [
-				'label'  => __('Umowa i płatności', 'basemgmt'),
+				'label'  => __('Umowa', 'basemgmt'),
 				'stages' => [
-					self::STAGE_CONTRACT_DRAFT,
 					self::STAGE_CONTRACT_SIGNED,
-					self::STAGE_AWAITING_PAYMENT,
-				],
-			],
-			'operations' => [
-				'label'  => __('Przygotowanie operacyjne', 'basemgmt'),
-				'stages' => [
-					self::STAGE_READY,
 				],
 			],
 			'on_site' => [
-				'label'  => __('Przyjazd i pobyt', 'basemgmt'),
+				'label'  => __('Pobyt', 'basemgmt'),
 				'stages' => [
 					self::STAGE_ON_SITE,
 				],
@@ -150,17 +135,18 @@ final class CampCaseRepository {
 	public static function allowed_stage_transitions(): array {
 		return [
 			self::STAGE_INQUIRY          => [self::STAGE_OFFER, self::STAGE_CANCELLED],
-			self::STAGE_OFFER            => [self::STAGE_NEGOTIATION, self::STAGE_TENTATIVE, self::STAGE_CANCELLED],
-			self::STAGE_NEGOTIATION      => [self::STAGE_OFFER, self::STAGE_TENTATIVE, self::STAGE_CANCELLED],
-			self::STAGE_TENTATIVE        => [self::STAGE_NEGOTIATION, self::STAGE_CONTRACT_DRAFT, self::STAGE_CANCELLED],
-			self::STAGE_CONTRACT_DRAFT   => [self::STAGE_TENTATIVE, self::STAGE_CONTRACT_SIGNED, self::STAGE_CANCELLED],
-			self::STAGE_CONTRACT_SIGNED  => [self::STAGE_CONTRACT_DRAFT, self::STAGE_AWAITING_PAYMENT, self::STAGE_READY, self::STAGE_CANCELLED],
-			self::STAGE_AWAITING_PAYMENT => [self::STAGE_CONTRACT_SIGNED, self::STAGE_READY, self::STAGE_CANCELLED],
-			self::STAGE_READY            => [self::STAGE_AWAITING_PAYMENT, self::STAGE_ON_SITE, self::STAGE_CANCELLED],
-			self::STAGE_ON_SITE          => [self::STAGE_READY, self::STAGE_SETTLEMENT],
+			self::STAGE_OFFER            => [self::STAGE_INQUIRY, self::STAGE_CONTRACT_SIGNED, self::STAGE_CANCELLED],
+			self::STAGE_CONTRACT_SIGNED  => [self::STAGE_OFFER, self::STAGE_ON_SITE, self::STAGE_CANCELLED],
+			self::STAGE_ON_SITE          => [self::STAGE_CONTRACT_SIGNED, self::STAGE_SETTLEMENT],
 			self::STAGE_SETTLEMENT       => [self::STAGE_ON_SITE, self::STAGE_CLOSED],
 			self::STAGE_CLOSED           => [],
 			self::STAGE_CANCELLED        => [],
+			// Legacy stages mapped to allow existing records to still transition forward
+			self::STAGE_NEGOTIATION      => [self::STAGE_OFFER, self::STAGE_CONTRACT_SIGNED, self::STAGE_CANCELLED],
+			self::STAGE_TENTATIVE        => [self::STAGE_OFFER, self::STAGE_CONTRACT_SIGNED, self::STAGE_CANCELLED],
+			self::STAGE_CONTRACT_DRAFT   => [self::STAGE_OFFER, self::STAGE_CONTRACT_SIGNED, self::STAGE_CANCELLED],
+			self::STAGE_AWAITING_PAYMENT => [self::STAGE_CONTRACT_SIGNED, self::STAGE_ON_SITE, self::STAGE_CANCELLED],
+			self::STAGE_READY            => [self::STAGE_CONTRACT_SIGNED, self::STAGE_ON_SITE, self::STAGE_CANCELLED],
 		];
 	}
 

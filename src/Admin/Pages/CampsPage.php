@@ -230,6 +230,19 @@ final class CampsPage {
 			$camp_id
 		)) : [];
 
+		// ── Equipment tab data ────────────────────────────────────────────────
+		$camp_equipment = $camp_id > 0 ? $wpdb->get_results($wpdb->prepare(
+			"SELECT * FROM " . Schema::table('camp_equipment') . " WHERE camp_id = %d ORDER BY created_at DESC",
+			$camp_id
+		)) : [];
+
+		// ── Declaration docs tab data ─────────────────────────────────────────
+		$camp_decl_docs   = $camp_id > 0 ? $wpdb->get_results($wpdb->prepare(
+			"SELECT * FROM " . Schema::table('camp_decl_docs') . " WHERE camp_id = %d ORDER BY created_at DESC",
+			$camp_id
+		)) : [];
+		$decl_tpl_options = \BaseMgmt\Admin\Pages\OrgDeclarationsPage::get_all();
+
 		include BASEMGMT_DIR . 'templates/admin/camps/edit.php';
 	}
 
@@ -1029,24 +1042,73 @@ final class CampsPage {
 	}
 
 	/**
-	 * Auto-add task templates, documents, and declarations marked as auto-add to a newly created camp.
+	 * Auto-add documents and declaration docs marked as auto-add to a newly created camp.
+	 * Note: task templates are NOT auto-added (must be added manually via "Dodaj z szablonu").
 	 */
 	private function auto_add_templates_to_camp( int $camp_id ): void {
 		global $wpdb;
 
-		// Auto-add task templates
-		$task_templates = OrgTasksPage::get_auto_add();
-		foreach ( $task_templates as $tmpl ) {
-			$wpdb->insert(Schema::table('camp_checklist_items'), [
+		// Auto-add doc templates
+		$doc_templates = $wpdb->get_results(
+			"SELECT * FROM " . Schema::table('doc_templates') . " WHERE auto_add = 1 ORDER BY sort_order ASC, id ASC"
+		) ?: [];
+		$camp = CampRepository::get($camp_id);
+		$org  = CampCaseRepository::get_organizer($camp_id);
+		$pre  = CampCaseRepository::get_prearrival($camp_id);
+		foreach ( $doc_templates as $tpl ) {
+			$vars = [
+				'{{camp_name}}'       => $camp->name ?? '',
+				'{{organizer_name}}'  => $org->organization_name ?? '',
+				'{{organizer_email}}' => $org->contact_email ?? '',
+				'{{start_date}}'      => $camp->start_date ?? '',
+				'{{end_date}}'        => $camp->end_date ?? '',
+				'{{participants}}'    => (string) ($pre->declared_participants ?? 0),
+			];
+			$html = str_replace(array_keys($vars), array_values($vars), $tpl->html_content ?? '');
+			$wpdb->insert(Schema::table('camp_documents'), [
+				'camp_id'       => $camp_id,
+				'document_type' => $tpl->doc_type,
+				'doc_category'  => 'template',
+				'title'         => $tpl->title,
+				'status'        => 'draft',
+				'template_id'   => $tpl->id,
+				'html_content'  => $html,
+			]);
+		}
+
+		// Auto-add doc library items
+		$lib_items = $wpdb->get_results(
+			"SELECT * FROM " . Schema::table('doc_library') . " WHERE auto_add = 1 ORDER BY sort_order ASC, id ASC"
+		) ?: [];
+		foreach ( $lib_items as $lib_doc ) {
+			$wpdb->insert(Schema::table('camp_documents'), [
+				'camp_id'       => $camp_id,
+				'document_type' => $lib_doc->doc_type,
+				'doc_category'  => 'library',
+				'title'         => $lib_doc->title,
+				'status'        => 'ready',
+				'file_id'       => $lib_doc->file_id,
+				'file_url'      => $lib_doc->file_url,
+			]);
+		}
+
+		// Auto-add declaration templates
+		$decl_templates = \BaseMgmt\Admin\Pages\OrgDeclarationsPage::get_all(true);
+		foreach ( $decl_templates as $dtpl ) {
+			$vars = [
+				'{{camp_name}}'       => $camp->name ?? '',
+				'{{organizer_name}}'  => $org->organization_name ?? '',
+				'{{start_date}}'      => $camp->start_date ?? '',
+				'{{end_date}}'        => $camp->end_date ?? '',
+				'{{participants}}'    => (string) ($pre->declared_participants ?? 0),
+			];
+			$html = str_replace(array_keys($vars), array_values($vars), $dtpl->html_content ?? '');
+			$wpdb->insert(Schema::table('camp_decl_docs'), [
 				'camp_id'     => $camp_id,
-				'party'       => 'shared',
-				'label'       => $tmpl->title,
-				'description' => $tmpl->description ?? '',
-				'status'      => 'pending',
-				'priority'    => $tmpl->priority ?? 'normal',
-				'assigned_to' => '',
-				'created_at'  => current_time('mysql'),
-				'updated_at'  => current_time('mysql'),
+				'template_id' => $dtpl->id,
+				'title'       => $dtpl->title,
+				'status'      => 'draft',
+				'html_content'=> $html,
 			]);
 		}
 	}
@@ -1271,5 +1333,202 @@ final class CampsPage {
 		$wpdb->delete(Schema::table('camp_damages'), ['id' => $damage_id, 'camp_id' => $camp_id]);
 		AdminMenu::set_notice(__('Szkoda usunięta.', 'basemgmt'));
 		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-finance");
+	}
+
+	// ── Equipment handlers ────────────────────────────────────────────────────
+
+	public function handle_add_camp_equipment(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_add_camp_equipment');
+		$camp_id = (int) ($_POST['camp_id'] ?? 0);
+		if ( $camp_id <= 0 ) {
+			$this->redirect_back('basemgmt-camps');
+			return;
+		}
+		global $wpdb;
+		$name = sanitize_text_field(wp_unslash($_POST['equipment_name'] ?? ''));
+		if ( empty($name) ) {
+			AdminMenu::set_notice(__('Nazwa sprzętu jest wymagana.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
+			return;
+		}
+		$wpdb->insert(Schema::table('camp_equipment'), [
+			'camp_id'        => $camp_id,
+			'equipment_type' => sanitize_text_field(wp_unslash($_POST['equipment_type'] ?? '')),
+			'name'           => $name,
+			'issued_qty'     => max(0, (int) ($_POST['issued_qty'] ?? 0)),
+			'returned_qty'   => 0,
+			'notes'          => sanitize_textarea_field(wp_unslash($_POST['equipment_notes'] ?? '')),
+		]);
+		AdminMenu::set_notice(__('Sprzęt dodany.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
+	}
+
+	public function handle_return_camp_equipment(): void {
+		Capabilities::require_admin();
+		$camp_id  = (int) ($_GET['id'] ?? 0);
+		$equip_id = (int) ($_GET['equip_id'] ?? 0);
+		check_admin_referer("bm_return_equipment_{$equip_id}");
+		$qty = max(0, (int) ($_GET['qty'] ?? 0));
+		if ( $equip_id <= 0 || $camp_id <= 0 ) {
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
+			return;
+		}
+		global $wpdb;
+		$row = $wpdb->get_row($wpdb->prepare(
+			"SELECT * FROM " . Schema::table('camp_equipment') . " WHERE id = %d AND camp_id = %d",
+			$equip_id, $camp_id
+		));
+		if ( ! $row ) {
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
+			return;
+		}
+		$new_returned = min((int) $row->issued_qty, (int) $row->returned_qty + $qty);
+		$wpdb->update(Schema::table('camp_equipment'), ['returned_qty' => $new_returned], ['id' => $equip_id]);
+		AdminMenu::set_notice(sprintf(__('Zarejestrowano zwrot %d szt.', 'basemgmt'), $qty));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
+	}
+
+	public function handle_delete_camp_equipment(): void {
+		Capabilities::require_admin();
+		$camp_id  = (int) ($_GET['id'] ?? 0);
+		$equip_id = (int) ($_GET['equip_id'] ?? 0);
+		check_admin_referer("bm_delete_equipment_{$equip_id}");
+		global $wpdb;
+		$wpdb->delete(Schema::table('camp_equipment'), ['id' => $equip_id, 'camp_id' => $camp_id]);
+		AdminMenu::set_notice(__('Sprzęt usunięty.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
+	}
+
+	// ── Declaration doc handlers ───────────────────────────────────────────────
+
+	public function handle_add_camp_decl_doc(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_add_camp_decl_doc');
+		$camp_id     = (int) ($_POST['camp_id'] ?? 0);
+		$template_id = (int) ($_POST['decl_template_id'] ?? 0);
+		if ( $camp_id <= 0 || $template_id <= 0 ) {
+			AdminMenu::set_notice(__('Nieprawidłowe dane.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		global $wpdb;
+		$tpl  = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . Schema::table('decl_templates') . " WHERE id = %d", $template_id));
+		$camp = CampRepository::get($camp_id);
+		$org  = CampCaseRepository::get_organizer($camp_id);
+		$pre  = CampCaseRepository::get_prearrival($camp_id);
+		if ( ! $tpl || ! $camp ) {
+			AdminMenu::set_notice(__('Nie znaleziono szablonu lub obozu.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		$vars = [
+			'{{camp_name}}'       => $camp->name,
+			'{{organizer_name}}'  => $org->organization_name ?? '',
+			'{{start_date}}'      => $camp->start_date,
+			'{{end_date}}'        => $camp->end_date,
+			'{{participants}}'    => (string) ($pre->declared_participants ?? 0),
+		];
+		$html = str_replace(array_keys($vars), array_values($vars), $tpl->html_content ?? '');
+		$wpdb->insert(Schema::table('camp_decl_docs'), [
+			'camp_id'      => $camp_id,
+			'template_id'  => $template_id,
+			'title'        => $tpl->title . ' — ' . $camp->name,
+			'status'       => 'draft',
+			'html_content' => $html,
+		]);
+		AdminMenu::set_notice(__('Deklaracja dodana do obozu.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+	}
+
+	public function handle_delete_camp_decl_doc(): void {
+		Capabilities::require_admin();
+		$camp_id = (int) ($_GET['id'] ?? 0);
+		$doc_id  = (int) ($_GET['decl_doc_id'] ?? 0);
+		check_admin_referer("bm_delete_camp_decl_doc_{$doc_id}");
+		global $wpdb;
+		$wpdb->delete(Schema::table('camp_decl_docs'), ['id' => $doc_id, 'camp_id' => $camp_id]);
+		AdminMenu::set_notice(__('Deklaracja usunięta.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+	}
+
+	/**
+	 * Handle declaration document signing — either qualified electronic signature (PDF upload + validation)
+	 * or manual scan upload.
+	 */
+	public function handle_sign_camp_decl_doc(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_sign_camp_decl_doc');
+		$camp_id = (int) ($_POST['camp_id'] ?? 0);
+		$doc_id  = (int) ($_POST['decl_doc_id'] ?? 0);
+		$method  = sanitize_key($_POST['sign_method'] ?? '');
+
+		if ( $camp_id <= 0 || $doc_id <= 0 || ! in_array($method, ['qualified', 'scan'], true) ) {
+			AdminMenu::set_notice(__('Nieprawidłowe dane.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+
+		if ( empty($_FILES['signed_file']['name']) ) {
+			AdminMenu::set_notice(__('Nie przesłano pliku.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+
+		// Validate file type
+		$allowed_types = ['application/pdf', 'image/jpeg', 'image/png'];
+		if ( $method === 'qualified' ) {
+			$allowed_types = ['application/pdf'];
+		}
+		$file_type = $_FILES['signed_file']['type'] ?? '';
+		if ( ! in_array($file_type, $allowed_types, true) ) {
+			AdminMenu::set_notice(
+				$method === 'qualified'
+					? __('Podpis kwalifikowany musi być plikiem PDF.', 'basemgmt')
+					: __('Dozwolone formaty: PDF, JPG, PNG.', 'basemgmt'),
+				'error'
+			);
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+
+		// For qualified signature: basic heuristic check for digital signature in PDF
+		if ( $method === 'qualified' ) {
+			$tmp_path = $_FILES['signed_file']['tmp_name'] ?? '';
+			$content  = file_get_contents($tmp_path, false, null, 0, 65536);
+			if ( $content === false || (
+				strpos($content, '/ByteRange') === false &&
+				strpos($content, '/Sig')       === false &&
+				strpos($content, '/SigRef')    === false
+			) ) {
+				AdminMenu::set_notice(__('Plik PDF nie zawiera wykrywalnego podpisu cyfrowego. Upewnij się, że dokument jest podpisany podpisem kwalifikowanym.', 'basemgmt'), 'error');
+				$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+				return;
+			}
+		}
+
+		// Upload via WP media library
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+
+		$upload = wp_handle_upload($_FILES['signed_file'], ['test_form' => false]);
+		if ( isset($upload['error']) ) {
+			AdminMenu::set_notice(sprintf(__('Błąd uploadu: %s', 'basemgmt'), $upload['error']), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+
+		global $wpdb;
+		$wpdb->update(Schema::table('camp_decl_docs'), [
+			'status'        => 'signed',
+			'signed_method' => $method,
+			'signed_at'     => current_time('mysql'),
+			'file_url'      => $upload['url'],
+			'uploaded_at'   => current_time('mysql'),
+		], ['id' => $doc_id, 'camp_id' => $camp_id]);
+
+		AdminMenu::set_notice(__('Deklaracja oznaczona jako podpisana.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
 	}
 }

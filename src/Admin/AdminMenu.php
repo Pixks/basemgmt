@@ -16,6 +16,7 @@ use BaseMgmt\Admin\Pages\MealTemplatesPage;
 use BaseMgmt\Admin\Pages\MenuPage;
 use BaseMgmt\Admin\Pages\LicensePage;
 use BaseMgmt\Admin\Pages\OrgAccommodationsPage;
+use BaseMgmt\Admin\Pages\OrgDeclarationsPage;
 use BaseMgmt\Admin\Pages\OrgDietsPage;
 use BaseMgmt\Admin\Pages\OrgDocTemplatesPage;
 use BaseMgmt\Admin\Pages\OrgDocumentsPage;
@@ -65,6 +66,7 @@ final class AdminMenu {
 	private OrgFinancePage      $org_finance;
 	private OrgTasksPage        $org_tasks;
 	private OrgAccommodationsPage $org_accommodations;
+	private OrgDeclarationsPage   $org_declarations;
 	private OrgDietsPage          $org_diets;
 
 	public function __construct() {
@@ -92,6 +94,7 @@ final class AdminMenu {
 		$this->org_finance       = new OrgFinancePage();
 		$this->org_tasks         = new OrgTasksPage();
 		$this->org_accommodations = new OrgAccommodationsPage();
+		$this->org_declarations   = new OrgDeclarationsPage();
 		$this->org_diets          = new OrgDietsPage();
 	}
 
@@ -168,6 +171,15 @@ final class AdminMenu {
 			'manage_basemgmt',
 			'basemgmt-org-doc-templates',
 			[$this->org_doc_templates, 'render']
+		);
+
+		add_submenu_page(
+			'basemgmt',
+			__('Organizacja – Deklaracje', 'basemgmt'),
+			'&nbsp;&nbsp; ↳ ' . __('Deklaracje', 'basemgmt'),
+			'manage_basemgmt',
+			'basemgmt-org-declarations',
+			[$this->org_declarations, 'render']
 		);
 
 		add_submenu_page(
@@ -578,6 +590,17 @@ final class AdminMenu {
 			'bm_create_camp_doc_from_template'  => [$this->camps, 'handle_create_camp_doc_from_template'],
 			'bm_send_camp_doc'                  => [$this->camps, 'handle_send_camp_doc'],
 			'bm_delete_camp_doc'                => [$this->camps, 'handle_delete_camp_doc'],
+			// Organizacja – Deklaracje
+			'bm_save_decl_template'             => [$this->org_declarations, 'handle_save'],
+			'bm_delete_decl_template'           => [$this->org_declarations, 'handle_delete'],
+			// Camp declaration docs
+			'bm_add_camp_decl_doc'              => [$this->camps, 'handle_add_camp_decl_doc'],
+			'bm_delete_camp_decl_doc'           => [$this->camps, 'handle_delete_camp_decl_doc'],
+			'bm_sign_camp_decl_doc'             => [$this->camps, 'handle_sign_camp_decl_doc'],
+			// Camp equipment
+			'bm_add_camp_equipment'             => [$this->camps, 'handle_add_camp_equipment'],
+			'bm_return_camp_equipment'          => [$this->camps, 'handle_return_camp_equipment'],
+			'bm_delete_camp_equipment'          => [$this->camps, 'handle_delete_camp_equipment'],
 			// Camp finance
 			'bm_save_camp_finance'              => [$this->camps, 'handle_save_camp_finance'],
 		];

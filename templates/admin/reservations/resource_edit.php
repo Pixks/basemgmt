@@ -77,14 +77,52 @@ $rid = $resource ? (int) $resource->id : 0;
                     </td>
                 </tr>
                 <tr>
+                    <th scope="row"><label><?php esc_html_e('Model cenowy', 'basemgmt'); ?></label></th>
+                    <td>
+                        <?php $pricing_mode = $resource->pricing_mode ?? 'flat'; ?>
+                        <label style="display:block;margin-bottom:4px;">
+                            <input type="radio" name="pricing_mode" value="flat" <?php checked($pricing_mode, 'flat'); ?> id="bm-pricing-flat">
+                            <?php esc_html_e('Stała opłata za rezerwację (np. krąg ogniskowy — płaci się raz)', 'basemgmt'); ?>
+                        </label>
+                        <label style="display:block;">
+                            <input type="radio" name="pricing_mode" value="per_unit" <?php checked($pricing_mode, 'per_unit'); ?> id="bm-pricing-per-unit">
+                            <?php esc_html_e('Opłata za sztukę (np. kajak — obóz podaje ile sztuk chce wypożyczyć)', 'basemgmt'); ?>
+                        </label>
+                    </td>
+                </tr>
+                <tr id="bm-total-units-row" style="<?php echo $pricing_mode === 'per_unit' ? '' : 'display:none;'; ?>">
+                    <th><label for="total_units"><?php esc_html_e('Całkowita liczba sztuk w bazie', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="number" id="total_units" name="total_units"
+                               value="<?php echo esc_attr($resource->total_units ?? 0); ?>"
+                               min="0" style="width:80px;">
+                        <p class="description"><?php esc_html_e('Ile łącznie sztuk tego zasobu posiada baza (walidacja dostępności podczas rezerwacji).', 'basemgmt'); ?></p>
+                    </td>
+                </tr>
+                <tr>
                     <th scope="row"><label for="cost_per_reservation"><?php esc_html_e('Koszt rezerwacji (PLN)', 'basemgmt'); ?></label></th>
                     <td>
                         <input type="number" id="cost_per_reservation" name="cost_per_reservation"
                                value="<?php echo esc_attr($resource->cost_per_reservation ?? '0.00'); ?>"
                                min="0" step="0.01" style="width:120px;">
-                        <p class="description"><?php esc_html_e('Po zatwierdzeniu rezerwacji zostanie automatycznie dodana pozycja w finansach obozu. Wpisz 0, aby nie naliczać kosztu.', 'basemgmt'); ?></p>
+                        <p class="description" id="bm-cost-desc-flat" <?php echo $pricing_mode === 'per_unit' ? 'style="display:none;"' : ''; ?>>
+                            <?php esc_html_e('Jednorazowa opłata za rezerwację tego zasobu.', 'basemgmt'); ?>
+                        </p>
+                        <p class="description" id="bm-cost-desc-per-unit" <?php echo $pricing_mode !== 'per_unit' ? 'style="display:none;"' : ''; ?>>
+                            <?php esc_html_e('Koszt za jedną sztukę. Kwota w finansach obozu = liczba_sztuk × ten_koszt.', 'basemgmt'); ?>
+                        </p>
                     </td>
                 </tr>
+                <script>
+                document.querySelectorAll('input[name="pricing_mode"]').forEach(function(r) {
+                    r.addEventListener('change', function() {
+                        var isPerUnit = document.getElementById('bm-pricing-per-unit').checked;
+                        document.getElementById('bm-total-units-row').style.display = isPerUnit ? '' : 'none';
+                        document.getElementById('bm-cost-desc-flat').style.display    = isPerUnit ? 'none' : '';
+                        document.getElementById('bm-cost-desc-per-unit').style.display = isPerUnit ? '' : 'none';
+                    });
+                });
+                </script>
                     <p class="description"><?php esc_html_e('0 = bez limitu', 'basemgmt'); ?></p></td>
                 </tr>
                 <tr>

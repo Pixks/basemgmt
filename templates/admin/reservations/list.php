@@ -68,10 +68,26 @@ $status_colors = [
                     <tr>
                         <th><label><?php esc_html_e('Zasób *', 'basemgmt'); ?></label></th>
                         <td>
-                            <select name="resource_id" required>
+                            <select name="resource_id" id="bm-res-resource-sel" required>
                                 <option value=""><?php esc_html_e('Wybierz', 'basemgmt'); ?></option>
-                                <?php foreach ($resources as $r): if ($r->status === 'active'): ?><option value="<?php echo esc_attr($r->id); ?>"><?php echo esc_html($r->name); ?></option><?php endif; endforeach; ?>
+                                <?php foreach ($resources as $r): if ($r->status === 'active'): ?>
+                                    <option value="<?php echo esc_attr($r->id); ?>"
+                                        data-pricing-mode="<?php echo esc_attr($r->pricing_mode ?? 'flat'); ?>"
+                                        data-total-units="<?php echo esc_attr($r->total_units ?? 0); ?>">
+                                        <?php echo esc_html($r->name); ?>
+                                        <?php if ( ($r->pricing_mode ?? 'flat') === 'per_unit' ) : ?>
+                                            (<?php echo esc_html(sprintf(__('max %d szt.', 'basemgmt'), $r->total_units ?? 0)); ?>)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endif; endforeach; ?>
                             </select>
+                        </td>
+                    </tr>
+                    <tr id="bm-res-units-row" style="display:none;">
+                        <th><label><?php esc_html_e('Liczba sztuk *', 'basemgmt'); ?></label></th>
+                        <td>
+                            <input type="number" name="reserved_units" id="bm-res-units-inp" min="1" value="1" style="width:80px;">
+                            <span class="description" id="bm-res-units-avail"></span>
                         </td>
                     </tr>
                     <tr>
@@ -98,6 +114,31 @@ $status_colors = [
                         <td colspan="3"><input type="text" name="purpose" class="large-text"></td>
                     </tr>
                 </table>
+                <script>
+                (function() {
+                    var sel = document.getElementById('bm-res-resource-sel');
+                    var row = document.getElementById('bm-res-units-row');
+                    var inp = document.getElementById('bm-res-units-inp');
+                    var avail = document.getElementById('bm-res-units-avail');
+                    if (!sel) return;
+                    sel.addEventListener('change', function() {
+                        var opt = sel.options[sel.selectedIndex];
+                        var mode = opt ? opt.getAttribute('data-pricing-mode') : 'flat';
+                        var total = opt ? parseInt(opt.getAttribute('data-total-units'), 10) : 0;
+                        if (mode === 'per_unit') {
+                            row.style.display = '';
+                            inp.required = true;
+                            if (total > 0) {
+                                avail.textContent = '<?php esc_js(esc_html_e('Dostępne:', 'basemgmt')); ?> ' + total + ' <?php esc_js(esc_html_e('szt. (razem w bazie)', 'basemgmt')); ?>';
+                                inp.max = total;
+                            }
+                        } else {
+                            row.style.display = 'none';
+                            inp.required = false;
+                        }
+                    });
+                })();
+                </script>
                 <button type="submit" class="button button-primary" style="margin-top:8px;"><?php esc_html_e('Dodaj i zatwierdź', 'basemgmt'); ?></button>
             </form>
         </div>

@@ -9,13 +9,13 @@ $readiness_percent = (int) ($readiness['percent'] ?? 0);
 
 $super_status_map = [
 	'inquiry'           => ['label' => __('Zapytanie', 'basemgmt'),     'slug' => 'zapytanie'],
-	'offer'             => ['label' => __('Zapytanie', 'basemgmt'),     'slug' => 'zapytanie'],
-	'negotiation'       => ['label' => __('Zapytanie', 'basemgmt'),     'slug' => 'zapytanie'],
-	'tentative_booking' => ['label' => __('Zapytanie', 'basemgmt'),     'slug' => 'zapytanie'],
-	'contract_draft'    => ['label' => __('Przygotowanie', 'basemgmt'), 'slug' => 'przygotowanie'],
-	'contract_signed'   => ['label' => __('Przygotowanie', 'basemgmt'), 'slug' => 'przygotowanie'],
-	'awaiting_payment'  => ['label' => __('Przygotowanie', 'basemgmt'), 'slug' => 'przygotowanie'],
-	'ready_for_arrival' => ['label' => __('Przygotowanie', 'basemgmt'), 'slug' => 'przygotowanie'],
+	'offer'             => ['label' => __('Oferta', 'basemgmt'),        'slug' => 'zapytanie'],
+	'negotiation'       => ['label' => __('Oferta', 'basemgmt'),        'slug' => 'zapytanie'],
+	'tentative_booking' => ['label' => __('Oferta', 'basemgmt'),        'slug' => 'zapytanie'],
+	'contract_draft'    => ['label' => __('Umowa', 'basemgmt'),         'slug' => 'przygotowanie'],
+	'contract_signed'   => ['label' => __('Umowa', 'basemgmt'),         'slug' => 'przygotowanie'],
+	'awaiting_payment'  => ['label' => __('Umowa', 'basemgmt'),         'slug' => 'przygotowanie'],
+	'ready_for_arrival' => ['label' => __('Umowa', 'basemgmt'),         'slug' => 'przygotowanie'],
 	'on_site'           => ['label' => __('Pobyt', 'basemgmt'),         'slug' => 'pobyt'],
 	'settlement'        => ['label' => __('Rozliczenie', 'basemgmt'),   'slug' => 'rozliczenie'],
 	'closed'            => ['label' => __('Zakończono', 'basemgmt'),    'slug' => 'zakonczone'],
@@ -48,6 +48,7 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 			<a href="#" class="nav-tab" data-tab="workcenter"><?php esc_html_e('Centrum Pracy', 'basemgmt'); ?></a>
 			<a href="#" class="nav-tab" data-tab="organizer"><?php esc_html_e('Organizator', 'basemgmt'); ?></a>
 			<a href="#" class="nav-tab" data-tab="documents"><?php esc_html_e('Dokumenty', 'basemgmt'); ?></a>
+			<a href="#" class="nav-tab" data-tab="equipment"><?php esc_html_e('Sprzęt', 'basemgmt'); ?></a>
 			<a href="#" class="nav-tab" data-tab="finance"><?php esc_html_e('Finanse', 'basemgmt'); ?></a>
 			<span style="flex:1;"></span>
 			<button type="button" class="button button-primary" style="margin:4px 0 4px 8px;" data-bm-alert="<?php esc_attr_e('Funkcja rozliczenia zostanie wkrótce uruchomiona.', 'basemgmt'); ?>">
@@ -73,10 +74,6 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
                                         <strong><?php echo esc_html($case->next_action_due_date ?? '—'); ?></strong>
                                 </div>
                                 <div class="bm-case-card">
-                                        <span class="bm-stat-label"><?php esc_html_e('Otwarte blokery', 'basemgmt'); ?></span>
-                                        <strong><?php echo esc_html((string) count($workflow['blockers'])); ?></strong>
-                                </div>
-                                <div class="bm-case-card">
                                         <span class="bm-stat-label"><?php esc_html_e('Zadania', 'basemgmt'); ?></span>
                                         <strong><?php
                                                 $tasks_total = $wpdb->get_var($wpdb->prepare(
@@ -98,34 +95,6 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
                                                         $id
                                                 )));
                                         ?></strong>
-                                </div>
-                        </div>
-
-                        <!-- Blockers + Actions -->
-                        <div class="bm-case-grid" style="margin-bottom:20px;">
-                                <div class="bm-case-card">
-                                        <h3 style="margin-top:0;"><?php esc_html_e('Co blokuje przejście dalej', 'basemgmt'); ?></h3>
-                                        <?php if ( empty($workflow['blockers']) ) : ?>
-                                                <p class="bm-muted"><?php esc_html_e('Brak krytycznych blokerów na tym etapie.', 'basemgmt'); ?></p>
-                                        <?php else : ?>
-                                                <ul style="margin:0 0 0 18px;">
-                                                        <?php foreach ( $workflow['blockers'] as $item ) : ?>
-                                                                <li><?php echo esc_html($item); ?></li>
-                                                        <?php endforeach; ?>
-                                                </ul>
-                                        <?php endif; ?>
-                                </div>
-                                <div class="bm-case-card">
-                                        <h3 style="margin-top:0;"><?php esc_html_e('Sugerowane działania', 'basemgmt'); ?></h3>
-                                        <?php if ( empty($workflow['next_actions']) ) : ?>
-                                                <p class="bm-muted"><?php esc_html_e('Brak sugestii — etap kompletny.', 'basemgmt'); ?></p>
-                                        <?php else : ?>
-                                                <ol style="margin:0 0 0 18px;">
-                                                        <?php foreach ( $workflow['next_actions'] as $item ) : ?>
-                                                                <li><?php echo esc_html($item); ?></li>
-                                                        <?php endforeach; ?>
-                                                </ol>
-                                        <?php endif; ?>
                                 </div>
                         </div>
 
@@ -696,6 +665,155 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 				</table>
 			<?php endif; ?>
 
+			<!-- ── Deklaracje dokumentowe ───────────────────────────────────── -->
+			<div class="postbox" style="margin-top:24px;">
+				<div class="postbox-header" style="display:flex;align-items:center;justify-content:space-between;">
+					<h2 class="hndle"><?php esc_html_e('Deklaracje', 'basemgmt'); ?></h2>
+					<button type="button" class="button bm-modal-open" data-modal="bm-modal-add-decl" style="margin:8px 12px;">
+						<?php esc_html_e('+ Dodaj deklarację', 'basemgmt'); ?>
+					</button>
+				</div>
+				<div class="inside">
+					<?php if ( empty($camp_decl_docs) ) : ?>
+						<p class="bm-muted"><?php esc_html_e('Brak deklaracji przypisanych do obozu.', 'basemgmt'); ?></p>
+					<?php else : ?>
+						<table class="wp-list-table widefat fixed striped bm-table">
+							<thead>
+								<tr>
+									<th><?php esc_html_e('Tytuł', 'basemgmt'); ?></th>
+									<th style="width:110px;"><?php esc_html_e('Status', 'basemgmt'); ?></th>
+									<th style="width:130px;"><?php esc_html_e('Podpisano', 'basemgmt'); ?></th>
+									<th style="width:210px;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php
+								$decl_status_map = [
+									'draft'  => ['label' => __('Szkic', 'basemgmt'),     'class' => 'bm-badge--normal'],
+									'sent'   => ['label' => __('Wysłana', 'basemgmt'),   'class' => 'bm-badge--high'],
+									'signed' => ['label' => __('Podpisana', 'basemgmt'), 'class' => 'bm-badge--success'],
+								];
+								foreach ( $camp_decl_docs as $ddoc ) :
+									$ds = $decl_status_map[$ddoc->status] ?? ['label' => $ddoc->status, 'class' => 'bm-badge--normal'];
+								?>
+									<tr>
+										<td><strong><?php echo esc_html($ddoc->title); ?></strong></td>
+										<td><span class="bm-badge <?php echo esc_attr($ds['class']); ?>"><?php echo esc_html($ds['label']); ?></span></td>
+										<td class="bm-muted">
+											<?php if ( ! empty($ddoc->signed_at) ) : ?>
+												<?php echo esc_html(substr($ddoc->signed_at, 0, 10)); ?>
+												<small>(<?php echo esc_html($ddoc->signed_method === 'qualified' ? __('kwalifikowany', 'basemgmt') : __('skan', 'basemgmt')); ?>)</small>
+											<?php else : ?>—<?php endif; ?>
+										</td>
+										<td>
+											<?php if ( ! empty($ddoc->html_content) ) : ?>
+												<a href="#" class="button button-small" target="_blank"
+													onclick="event.preventDefault(); bm_preview_decl(<?php echo (int) $ddoc->id; ?>);">
+													<?php esc_html_e('Podgląd', 'basemgmt'); ?>
+												</a>
+											<?php endif; ?>
+											<?php if ( ! empty($ddoc->file_url) ) : ?>
+												<a href="<?php echo esc_url($ddoc->file_url); ?>" class="button button-small" target="_blank">
+													<?php esc_html_e('Pobierz podpisany', 'basemgmt'); ?>
+												</a>
+											<?php endif; ?>
+											<?php if ( $ddoc->status !== 'signed' ) : ?>
+												<button type="button" class="button button-small bm-modal-open"
+													data-modal="bm-modal-sign-decl"
+													data-decl-id="<?php echo esc_attr($ddoc->id); ?>"
+													data-decl-title="<?php echo esc_attr($ddoc->title); ?>">
+													<?php esc_html_e('Podpisz', 'basemgmt'); ?>
+												</button>
+											<?php endif; ?>
+											<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_decl_doc&id={$id}&decl_doc_id={$ddoc->id}"), "bm_delete_camp_decl_doc_{$ddoc->id}")); ?>"
+												class="button button-small bm-danger"
+												data-bm-confirm="<?php esc_attr_e('Usunąć deklarację?', 'basemgmt'); ?>">
+												<?php esc_html_e('Usuń', 'basemgmt'); ?>
+											</a>
+										</td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<!-- Modal: Dodaj deklarację -->
+			<div id="bm-modal-add-decl" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Dodaj deklarację z szablonu', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+						<?php wp_nonce_field('bm_add_camp_decl_doc'); ?>
+						<input type="hidden" name="action" value="bm_add_camp_decl_doc">
+						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
+						<div class="bm-modal-body">
+							<?php if ( empty($decl_tpl_options) ) : ?>
+								<p><?php esc_html_e('Brak szablonów deklaracji. Utwórz je w Organizacja → Deklaracje.', 'basemgmt'); ?></p>
+							<?php else : ?>
+								<label><strong><?php esc_html_e('Wybierz szablon:', 'basemgmt'); ?></strong></label>
+								<select name="decl_template_id" class="widefat" required>
+									<option value=""><?php esc_html_e('— Wybierz —', 'basemgmt'); ?></option>
+									<?php foreach ( $decl_tpl_options as $dtpl ) : ?>
+										<option value="<?php echo esc_attr($dtpl->id); ?>"><?php echo esc_html($dtpl->title); ?></option>
+									<?php endforeach; ?>
+								</select>
+							<?php endif; ?>
+						</div>
+						<div class="bm-modal-footer">
+							<?php if ( ! empty($decl_tpl_options) ) : ?>
+								<button type="submit" class="button button-primary"><?php esc_html_e('Dodaj', 'basemgmt'); ?></button>
+							<?php endif; ?>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<!-- Modal: Podpisz deklarację -->
+			<div id="bm-modal-sign-decl" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Prześlij podpisaną deklarację', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data">
+						<?php wp_nonce_field('bm_sign_camp_decl_doc'); ?>
+						<input type="hidden" name="action" value="bm_sign_camp_decl_doc">
+						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
+						<input type="hidden" name="decl_doc_id" id="bm-sign-decl-id" value="">
+						<div class="bm-modal-body">
+							<p id="bm-sign-decl-title" style="font-weight:600;"></p>
+							<p>
+								<label><strong><?php esc_html_e('Metoda podpisu:', 'basemgmt'); ?></strong></label><br>
+								<label style="display:block;margin:4px 0;">
+									<input type="radio" name="sign_method" value="qualified" checked>
+									<?php esc_html_e('Podpis kwalifikowany (PDF z podpisem cyfrowym)', 'basemgmt'); ?>
+								</label>
+								<label style="display:block;margin:4px 0;">
+									<input type="radio" name="sign_method" value="scan">
+									<?php esc_html_e('Skan podpisanego dokumentu (PDF, JPG, PNG)', 'basemgmt'); ?>
+								</label>
+							</p>
+							<p>
+								<label><strong><?php esc_html_e('Plik:', 'basemgmt'); ?></strong></label><br>
+								<input type="file" name="signed_file" accept=".pdf,.jpg,.jpeg,.png" required>
+							</p>
+							<p class="bm-muted" style="font-size:12px;">
+								<?php esc_html_e('Podpis kwalifikowany: wymagany plik PDF z osadzonym podpisem cyfrowym. System wykryje podpis automatycznie.', 'basemgmt'); ?>
+							</p>
+						</div>
+						<div class="bm-modal-footer">
+							<button type="submit" class="button button-primary"><?php esc_html_e('Prześlij', 'basemgmt'); ?></button>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
+					</form>
+				</div>
+			</div>
+
 			<!-- Modal: Dodaj z biblioteki -->
 			<div id="bm-modal-library" style="display:none;" class="bm-modal-overlay">
 				<div class="bm-modal">
@@ -768,6 +886,131 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 				</div>
 			</div>
 		</div><!-- /documents -->
+
+		<!-- ── SPRZĘT ───────────────────────────────────────────────────────── -->
+		<div class="bm-tab-panel" data-tab="equipment" id="bm-section-equipment">
+			<div class="bm-workcenter-header" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+				<h2 style="margin:0;"><?php esc_html_e('Sprzęt obozowy', 'basemgmt'); ?></h2>
+				<button type="button" class="button button-primary bm-modal-open" data-modal="bm-modal-add-equipment">
+					<?php esc_html_e('+ Dodaj sprzęt', 'basemgmt'); ?>
+				</button>
+			</div>
+
+			<?php if ( empty($camp_equipment) ) : ?>
+				<div class="bm-empty-state">
+					<span class="dashicons dashicons-tools" style="font-size:40px;color:#c3c4c7;"></span>
+					<p><?php esc_html_e('Brak wydanego sprzętu. Dodaj pierwszy wpis.', 'basemgmt'); ?></p>
+				</div>
+			<?php else : ?>
+				<table class="wp-list-table widefat fixed striped bm-table">
+					<thead>
+						<tr>
+							<th><?php esc_html_e('Typ', 'basemgmt'); ?></th>
+							<th><?php esc_html_e('Nazwa', 'basemgmt'); ?></th>
+							<th style="width:90px;"><?php esc_html_e('Wydano', 'basemgmt'); ?></th>
+							<th style="width:90px;"><?php esc_html_e('Zwrócono', 'basemgmt'); ?></th>
+							<th style="width:90px;"><?php esc_html_e('Do zwrotu', 'basemgmt'); ?></th>
+							<th style="width:100px;"><?php esc_html_e('Status', 'basemgmt'); ?></th>
+							<th><?php esc_html_e('Notatki', 'basemgmt'); ?></th>
+							<th style="width:180px;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $camp_equipment as $eq ) : ?>
+							<?php
+							$issued   = (int) $eq->issued_qty;
+							$returned = (int) $eq->returned_qty;
+							$pending  = $issued - $returned;
+							$status   = $pending <= 0 ? 'returned' : ($returned > 0 ? 'partial' : 'issued');
+							$status_labels = ['issued' => ['label' => __('Wydany', 'basemgmt'), 'class' => 'bm-badge--urgent'], 'partial' => ['label' => __('Częściowy zwrot', 'basemgmt'), 'class' => 'bm-badge--high'], 'returned' => ['label' => __('Zwrócony', 'basemgmt'), 'class' => 'bm-badge--success']];
+							$sl = $status_labels[$status];
+							?>
+							<tr>
+								<td class="bm-muted"><?php echo esc_html($eq->equipment_type ?: '—'); ?></td>
+								<td><strong><?php echo esc_html($eq->name); ?></strong></td>
+								<td><?php echo esc_html($issued); ?></td>
+								<td><?php echo esc_html($returned); ?></td>
+								<td><?php echo esc_html($pending); ?></td>
+								<td><span class="bm-badge <?php echo esc_attr($sl['class']); ?>"><?php echo esc_html($sl['label']); ?></span></td>
+								<td class="bm-muted"><?php echo esc_html($eq->notes ?: '—'); ?></td>
+								<td>
+									<?php if ( $pending > 0 ) : ?>
+										<button type="button" class="button button-small bm-modal-open"
+											data-modal="bm-modal-return-equipment"
+											data-equip-id="<?php echo esc_attr($eq->id); ?>"
+											data-equip-name="<?php echo esc_attr($eq->name); ?>"
+											data-pending="<?php echo esc_attr($pending); ?>">
+											<?php esc_html_e('Zwrot', 'basemgmt'); ?>
+										</button>
+									<?php endif; ?>
+									<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_equipment&id={$id}&equip_id={$eq->id}"), "bm_delete_equipment_{$eq->id}")); ?>"
+										class="button button-small bm-danger"
+										data-bm-confirm="<?php esc_attr_e('Usunąć wpis sprzętu?', 'basemgmt'); ?>">
+										<?php esc_html_e('Usuń', 'basemgmt'); ?>
+									</a>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php endif; ?>
+
+			<!-- Modal: Dodaj sprzęt -->
+			<div id="bm-modal-add-equipment" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Dodaj wydany sprzęt', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+						<?php wp_nonce_field('bm_add_camp_equipment'); ?>
+						<input type="hidden" name="action" value="bm_add_camp_equipment">
+						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
+						<div class="bm-modal-body">
+							<p>
+								<label><strong><?php esc_html_e('Typ sprzętu', 'basemgmt'); ?></strong></label><br>
+								<input type="text" name="equipment_type" class="widefat" placeholder="<?php esc_attr_e('np. Namioty, Sprzęt kuchenny, Sprzęt sportowy…', 'basemgmt'); ?>">
+							</p>
+							<p>
+								<label><strong><?php esc_html_e('Nazwa', 'basemgmt'); ?></strong> <span style="color:red;">*</span></label><br>
+								<input type="text" name="equipment_name" class="widefat" required placeholder="<?php esc_attr_e('np. Namiot 6-osobowy, Kajak…', 'basemgmt'); ?>">
+							</p>
+							<p>
+								<label><strong><?php esc_html_e('Ilość wydana', 'basemgmt'); ?></strong></label><br>
+								<input type="number" name="issued_qty" class="small-text" min="1" value="1" required>
+							</p>
+							<p>
+								<label><strong><?php esc_html_e('Notatki', 'basemgmt'); ?></strong></label><br>
+								<textarea name="equipment_notes" class="widefat" rows="2"></textarea>
+							</p>
+						</div>
+						<div class="bm-modal-footer">
+							<button type="submit" class="button button-primary"><?php esc_html_e('Dodaj sprzęt', 'basemgmt'); ?></button>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<!-- Modal: Zwrot sprzętu -->
+			<div id="bm-modal-return-equipment" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Zwrot sprzętu', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<div class="bm-modal-body">
+						<p id="bm-return-equip-desc"></p>
+						<label><strong><?php esc_html_e('Ilość zwracana', 'basemgmt'); ?></strong></label><br>
+						<input type="number" id="bm-return-qty-input" min="1" value="1" class="small-text">
+					</div>
+					<div class="bm-modal-footer">
+						<a id="bm-return-equip-link" href="#" class="button button-primary"><?php esc_html_e('Zarejestruj zwrot', 'basemgmt'); ?></a>
+						<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+					</div>
+				</div>
+			</div>
+		</div><!-- /equipment -->
 
 		<!-- ── FINANSE ───────────────────────────────────────────────────────── -->
 		<div class="bm-tab-panel" data-tab="finance" id="bm-section-finance">
@@ -1213,6 +1456,54 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 		});
 	}
 	bmRecalcFinance();
+
+	// ── Generic: open modals by data-modal attribute ──────────────────────
+	document.querySelectorAll('.bm-modal-open').forEach(function(btn) {
+		btn.addEventListener('click', function() {
+			var modalId = btn.getAttribute('data-modal');
+			if (modalId) openModal(modalId);
+		});
+	});
+
+	// ── Return equipment modal ────────────────────────────────────────────
+	document.querySelectorAll('[data-modal="bm-modal-return-equipment"]').forEach(function(btn) {
+		btn.addEventListener('click', function() {
+			var equipId   = btn.getAttribute('data-equip-id');
+			var equipName = btn.getAttribute('data-equip-name');
+			var pending   = parseInt(btn.getAttribute('data-pending'), 10) || 1;
+			var desc = document.getElementById('bm-return-equip-desc');
+			var qtyInp = document.getElementById('bm-return-qty-input');
+			var link = document.getElementById('bm-return-equip-link');
+			if (desc)   desc.textContent = '<?php esc_js(esc_html_e('Sprzęt:', 'basemgmt')); ?> ' + equipName + ' (<?php esc_js(esc_html_e('do zwrotu:', 'basemgmt')); ?> ' + pending + ')';
+			if (qtyInp) { qtyInp.max = pending; qtyInp.value = pending; }
+			var nonce = '';
+			<?php
+			// Pre-generate nonces for all equipment items
+			if ( ! empty($camp_equipment) ) :
+				foreach ( $camp_equipment as $eq ) :
+			?>
+			if (equipId == '<?php echo (int) $eq->id; ?>') nonce = '<?php echo wp_create_nonce("bm_return_equipment_{$eq->id}"); ?>';
+			<?php endforeach; endif; ?>
+			if (link) {
+				qtyInp.addEventListener('input', function() {
+					link.href = '<?php echo esc_url(admin_url("admin-post.php?action=bm_return_camp_equipment&id={$id}")); ?>&equip_id=' + equipId + '&qty=' + qtyInp.value + '&_wpnonce=' + nonce;
+				});
+				link.href = '<?php echo esc_url(admin_url("admin-post.php?action=bm_return_camp_equipment&id={$id}")); ?>&equip_id=' + equipId + '&qty=' + pending + '&_wpnonce=' + nonce;
+			}
+		});
+	});
+
+	// ── Sign decl modal ───────────────────────────────────────────────────
+	document.querySelectorAll('[data-modal="bm-modal-sign-decl"]').forEach(function(btn) {
+		btn.addEventListener('click', function() {
+			var declId    = btn.getAttribute('data-decl-id');
+			var declTitle = btn.getAttribute('data-decl-title');
+			var idInp  = document.getElementById('bm-sign-decl-id');
+			var titleEl = document.getElementById('bm-sign-decl-title');
+			if (idInp) idInp.value = declId;
+			if (titleEl) titleEl.textContent = declTitle;
+		});
+	});
 })();
 </script>
 <?php endif; ?>

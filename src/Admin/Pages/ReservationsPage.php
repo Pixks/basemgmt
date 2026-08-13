@@ -73,22 +73,26 @@ final class ReservationsPage {
 
 		$id = (int) ($_POST['resource_id'] ?? 0);
 		$data = [
-			'name'                 => sanitize_text_field($_POST['name']                 ?? ''),
-			'type'                 => sanitize_key($_POST['type']                        ?? ResourceRepository::TYPE_OTHER),
-			'description'          => sanitize_textarea_field($_POST['description']      ?? ''),
-			'status'               => sanitize_key($_POST['status']                      ?? 'active'),
-			'rules'                => sanitize_textarea_field($_POST['rules']            ?? ''),
-			'available_from'       => sanitize_text_field($_POST['available_from']       ?? '06:00'),
-			'available_to'         => sanitize_text_field($_POST['available_to']         ?? '22:00'),
-			'min_duration_minutes' => (int) ($_POST['min_duration_minutes']              ?? 0),
-			'max_duration_minutes' => (int) ($_POST['max_duration_minutes']              ?? 0),
-			'min_advance_hours'    => (int) ($_POST['min_advance_hours']                 ?? 0),
-			'max_advance_days'     => (int) ($_POST['max_advance_days']                  ?? 30),
-			'is_blocked'           => (int) ($_POST['is_blocked']                        ?? 0),
-			'block_reason'         => sanitize_text_field($_POST['block_reason']         ?? ''),
-			'block_from'           => sanitize_text_field($_POST['block_from']           ?? ''),
-			'block_to'             => sanitize_text_field($_POST['block_to']             ?? ''),
-			'cost_per_reservation' => (float) str_replace(',', '.', wp_unslash($_POST['cost_per_reservation'] ?? '0')),
+			'name'                      => sanitize_text_field($_POST['name']                 ?? ''),
+			'type'                      => sanitize_key($_POST['type']                        ?? ResourceRepository::TYPE_OTHER),
+			'description'               => sanitize_textarea_field($_POST['description']      ?? ''),
+			'status'                    => sanitize_key($_POST['status']                      ?? 'active'),
+			'rules'                     => sanitize_textarea_field($_POST['rules']            ?? ''),
+			'available_from'            => sanitize_text_field($_POST['available_from']       ?? '06:00'),
+			'available_to'              => sanitize_text_field($_POST['available_to']         ?? '22:00'),
+			'min_duration_minutes'      => (int) ($_POST['min_duration_minutes']              ?? 0),
+			'max_duration_minutes'      => (int) ($_POST['max_duration_minutes']              ?? 0),
+			'min_advance_hours'         => (int) ($_POST['min_advance_hours']                 ?? 0),
+			'max_advance_days'          => (int) ($_POST['max_advance_days']                  ?? 30),
+			'cancel_advance_hours'      => (int) ($_POST['cancel_advance_hours']              ?? 0),
+			'max_reservations_per_camp' => (int) ($_POST['max_reservations_per_camp']         ?? 0),
+			'is_blocked'                => (int) ($_POST['is_blocked']                        ?? 0),
+			'block_reason'              => sanitize_text_field($_POST['block_reason']         ?? ''),
+			'block_from'                => sanitize_text_field($_POST['block_from']           ?? ''),
+			'block_to'                  => sanitize_text_field($_POST['block_to']             ?? ''),
+			'cost_per_reservation'      => (float) str_replace(',', '.', wp_unslash($_POST['cost_per_reservation'] ?? '0')),
+			'pricing_mode'              => in_array($_POST['pricing_mode'] ?? '', ['flat', 'per_unit'], true) ? $_POST['pricing_mode'] : 'flat',
+			'total_units'               => max(0, (int) ($_POST['total_units'] ?? 0)),
 		];
 
 		if ( $id ) {
@@ -172,22 +176,25 @@ final class ReservationsPage {
 		check_admin_referer('bm_admin_create_reservation');
 
 		$result = ReservationRepository::admin_create([
-			'resource_id' => (int) ($_POST['resource_id'] ?? 0),
-			'camp_id'     => (int) ($_POST['camp_id']     ?? 0),
-			'staff_id'    => 0,
-			'res_date'    => sanitize_text_field($_POST['res_date']    ?? ''),
-			'start_time'  => sanitize_text_field($_POST['start_time']  ?? ''),
-			'end_time'    => sanitize_text_field($_POST['end_time']    ?? ''),
-			'purpose'     => sanitize_textarea_field($_POST['purpose'] ?? ''),
+			'resource_id'    => (int) ($_POST['resource_id'] ?? 0),
+			'camp_id'        => (int) ($_POST['camp_id']     ?? 0),
+			'staff_id'       => 0,
+			'res_date'       => sanitize_text_field($_POST['res_date']       ?? ''),
+			'start_time'     => sanitize_text_field($_POST['start_time']     ?? ''),
+			'end_time'       => sanitize_text_field($_POST['end_time']       ?? ''),
+			'purpose'        => sanitize_textarea_field($_POST['purpose']    ?? ''),
+			'reserved_units' => max(0, (int) ($_POST['reserved_units']       ?? 0)),
 		]);
 
 		if ( isset($result['error']) ) {
 			$msgs = [
-				'conflict'    => __('Termin jest już zajęty.', 'basemgmt'),
-				'blocked'     => __('Zasób ma aktywną blokadę techniczną.', 'basemgmt'),
-				'unavailable' => __('Zasób niedostępny lub poza godzinami dostępności.', 'basemgmt'),
-				'too_short'   => __('Czas rezerwacji jest za krótki.', 'basemgmt'),
-				'too_long'    => __('Czas rezerwacji jest za długi.', 'basemgmt'),
+				'conflict'         => __('Termin jest już zajęty.', 'basemgmt'),
+				'blocked'          => __('Zasób ma aktywną blokadę techniczną.', 'basemgmt'),
+				'unavailable'      => __('Zasób niedostępny lub poza godzinami dostępności.', 'basemgmt'),
+				'too_short'        => __('Czas rezerwacji jest za krótki.', 'basemgmt'),
+				'too_long'         => __('Czas rezerwacji jest za długi.', 'basemgmt'),
+				'units_required'   => __('Podaj liczbę sztuk do wypożyczenia.', 'basemgmt'),
+				'units_unavailable'=> __('Niewystarczająca liczba dostępnych sztuk.', 'basemgmt'),
 			];
 			AdminMenu::set_notice($msgs[$result['error']] ?? __('Błąd tworzenia rezerwacji.', 'basemgmt'), 'error');
 		} else {
@@ -204,6 +211,7 @@ final class ReservationsPage {
 	/**
 	 * If the reserved resource has a cost_per_reservation > 0, automatically
 	 * insert a payment-schedule line in the camp's finance tab.
+	 * For per_unit resources: amount = reserved_units × cost_per_reservation.
 	 */
 	private function maybe_add_reservation_finance_line(int $reservation_id): void {
 		global $wpdb;
@@ -215,19 +223,33 @@ final class ReservationsPage {
 		if ( ! $resource || (float) $resource->cost_per_reservation <= 0 ) {
 			return;
 		}
-		$camp_id = (int) $res->camp_id;
-		$tbl     = \BaseMgmt\Database\Schema::table('camp_payment_schedules');
+		$camp_id     = (int) $res->camp_id;
+		$pricing_mode = $resource->pricing_mode ?? 'flat';
+		$cost         = (float) $resource->cost_per_reservation;
 
+		if ( $pricing_mode === 'per_unit' ) {
+			$units  = max(1, (int) ($res->reserved_units ?? 1));
+			$amount = $cost * $units;
+			$label  = sprintf(
+				// translators: %1$s = resource name, %2$s = units, %3$s = date
+				__('Rezerwacja: %1$s × %2$d szt. (%3$s)', 'basemgmt'),
+				$resource->name, $units, $res->res_date
+			);
+		} else {
+			$amount = $cost;
+			$label  = sprintf(
+				// translators: %1$s = resource name, %2$s = reservation date
+				__('Rezerwacja: %1$s (%2$s)', 'basemgmt'),
+				$resource->name, $res->res_date
+			);
+		}
+
+		$tbl = \BaseMgmt\Database\Schema::table('camp_payment_schedules');
 		$wpdb->insert($tbl, [
 			'camp_id'      => $camp_id,
 			'payment_type' => 'extra_fee',
-			'label'        => sprintf(
-				// translators: %1$s = resource name, %2$s = reservation date
-				__('Rezerwacja: %1$s (%2$s)', 'basemgmt'),
-				$resource->name,
-				$res->res_date
-			),
-			'amount'       => (float) $resource->cost_per_reservation,
+			'label'        => $label,
+			'amount'       => $amount,
 			'due_date'     => $res->res_date,
 			'status'       => 'expected',
 			'description'  => sprintf('%s %s–%s', $res->res_date, $res->start_time, $res->end_time),

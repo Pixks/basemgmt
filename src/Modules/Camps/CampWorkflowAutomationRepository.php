@@ -63,14 +63,6 @@ final class CampWorkflowAutomationRepository {
 					'metadata'         => ['overdue_count' => (int) $module_summary['payments']['overdue']],
 				]
 			);
-			CampCaseRepository::ensure_checklist_task($camp_id, [
-				'label'    => __('Follow-up zaległej płatności', 'basemgmt'),
-				'party'    => CampCaseRepository::CHECKLIST_PARTY_CENTER,
-				'status'   => CampCaseRepository::CHECKLIST_STATUS_PENDING,
-				'priority' => CampCaseRepository::CHECKLIST_PRIORITY_CRITICAL,
-				'due_date' => $today,
-				'comment'  => __('Automatycznie dodane po wykryciu płatności po terminie.', 'basemgmt'),
-			]);
 		}
 
 		if ( $days_to_start !== null && $days_to_start >= 0 && $days_to_start <= 14 && ! CampCaseRepository::is_prearrival_ready($prearrival) ) {
@@ -93,14 +85,6 @@ final class CampWorkflowAutomationRepository {
 					'source_stage'     => (string) ($case->process_stage ?? CampCaseRepository::STAGE_INQUIRY),
 				]
 			);
-			CampCaseRepository::ensure_checklist_task($camp_id, [
-				'label'    => __('Uzupełnij brakujące dane prearrival', 'basemgmt'),
-				'party'    => CampCaseRepository::CHECKLIST_PARTY_ORGANIZER,
-				'status'   => CampCaseRepository::CHECKLIST_STATUS_PENDING,
-				'priority' => $days_to_start <= 7 ? CampCaseRepository::CHECKLIST_PRIORITY_CRITICAL : CampCaseRepository::CHECKLIST_PRIORITY_HIGH,
-				'due_date' => (string) ($camp->start_date ?? $today),
-				'comment'  => __('Automatycznie dodane, bo start obozu się zbliża.', 'basemgmt'),
-			]);
 		}
 
 		if ( $days_to_start !== null && $days_to_start >= 0 && $days_to_start <= 7 && (int) ($readiness['percent'] ?? 0) < 100 ) {
@@ -144,14 +128,6 @@ final class CampWorkflowAutomationRepository {
 					'source_stage'     => (string) ($case->process_stage ?? CampCaseRepository::STAGE_INQUIRY),
 				]
 			);
-			CampCaseRepository::ensure_checklist_task($camp_id, [
-				'label'    => __('Przygotuj rozliczenie końcowe', 'basemgmt'),
-				'party'    => CampCaseRepository::CHECKLIST_PARTY_CENTER,
-				'status'   => CampCaseRepository::CHECKLIST_STATUS_PENDING,
-				'priority' => CampCaseRepository::CHECKLIST_PRIORITY_CRITICAL,
-				'due_date' => $today,
-				'comment'  => __('Automatycznie dodane po zakończeniu pobytu bez rozliczenia.', 'basemgmt'),
-			]);
 		}
 
 		self::resolve_missing_events(

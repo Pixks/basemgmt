@@ -82,7 +82,9 @@ final class ResourceRepository {
 			'max_advance_days'          => (int) ($data['max_advance_days']          ?? 30),
 			'cancel_advance_hours'      => (int) ($data['cancel_advance_hours']      ?? 0),
 			'max_reservations_per_camp' => (int) ($data['max_reservations_per_camp'] ?? 0),
-			'cost_per_reservation'      => (float) str_replace(',', '.', $data['cost_per_reservation'] ?? '0'),
+			'cost_per_reservation'      => (float) str_replace(',', '.', (string) ($data['cost_per_reservation'] ?? '0')),
+			'pricing_mode'              => in_array($data['pricing_mode'] ?? '', ['flat', 'per_unit'], true) ? $data['pricing_mode'] : 'flat',
+			'total_units'               => max(0, (int) ($data['total_units'] ?? 0)),
 			'is_blocked'                => (int) ($data['is_blocked']                ?? 0),
 			'block_reason'              => sanitize_text_field($data['block_reason'] ?? ''),
 			'block_from'                => $data['block_from'] ?: null,
@@ -96,6 +98,7 @@ final class ResourceRepository {
 		$fields = ['name', 'type', 'description', 'status', 'rules', 'available_from', 'available_to',
 		           'min_duration_minutes', 'max_duration_minutes', 'min_advance_hours', 'max_advance_days',
 		           'cancel_advance_hours', 'max_reservations_per_camp', 'cost_per_reservation',
+		           'pricing_mode', 'total_units',
 		           'is_blocked', 'block_reason', 'block_from', 'block_to'];
 		$update = [];
 		foreach ( $fields as $f ) {
@@ -105,8 +108,10 @@ final class ResourceRepository {
 				'type', 'status'       => sanitize_key($data[$f]),
 				'description', 'rules' => sanitize_textarea_field($data[$f]),
 				'min_duration_minutes', 'max_duration_minutes', 'min_advance_hours',
-				'max_advance_days', 'cancel_advance_hours', 'max_reservations_per_camp', 'is_blocked' => (int) $data[$f],
+				'max_advance_days', 'cancel_advance_hours', 'max_reservations_per_camp',
+				'is_blocked', 'total_units' => max(0, (int) $data[$f]),
 				'cost_per_reservation' => (float) str_replace(',', '.', (string) $data[$f]),
+				'pricing_mode'         => in_array($data[$f], ['flat', 'per_unit'], true) ? $data[$f] : 'flat',
 				'block_from', 'block_to' => $data[$f] ?: null,
 				default => sanitize_text_field($data[$f]),
 			};

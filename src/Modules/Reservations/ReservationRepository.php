@@ -184,6 +184,25 @@ final class ReservationRepository {
 			}
 		}
 
+		// 5c. Per-unit inventory check.
+		$reserved_units = max(0, (int) ($data['reserved_units'] ?? 0));
+		if ( isset($resource->pricing_mode) && $resource->pricing_mode === 'per_unit' ) {
+			$total_units = (int) ($resource->total_units ?? 0);
+			if ( $total_units > 0 ) {
+				$already_reserved = (int) $wpdb->get_var($wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"SELECT COALESCE(SUM(reserved_units),0) FROM $t WHERE resource_id = %d AND status IN ('" . implode("','", self::BLOCKING_STATUSES) . "')",
+					$resource_id
+				));
+				if ( $reserved_units <= 0 ) {
+					return ['error' => 'units_required'];
+				}
+				if ( $already_reserved + $reserved_units > $total_units ) {
+					return ['error' => 'units_unavailable'];
+				}
+			}
+		}
+
 		$t = Schema::table('resource_reservations');
 
 		// 6. BEGIN TRANSACTION + SELECT FOR UPDATE (prevents race conditions).
@@ -218,6 +237,7 @@ final class ReservationRepository {
 			'purpose'        => $purpose,
 			'status'         => self::STATUS_PENDING,
 			'admin_comment'  => '',
+			'reserved_units' => $reserved_units,
 			'created_at'     => current_time('mysql', true),
 			'updated_at'     => current_time('mysql', true),
 		]);

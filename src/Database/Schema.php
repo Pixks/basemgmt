@@ -94,6 +94,11 @@ final class Schema {
 			'camp_declaration_days'             => $wpdb->prefix . 'bm_camp_declaration_days',
 			'camp_declaration_diet_lines'       => $wpdb->prefix . 'bm_camp_declaration_diet_lines',
 			'camp_declaration_accommodation_lines' => $wpdb->prefix . 'bm_camp_declaration_accommodation_lines',
+			// Equipment issued to camps
+			'camp_equipment'                    => $wpdb->prefix . 'bm_camp_equipment',
+			// Declaration documents (Org → Deklaracje)
+			'decl_templates'                    => $wpdb->prefix . 'bm_decl_templates',
+			'camp_decl_docs'                    => $wpdb->prefix . 'bm_camp_decl_docs',
 		];
 	}
 
@@ -1380,6 +1385,87 @@ final class Schema {
 		}
 		if ( $sched_cols && ! in_array('discount_type', $sched_cols, true) ) {
 			$wpdb->query("ALTER TABLE {$p}bm_camp_payment_schedules ADD COLUMN discount_type VARCHAR(10) NOT NULL DEFAULT 'fixed' AFTER discount"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		// ── Sprzęt obozu (Camp Equipment) ────────────────────────────────────────
+
+		$equip_sql = [];
+
+		$equip_sql[] = "CREATE TABLE {$p}bm_camp_equipment (
+			id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id          BIGINT UNSIGNED NOT NULL,
+			equipment_type   VARCHAR(60)     NOT NULL DEFAULT '',
+			name             VARCHAR(255)    NOT NULL,
+			issued_qty       INT             NOT NULL DEFAULT 0,
+			returned_qty     INT             NOT NULL DEFAULT 0,
+			notes            TEXT            DEFAULT NULL,
+			created_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp (camp_id)
+		) $charset;";
+
+		foreach ( $equip_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── Szablony deklaracji (Declaration Templates) ───────────────────────────
+
+		$decl_tpl_sql = [];
+
+		$decl_tpl_sql[] = "CREATE TABLE {$p}bm_decl_templates (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			title        VARCHAR(255)    NOT NULL,
+			description  TEXT            DEFAULT NULL,
+			html_content LONGTEXT        NOT NULL DEFAULT '',
+			auto_add     TINYINT(1)      NOT NULL DEFAULT 0,
+			sort_order   INT             NOT NULL DEFAULT 0,
+			created_by   BIGINT UNSIGNED DEFAULT NULL,
+			created_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_auto_add (auto_add),
+			KEY idx_order    (sort_order)
+		) $charset;";
+
+		$decl_tpl_sql[] = "CREATE TABLE {$p}bm_camp_decl_docs (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			camp_id       BIGINT UNSIGNED NOT NULL,
+			template_id   BIGINT UNSIGNED DEFAULT NULL,
+			title         VARCHAR(255)    NOT NULL,
+			status        VARCHAR(30)     NOT NULL DEFAULT 'draft',
+			html_content  LONGTEXT        DEFAULT NULL,
+			file_url      VARCHAR(500)    NOT NULL DEFAULT '',
+			signed_method VARCHAR(20)     NOT NULL DEFAULT '',
+			signed_at     DATETIME        DEFAULT NULL,
+			uploaded_at   DATETIME        DEFAULT NULL,
+			created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_camp     (camp_id),
+			KEY idx_status   (status),
+			KEY idx_template (template_id)
+		) $charset;";
+
+		foreach ( $decl_tpl_sql as $statement ) {
+			dbDelta($statement);
+		}
+
+		// ── ALTER: pricing_mode + total_units on bm_resources ────────────────────
+		$res_cols2 = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_resources");
+		if ( $res_cols2 ) {
+			if ( ! in_array('pricing_mode', $res_cols2, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_resources ADD COLUMN pricing_mode VARCHAR(10) NOT NULL DEFAULT 'flat' AFTER cost_per_reservation"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('total_units', $res_cols2, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_resources ADD COLUMN total_units INT UNSIGNED NOT NULL DEFAULT 0 AFTER pricing_mode"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+		}
+
+		// ── ALTER: reserved_units on bm_resource_reservations ────────────────────
+		$resv_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_resource_reservations");
+		if ( $resv_cols && ! in_array('reserved_units', $resv_cols, true) ) {
+			$wpdb->query("ALTER TABLE {$p}bm_resource_reservations ADD COLUMN reserved_units INT UNSIGNED NOT NULL DEFAULT 1 AFTER purpose"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 }
