@@ -752,31 +752,142 @@ final class CampsPage {
 		$apply_package = ! empty($_POST['apply_package_btn']) ? (int) ($_POST['apply_package'] ?? 0) : 0;
 
 		if ( $apply_package > 0 ) {
-			// Apply package: replace all schedules.
+			// Check declaration exists and is active
+			$declaration = $wpdb->get_row($wpdb->prepare(
+				"SELECT * FROM " . Schema::table('camp_declarations') . " WHERE camp_id = %d AND is_active = 1",
+				$camp_id
+			));
+			if ( ! $declaration ) {
+				AdminMenu::set_notice(__('Nie można zastosować pakietu — brak aktywnej deklaracji obozu. Uzupełnij deklarację najpierw.', 'basemgmt'), 'error');
+				$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-finance");
+				return;
+			}
+
+			$keep_existing = ! empty($_POST['keep_existing_schedules']);
+			if ( ! $keep_existing ) {
+				$wpdb->delete($tbl, ['camp_id' => $camp_id]);
+			}
+
+			$camp    = CampRepository::get($camp_id);
+			$pre     = CampCaseRepository::get_prearrival($camp_id);
+			$arrival = $pre->arrival_date ?? $camp->start_date ?? '';
+
+			$calc_due = static function( int $days_before, string $arrival_date ): ?string {
+				if ( ! $arrival_date || $days_before < 0 ) return null;
+				$dt = new \DateTime($arrival_date);
+				$dt->modify("-{$days_before} days");
+				return $dt->format('Y-m-d');
+			};
+
+			// 1. Standard package lines (pozycje kosztowe)
 			$pkg_lines = OrgFinancePage::get_package_lines($apply_package);
-			$camp      = CampRepository::get($camp_id);
-			$pre       = CampCaseRepository::get_prearrival($camp_id);
-			$arrival   = $pre->arrival_date ?? $camp->start_date ?? '';
-			$wpdb->delete($tbl, ['camp_id' => $camp_id]);
 			foreach ( $pkg_lines as $line ) {
-				$due_date = '';
-				if ( $arrival && $line->days_before >= 0 ) {
-					$dt = new \DateTime($arrival);
-					$dt->modify("-{$line->days_before} days");
-					$due_date = $dt->format('Y-m-d');
-				}
 				$wpdb->insert($tbl, [
 					'camp_id'      => $camp_id,
 					'payment_type' => $line->line_type,
 					'label'        => $line->label,
 					'amount'       => $line->unit_price,
-					'due_date'     => $due_date ?: null,
+					'amount_type'  => 'fixed',
+					'due_date'     => $calc_due((int) $line->days_before, $arrival),
 					'status'       => 'expected',
-					'description'  => $line->unit,
 				]);
 			}
+
+			// 2. Accommodation lines — from declaration
+			// Sum up person-days per accommodation type across all declaration days
+			$decl_days = $wpdb->get_results($wpdb->prepare(
+				"SELECT dd.id, dd.declared_persons FROM " . Schema::table('camp_declaration_days') . " dd WHERE dd.camp_id = %d",
+				$camp_id
+			));
+			$day_ids = $decl_days ? array_column($decl_days, 'id') : [];
+
+			$accom_totals = []; // [accom_type_id => total person-nights]
+			if ( $day_ids ) {
+				$ph = implode(',', array_fill(0, count($day_ids), '%d'));
+				$accom_lines = $wpdb->get_results($wpdb->prepare(
+					"SELECT accommodation_type_id, SUM(count) as total_count FROM " . Schema::table('camp_declaration_accommodation_lines') . " WHERE day_id IN ({$ph}) GROUP BY accommodation_type_id", // phpcs:ignore
+					...$day_ids
+				));
+				foreach ( $accom_lines as $al ) {
+					$accom_totals[(int)$al->accommodation_type_id] = (int)$al->total_count;
+				}
+			}
+
+			$pkg_accom = OrgFinancePage::get_package_accom($apply_package);
+			foreach ( $pkg_accom as $pa ) {
+				$type_id     = (int) $pa->accommodation_type_id;
+				$person_nights = $accom_totals[$type_id] ?? 0;
+				if ( $person_nights <= 0 ) continue;
+				$price_brutto = round((float)$pa->price_netto * (1 + (float)$pa->vat_rate / 100), 2);
+				$total        = round($price_brutto * $person_nights, 2);
+				$label        = sprintf(
+					/* translators: 1: accommodation name, 2: person-nights, 3: unit price */
+					__('%1$s — %2$d os./noc × %3$s zł', 'basemgmt'),
+					$pa->accom_name,
+					$person_nights,
+					number_format($price_brutto, 2, ',', ' ')
+				);
+				$wpdb->insert($tbl, [
+					'camp_id'      => $camp_id,
+					'payment_type' => 'accommodation',
+					'label'        => $label,
+					'amount'       => $total,
+					'amount_type'  => 'fixed',
+					'due_date'     => $calc_due((int) $pa->days_before, $arrival),
+					'status'       => 'expected',
+				]);
+			}
+
+			// 3. Diet lines — from declaration
+			// Sum person-days per diet_id across all declaration days
+			$diet_totals = []; // [diet_id => total person-days]
+			if ( $day_ids ) {
+				$ph = implode(',', array_fill(0, count($day_ids), '%d'));
+				$diet_lines_raw = $wpdb->get_results($wpdb->prepare(
+					"SELECT diet_id, SUM(count) as total_count FROM " . Schema::table('camp_declaration_diet_lines') . " WHERE day_id IN ({$ph}) GROUP BY diet_id", // phpcs:ignore
+					...$day_ids
+				));
+				foreach ( $diet_lines_raw as $dl ) {
+					$diet_totals[(int)$dl->diet_id] = (int)$dl->total_count;
+				}
+			}
+
+			// Get package diet slots grouped by diet_id — sum daily cost across enabled slots
+			$pkg_diets_raw = OrgFinancePage::get_package_diets($apply_package);
+			$diet_daily_cost = []; // [diet_id => ['name'=>, 'cost_brutto'=>, 'days_before'=>]]
+			foreach ( $pkg_diets_raw as $ds ) {
+				$did = (int)$ds->diet_id;
+				if ( ! isset($diet_daily_cost[$did]) ) {
+					$diet_daily_cost[$did] = ['name' => $ds->diet_name, 'cost_brutto' => 0.0, 'days_before' => (int)$ds->days_before];
+				}
+				$diet_daily_cost[$did]['cost_brutto'] += round((float)$ds->cost_netto * (1 + (float)$ds->vat_rate / 100), 4);
+			}
+
+			foreach ( $diet_daily_cost as $diet_id => $dc ) {
+				$person_days = $diet_totals[$diet_id] ?? 0;
+				if ( $person_days <= 0 ) continue;
+				$cost_per_day = round($dc['cost_brutto'], 2);
+				$total        = round($cost_per_day * $person_days, 2);
+				$label        = sprintf(
+					/* translators: 1: diet name, 2: person-days, 3: daily cost */
+					__('%1$s — %2$d os./dzień × %3$s zł', 'basemgmt'),
+					$dc['name'],
+					$person_days,
+					number_format($cost_per_day, 2, ',', ' ')
+				);
+				$wpdb->insert($tbl, [
+					'camp_id'      => $camp_id,
+					'payment_type' => 'food',
+					'label'        => $label,
+					'amount'       => $total,
+					'amount_type'  => 'fixed',
+					'due_date'     => $calc_due($dc['days_before'], $arrival),
+					'status'       => 'expected',
+				]);
+			}
+
 			update_post_meta($camp_id, '_bm_finance_package_id', $apply_package);
-			AdminMenu::set_notice(__('Pakiet finansowy zastosowany.', 'basemgmt'));
+			AdminMenu::set_notice(__('Pakiet finansowy zastosowany — harmonogram uzupełniony na podstawie deklaracji.', 'basemgmt'));
 			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-finance");
 			return;
 		}

@@ -1,4 +1,4 @@
-<?php defined('ABSPATH') || exit;
+﻿<?php defined('ABSPATH') || exit;
 $is_edit           = ! is_null($camp);
 $id                = $is_edit ? (int) $camp->id : 0;
 $process_stage     = $case->process_stage ?? \BaseMgmt\Modules\Camps\CampCaseRepository::STAGE_INQUIRY;
@@ -775,7 +775,7 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 				<h2 style="margin:0;"><?php esc_html_e('Finanse obozu', 'basemgmt'); ?></h2>
 			</div>
 
-			<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+			<form id="bm-finance-form"method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
 				<?php wp_nonce_field('bm_save_camp_finance'); ?>
 				<input type="hidden" name="action" value="bm_save_camp_finance">
 				<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
@@ -857,42 +857,114 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 					</div>
 
 					<div class="bm-task-sidebar">
-						<div class="postbox">
-							<div class="postbox-header"><h2 class="hndle"><?php esc_html_e('Pakiet finansowy', 'basemgmt'); ?></h2></div>
-							<div class="inside">
-								<p class="description"><?php esc_html_e('Wybierz pakiet aby automatycznie uzupełnić harmonogram. Daty zostaną obliczone od daty przyjazdu.', 'basemgmt'); ?></p>
-								<p>
-									<label><strong><?php esc_html_e('Pakiet:', 'basemgmt'); ?></strong></label><br>
-									<select id="bm_finance_package" name="apply_package" class="widefat">
-										<option value=""><?php esc_html_e('— nie wybrano —', 'basemgmt'); ?></option>
-										<?php foreach ( $payment_packages as $pkg ) : ?>
-											<option value="<?php echo esc_attr($pkg->id); ?>" <?php selected($camp_finance_package_id ?? 0, $pkg->id); ?>>
-												<?php echo esc_html($pkg->name . ($pkg->is_default ? ' ★' : '')); ?>
-											</option>
-										<?php endforeach; ?>
-									</select>
-								</p>
-								<p>
-									<button type="submit" name="apply_package_btn" value="1" class="button button-secondary" style="width:100%;">
-										<?php esc_html_e('Zastosuj pakiet', 'basemgmt'); ?>
-									</button>
-								</p>
-							</div>
+				<div class="postbox">
+					<div class="postbox-header"><h2 class="hndle"><?php esc_html_e('Pakiet finansowy', 'basemgmt'); ?></h2></div>
+					<div class="inside">
+						<?php $has_declaration = ! empty($camp_declaration) && $camp_declaration->is_active; ?>
+						<?php if ( ! $has_declaration ) : ?>
+						<div class="notice notice-warning inline" style="margin:0 0 12px;padding:8px 12px;">
+							<p style="margin:0;font-size:12px;"><?php esc_html_e('Brak aktywnej deklaracji — uzupełnij deklarację aby móc zastosować pakiet.', 'basemgmt'); ?></p>
 						</div>
-
-						<div class="postbox">
-							<div class="postbox-header"><h2 class="hndle"><?php esc_html_e('Zapisz', 'basemgmt'); ?></h2></div>
-							<div class="inside">
-								<button type="submit" class="button button-primary" style="width:100%;">
-									<?php esc_html_e('Zapisz harmonogram', 'basemgmt'); ?>
-								</button>
-							</div>
-						</div>
+						<?php endif; ?>
+						<p class="description"><?php esc_html_e('Pakiet wylicza koszty na podstawie deklaracji. Daty terminu płatności obliczane od daty przyjazdu.', 'basemgmt'); ?></p>
+						<p>
+							<label><strong><?php esc_html_e('Pakiet:', 'basemgmt'); ?></strong></label><br>
+							<select id="bm_finance_package" name="apply_package" class="widefat" <?php echo $has_declaration ? '' : 'disabled'; ?>>
+								<option value=""><?php esc_html_e('— nie wybrano —', 'basemgmt'); ?></option>
+								<?php foreach ( $payment_packages as $pkg ) : ?>
+									<option value="<?php echo esc_attr($pkg->id); ?>" <?php selected($camp_finance_package_id ?? 0, $pkg->id); ?>>
+										<?php echo esc_html($pkg->name . ($pkg->is_default ? ' ★' : '')); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+						</p>
+						<input type="hidden" name="keep_existing_schedules" id="bm-keep-existing-sched" value="0">
+						<p>
+							<button type="button" id="bm-apply-package-btn" class="button button-secondary" style="width:100%;" <?php echo $has_declaration ? '' : 'disabled'; ?>>
+								<?php esc_html_e('Zastosuj pakiet', 'basemgmt'); ?>
+							</button>
+						</p>
 					</div>
 				</div>
-			</form>
+				<div class="postbox">
+					<div class="postbox-header"><h2 class="hndle"><?php esc_html_e('Zapisz', 'basemgmt'); ?></h2></div>
+					<div class="inside">
+						<button type="submit" class="button button-primary" style="width:100%;">
+							<?php esc_html_e('Zapisz harmonogram', 'basemgmt'); ?>
+						</button>
+					</div>
+				</div>
+			</div>
+			</div>
+		</form>
+		<script>
+		(function() {
+			var btn = document.getElementById('bm-apply-package-btn');
+			if (!btn) return;
+			var keepField = document.getElementById('bm-keep-existing-sched');
+			var tbody = document.querySelector('#bm-finance-form tbody');
+			var hasRows = tbody ? tbody.querySelectorAll('tr').length > 0 : false;
 
-			<!-- ── Szkody ──────────────────────────────────────────────────── -->
+			function submitApply() {
+				var form = btn.closest('form');
+				var hidden = document.createElement('input');
+				hidden.type = 'hidden';
+				hidden.name = 'apply_package_btn';
+				hidden.value = '1';
+				form.appendChild(hidden);
+				form.submit();
+			}
+
+			btn.addEventListener('click', function() {
+				var pkgSel = document.getElementById('bm_finance_package');
+				if (!pkgSel || !pkgSel.value) {
+					bmModal.alert('<?php esc_attr_e('Wybierz pakiet finansowy.', 'basemgmt'); ?>');
+					return;
+				}
+				if (hasRows) {
+					bmModal.confirm(
+						'<?php esc_attr_e('W harmonogramie są już pozycje. Co chcesz zrobić?', 'basemgmt'); ?>',
+						function() {},
+						'<?php esc_attr_e('Zastosuj pakiet', 'basemgmt'); ?>'
+					);
+					setTimeout(function() {
+						var footer = document.getElementById('bm-modal-footer');
+						if (!footer) return;
+						footer.innerHTML = '';
+						var btnCancel = document.createElement('button');
+						btnCancel.type = 'button'; btnCancel.className = 'button';
+						btnCancel.textContent = '<?php esc_attr_e('Anuluj', 'basemgmt'); ?>';
+						btnCancel.addEventListener('click', function() {
+							document.getElementById('bm-modal-overlay').classList.remove('is-open');
+						});
+						var btnKeep = document.createElement('button');
+						btnKeep.type = 'button'; btnKeep.className = 'button button-secondary';
+						btnKeep.textContent = '<?php esc_attr_e('Zachowaj istniejące', 'basemgmt'); ?>';
+						btnKeep.addEventListener('click', function() {
+							keepField.value = '1';
+							document.getElementById('bm-modal-overlay').classList.remove('is-open');
+							submitApply();
+						});
+						var btnReplace = document.createElement('button');
+						btnReplace.type = 'button'; btnReplace.className = 'button button-primary';
+						btnReplace.textContent = '<?php esc_attr_e('Nadpisz harmonogram', 'basemgmt'); ?>';
+						btnReplace.addEventListener('click', function() {
+							keepField.value = '0';
+							document.getElementById('bm-modal-overlay').classList.remove('is-open');
+							submitApply();
+						});
+						footer.appendChild(btnCancel);
+						footer.appendChild(btnKeep);
+						footer.appendChild(btnReplace);
+					}, 20);
+				} else {
+					keepField.value = '0';
+					submitApply();
+				}
+			});
+		})();
+		</script>
+<!-- ── Szkody ──────────────────────────────────────────────────── -->
 			<div class="postbox" style="margin-top:20px;">
 				<div class="postbox-header">
 					<h2 class="hndle"><span class="dashicons dashicons-warning" style="font-size:16px;width:16px;height:16px;line-height:1;color:#d63638;"></span> <?php esc_html_e('Szkody', 'basemgmt'); ?></h2>

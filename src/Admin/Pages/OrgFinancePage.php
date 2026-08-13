@@ -236,4 +236,24 @@ final class OrgFinancePage {
 			$package_id
 		)) ?: [];
 	}
+
+	public static function get_package_accom(int $package_id): array {
+		global $wpdb;
+		return $wpdb->get_results($wpdb->prepare(
+			"SELECT pa.*, at.name as accom_name FROM " . Schema::table('payment_pkg_accom') . " pa
+			 LEFT JOIN " . Schema::table('accommodation_types') . " at ON at.id = pa.accommodation_type_id
+			 WHERE pa.package_id = %d ORDER BY pa.sort_order ASC",
+			$package_id
+		)) ?: [];
+	}
+
+	public static function get_package_diets(int $package_id): array {
+		global $wpdb;
+		return $wpdb->get_results($wpdb->prepare(
+			"SELECT ds.*, d.name as diet_name FROM " . Schema::table('payment_pkg_diet_slots') . " ds
+			 LEFT JOIN " . Schema::table('meal_diets') . " d ON d.id = ds.diet_id
+			 WHERE ds.package_id = %d AND ds.enabled = 1 ORDER BY ds.diet_id ASC, ds.meal_slot ASC",
+			$package_id
+		)) ?: [];
+	}
 }
