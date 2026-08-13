@@ -26,7 +26,6 @@ final class OrgFinancePage {
 		return [
 			self::LINE_ACCOMMODATION => __('Nocleg', 'basemgmt'),
 			self::LINE_FOOD          => __('Wyżywienie', 'basemgmt'),
-			self::LINE_OTHER         => __('Inne koszty', 'basemgmt'),
 			self::LINE_TAX           => __('Podatek', 'basemgmt'),
 			self::LINE_CUSTOM        => __('Inne', 'basemgmt'),
 		];

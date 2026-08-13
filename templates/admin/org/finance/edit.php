@@ -218,12 +218,15 @@ echo number_format($brutto, 2, ',', ' ');
 				<?php endforeach; ?>
 			</tbody>
 			<tfoot>
-				<tr style="background:#f9fafb;">
-					<td colspan="2"><strong><?php esc_html_e('Suma dzienna netto', 'basemgmt'); ?></strong></td>
-					<td class="bm-diet-total" style="font-weight:700;">
-						<?php echo number_format(array_sum(array_map(static fn($s) => (float)$s->cost_netto, $slots)), 2, ',', ' '); ?>
+				<tr style="background:#f9fafb;font-weight:600;">
+					<td colspan="2" style="padding:6px 8px;"><?php esc_html_e('Suma dzienna', 'basemgmt'); ?></td>
+					<td class="bm-diet-total-netto" style="padding:6px 8px;font-weight:700;">
+						<?php echo number_format(array_sum(array_map(static fn($s) => (bool)$s->enabled ? (float)$s->cost_netto : 0, $slots)), 2, ',', ' '); ?>
 					</td>
-					<td colspan="2"></td>
+					<td></td>
+					<td class="bm-diet-total-brutto" style="padding:6px 8px;font-weight:700;padding-right:6px;">
+						<?php echo number_format(array_sum(array_map(static fn($s) => (bool)$s->enabled ? (float)$s->cost_netto * (1 + (float)$s->vat_rate/100) : 0, $slots)), 2, ',', ' '); ?>
+					</td>
 				</tr>
 			</tfoot>
 		</table>
@@ -306,60 +309,121 @@ placeholder="<?php esc_attr_e('Wpisz typ…', 'basemgmt'); ?>">
 
 <script>
 (function() {
+'use strict';
+
+function fmt(v) { return v.toFixed(2).replace('.', ','); }
+function sum(arr) { return arr.reduce(function(a,b){return a+b;}, 0); }
+function el(id) { return document.getElementById(id); }
+
+// ── Global totals ───────────────────────────────────────────────────────
+function recalcAll() {
+	var linesNetto  = 0, linesBrutto  = 0;
+	var accomNetto  = 0, accomBrutto  = 0;
+	var dietsNetto  = 0, dietsBrutto  = 0;
+
+	// Lines
+	var linesSumN = el('bm-lines-sum-netto'), linesSumB = el('bm-lines-sum-brutto');
+	if (linesSumN) {
+		Array.from(document.querySelectorAll('#bm-lines-tbody tr.bm-finance-line')).forEach(function(row) {
+			var n = parseFloat(row.querySelector('.bm-line-price').value) || 0;
+			var v = parseFloat(row.querySelector('.bm-line-vat').value)   || 0;
+			linesNetto  += n;
+			linesBrutto += n * (1 + v/100);
+		});
+		linesSumN.textContent = fmt(linesNetto);
+		linesSumB.textContent = fmt(linesBrutto);
+	}
+
+	// Accom
+	var accomSumN = el('bm-accom-sum-netto'), accomSumB = el('bm-accom-sum-brutto');
+	if (accomSumN) {
+		Array.from(document.querySelectorAll('#bm-accom-tbody tr.bm-accom-row')).forEach(function(row) {
+			var n = parseFloat(row.querySelector('.bm-accom-netto').value) || 0;
+			var v = parseFloat(row.querySelector('.bm-accom-vat').value)   || 0;
+			accomNetto  += n;
+			accomBrutto += n * (1 + v/100);
+		});
+		accomSumN.textContent = fmt(accomNetto);
+		accomSumB.textContent = fmt(accomBrutto);
+	}
+
+	// Diets — sum across all blocks
+	Array.from(document.querySelectorAll('.bm-diet-block')).forEach(function(block) {
+		Array.from(block.querySelectorAll('tr.bm-diet-slot-row')).forEach(function(row) {
+			var nInput = row.querySelector('.bm-slot-netto');
+			if (!nInput || nInput.disabled) return;
+			var n = parseFloat(nInput.value) || 0;
+			var v = parseFloat(row.querySelector('.bm-slot-vat').value) || 0;
+			dietsNetto  += n;
+			dietsBrutto += n * (1 + v/100);
+		});
+	});
+
+	// Update diet block totals
+	Array.from(document.querySelectorAll('.bm-diet-block')).forEach(recalcDietBlock);
+
+	// Aggregate diet totals from block footers
+	dietsNetto = 0; dietsBrutto = 0;
+	Array.from(document.querySelectorAll('.bm-diet-block')).forEach(function(block) {
+		var tn = block.querySelector('.bm-diet-total-netto');
+		var tb = block.querySelector('.bm-diet-total-brutto');
+		if (tn) dietsNetto  += parseFloat(tn.textContent.replace(',','.')) || 0;
+		if (tb) dietsBrutto += parseFloat(tb.textContent.replace(',','.')) || 0;
+	});
+
+	if (el('bm-total-lines-netto')) {
+		el('bm-total-lines-netto').textContent  = fmt(linesNetto);
+		el('bm-total-lines-brutto').textContent = fmt(linesBrutto);
+		el('bm-total-accom-netto').textContent  = fmt(accomNetto);
+		el('bm-total-accom-brutto').textContent = fmt(accomBrutto);
+		el('bm-total-diets-netto').textContent  = fmt(dietsNetto);
+		el('bm-total-diets-brutto').textContent = fmt(dietsBrutto);
+		el('bm-total-all-netto').textContent    = fmt(linesNetto + accomNetto + dietsNetto);
+		el('bm-total-all-brutto').textContent   = fmt(linesBrutto + accomBrutto + dietsBrutto);
+	}
+}
+
+// ── Lines ───────────────────────────────────────────────────────────────
 var tbody = document.getElementById('bm-lines-tbody');
 var tmpl  = document.getElementById('bm-line-template');
 
 document.getElementById('bm-add-line').addEventListener('click', function() {
-var clone = tmpl.content.cloneNode(true);
-tbody.appendChild(clone);
+	var clone = tmpl.content.cloneNode(true);
+	tbody.appendChild(clone);
+	recalcAll();
 });
 
 tbody.addEventListener('click', function(e) {
-if ( e.target.classList.contains('bm-remove-line') ) {
-e.target.closest('tr').remove();
-}
+	if (e.target.classList.contains('bm-remove-line')) { e.target.closest('tr').remove(); recalcAll(); }
 });
 
-function updateBrutto(row) {
-var price  = parseFloat(row.querySelector('.bm-line-price').value) || 0;
-var vat    = parseFloat(row.querySelector('.bm-line-vat').value)   || 0;
-var brutto = price * (1 + vat / 100);
-row.querySelector('.bm-line-brutto').textContent = brutto.toFixed(2).replace('.', ',');
+function updateLineBrutto(row) {
+	var price  = parseFloat(row.querySelector('.bm-line-price').value) || 0;
+	var vat    = parseFloat(row.querySelector('.bm-line-vat').value)   || 0;
+	row.querySelector('.bm-line-brutto').textContent = fmt(price * (1 + vat / 100));
 }
 
 function toggleCustomType(row) {
-var sel   = row.querySelector('.bm-line-type');
-var input = row.querySelector('.bm-line-custom-type');
-if ( sel.value === 'custom' ) {
-input.style.display = '';
-input.required = true;
-} else {
-input.style.display = 'none';
-input.required = false;
-}
+	var sel = row.querySelector('.bm-line-type'), input = row.querySelector('.bm-line-custom-type');
+	if (sel.value === 'custom') { input.style.display=''; input.required=true; }
+	else { input.style.display='none'; input.required=false; }
 }
 
 tbody.addEventListener('change', function(e) {
-var row = e.target.closest('tr');
-if ( ! row ) return;
-if ( e.target.classList.contains('bm-line-type') ) toggleCustomType(row);
-if ( e.target.classList.contains('bm-line-price') || e.target.classList.contains('bm-line-vat') ) updateBrutto(row);
+	var row = e.target.closest('tr'); if (!row) return;
+	if (e.target.classList.contains('bm-line-type')) toggleCustomType(row);
+	updateLineBrutto(row); recalcAll();
 });
-
 tbody.addEventListener('input', function(e) {
-var row = e.target.closest('tr');
-if ( ! row ) return;
-if ( e.target.classList.contains('bm-line-price') || e.target.classList.contains('bm-line-vat') ) updateBrutto(row);
+	var row = e.target.closest('tr'); if (!row) return;
+	updateLineBrutto(row); recalcAll();
 });
 
 Array.from(tbody.querySelectorAll('tr.bm-finance-line')).forEach(function(row) {
-updateBrutto(row);
-toggleCustomType(row);
+	updateLineBrutto(row); toggleCustomType(row);
 });
-})();
 
-// ── Accommodations JS ───────────────────────────────────────────────────
-(function() {
+// ── Accommodations ──────────────────────────────────────────────────────
 var accomTbody = document.getElementById('bm-accom-tbody');
 var accomSel   = document.getElementById('bm-accom-select');
 
@@ -367,14 +431,13 @@ document.getElementById('bm-add-accom').addEventListener('click', function() {
 	var opt = accomSel.options[accomSel.selectedIndex];
 	if (!opt || !opt.value) return;
 	var typeId = opt.value, typeName = opt.dataset.name || opt.text;
-	// Prevent duplicates
 	if (accomTbody.querySelector('[name="accom_type_id[]"][value="'+typeId+'"]')) {
 		bmModal.alert('Ten typ noclegu jest już dodany.');
 		return;
 	}
 	var defPrice = opt.dataset.price || '0.00';
 	var defVat   = opt.dataset.vat   || '0';
-	var defBrutto = (parseFloat(defPrice)*(1+parseFloat(defVat)/100)).toFixed(2).replace('.',',');
+	var defBrutto = fmt(parseFloat(defPrice)*(1+parseFloat(defVat)/100));
 	var tr = document.createElement('tr');
 	tr.className = 'bm-accom-row';
 	tr.innerHTML =
@@ -386,36 +449,44 @@ document.getElementById('bm-add-accom').addEventListener('click', function() {
 		'<td><button type="button" class="button-link bm-remove-accom">✕</button></td>';
 	accomTbody.appendChild(tr);
 	accomSel.selectedIndex = 0;
+	recalcAll();
 });
 
 accomTbody.addEventListener('click', function(e) {
-	if (e.target.classList.contains('bm-remove-accom')) e.target.closest('tr').remove();
+	if (e.target.classList.contains('bm-remove-accom')) { e.target.closest('tr').remove(); recalcAll(); }
 });
 
-function recalcAccom(row) {
-	var n = parseFloat(row.querySelector('.bm-accom-netto').value) || 0;
-	var v = parseFloat(row.querySelector('.bm-accom-vat').value)   || 0;
-	row.querySelector('.bm-accom-brutto').textContent = (n*(1+v/100)).toFixed(2).replace('.', ',');
-}
 accomTbody.addEventListener('input', function(e) {
 	var row = e.target.closest('tr'); if (!row) return;
-	if (e.target.classList.contains('bm-accom-netto') || e.target.classList.contains('bm-accom-vat')) recalcAccom(row);
+	var n = parseFloat(row.querySelector('.bm-accom-netto').value) || 0;
+	var v = parseFloat(row.querySelector('.bm-accom-vat').value)   || 0;
+	row.querySelector('.bm-accom-brutto').textContent = fmt(n*(1+v/100));
+	recalcAll();
 });
-Array.from(accomTbody.querySelectorAll('tr')).forEach(recalcAccom);
-})();
 
-// ── Diets JS ────────────────────────────────────────────────────────────
-(function() {
-var dietSel  = document.getElementById('bm-diet-select');
+// ── Diets ───────────────────────────────────────────────────────────────
+var dietSel   = document.getElementById('bm-diet-select');
 var dietsWrap = document.getElementById('bm-diets-wrap');
-
 var mealSlots = <?php echo json_encode($meal_slots); ?>;
+
+function recalcDietBlock(block) {
+	var sumN = 0, sumB = 0;
+	Array.from(block.querySelectorAll('tr.bm-diet-slot-row')).forEach(function(row) {
+		var nInput = row.querySelector('.bm-slot-netto');
+		var n = parseFloat(nInput.value) || 0;
+		var v = parseFloat(row.querySelector('.bm-slot-vat').value) || 0;
+		var b = n*(1+v/100);
+		row.querySelector('.bm-slot-brutto').textContent = fmt(b);
+		if (!nInput.disabled) { sumN += n; sumB += b; }
+	});
+	var tn = block.querySelector('.bm-diet-total-netto'); if(tn) tn.textContent = fmt(sumN);
+	var tb = block.querySelector('.bm-diet-total-brutto'); if(tb) tb.textContent = fmt(sumB);
+}
 
 document.getElementById('bm-add-diet').addEventListener('click', function() {
 	var opt = dietSel.options[dietSel.selectedIndex];
 	if (!opt || !opt.value) return;
 	var dietId = opt.value, dietName = opt.dataset.name || opt.text;
-	// Prevent duplicates
 	if (dietsWrap.querySelector('[name="diet_id_entry[]"][value="'+dietId+'"]')) {
 		bmModal.alert('Ta dieta jest już dodana.');
 		return;
@@ -426,7 +497,7 @@ document.getElementById('bm-add-diet').addEventListener('click', function() {
 	for (var slotKey in mealSlots) {
 		var sn = (defSlots[slotKey] && defSlots[slotKey].netto) ? defSlots[slotKey].netto : '0.00';
 		var sv = (defSlots[slotKey] && defSlots[slotKey].vat)   ? defSlots[slotKey].vat   : '0';
-		var sb = (parseFloat(sn)*(1+parseFloat(sv)/100)).toFixed(2).replace('.',',');
+		var sb = fmt(parseFloat(sn)*(1+parseFloat(sv)/100));
 		rows += '<tr class="bm-diet-slot-row">' +
 			'<td style="text-align:center;"><input type="checkbox" name="diet_slot_enabled['+dietId+']['+slotKey+']" value="1" class="bm-slot-toggle" checked></td>' +
 			'<td>'+mealSlots[slotKey]+'</td>' +
@@ -453,45 +524,41 @@ document.getElementById('bm-add-diet').addEventListener('click', function() {
 				'<th style="width:120px;">Koszt netto</th><th style="width:70px;">VAT %</th><th style="width:90px;">Brutto</th>' +
 			'</tr></thead>' +
 			'<tbody>'+rows+'</tbody>' +
-			'<tfoot><tr style="background:#f9fafb;">' +
-				'<td colspan="2"><strong>Suma dzienna netto</strong></td>' +
-				'<td class="bm-diet-total" style="font-weight:700;">0,00</td><td colspan="2"></td>' +
+			'<tfoot><tr style="background:#f0f0f1;font-weight:600;">' +
+				'<td colspan="2" style="padding:6px 8px;">Suma dzienna</td>' +
+				'<td class="bm-diet-total-netto" style="padding:6px 8px;font-weight:700;">0,00</td>' +
+				'<td></td>' +
+				'<td class="bm-diet-total-brutto" style="padding:6px 8px;font-weight:700;padding-right:6px;">0,00</td>' +
 			'</tr></tfoot>' +
 		'</table>';
 	dietsWrap.appendChild(block);
 	dietSel.selectedIndex = 0;
+	recalcDietBlock(block);
+	recalcAll();
 });
 
 dietsWrap.addEventListener('click', function(e) {
-	if (e.target.classList.contains('bm-remove-diet')) e.target.closest('.bm-diet-block').remove();
+	if (e.target.classList.contains('bm-remove-diet')) { e.target.closest('.bm-diet-block').remove(); recalcAll(); }
 });
-
-function recalcDietBlock(block) {
-	var sum = 0;
-	Array.from(block.querySelectorAll('tr.bm-diet-slot-row')).forEach(function(row) {
-		var n = parseFloat(row.querySelector('.bm-slot-netto').value) || 0;
-		var v = parseFloat(row.querySelector('.bm-slot-vat').value)   || 0;
-		row.querySelector('.bm-slot-brutto').textContent = (n*(1+v/100)).toFixed(2).replace('.', ',');
-		if (!row.querySelector('.bm-slot-netto').disabled) sum += n;
-	});
-	var tot = block.querySelector('.bm-diet-total'); if(tot) tot.textContent = sum.toFixed(2).replace('.', ',');
-}
 
 dietsWrap.addEventListener('input', function(e) {
 	var block = e.target.closest('.bm-diet-block'); if (!block) return;
-	recalcDietBlock(block);
+	recalcDietBlock(block); recalcAll();
 });
 
 dietsWrap.addEventListener('change', function(e) {
 	if (!e.target.classList.contains('bm-slot-toggle')) return;
-	var row = e.target.closest('tr');
-	var en  = e.target.checked;
+	var row = e.target.closest('tr'), en = e.target.checked;
 	row.style.opacity = en ? '' : '0.45';
 	row.querySelector('.bm-slot-netto').disabled = !en;
 	row.querySelector('.bm-slot-vat').disabled   = !en;
 	var block = e.target.closest('.bm-diet-block'); if(block) recalcDietBlock(block);
+	recalcAll();
 });
 
+// Initial calc on page load
 Array.from(dietsWrap.querySelectorAll('.bm-diet-block')).forEach(recalcDietBlock);
+recalcAll();
+
 })();
 </script>
