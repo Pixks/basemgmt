@@ -11,6 +11,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
 - Pogoda pobierana z `/panel/weather` (wymaga sesji)
 - Naprawiono: `campName` w topbarze, licznik nieprzeczytanych wiadomości, lookup nazwy zasobu w rezerwacjach
 - Usunięto `role` z listy kadry w ekranie logowania (API nie zwraca tego pola)
+- **Nowa zakładka 📁 Teczka**: dokumenty obozu, szkody/usterki, deklaracja dzienna pobytu
 
 ---
 
@@ -255,6 +256,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
         </button>
         <button class="bm-tab" :class="tab==='pomoc' && 'bm-active'" @click="tab='pomoc'">📚 Pomoc</button>
         <button class="bm-tab" :class="tab==='formularze' && 'bm-active'" @click="tab='formularze'">📝 Formularze</button>
+        <button class="bm-tab" :class="tab==='teczka' && 'bm-active'" @click="tab='teczka'">📁 Teczka</button>
       </div>
     </div>
 
@@ -1295,6 +1297,257 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
       </div>
 
     </div><!-- /formularze -->
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <!-- ZAKŁADKA: TECZKA OBOZU                              -->
+    <!-- ─────────────────────────────────────────────────── -->
+    <div x-show="tab==='teczka'" class="bm-section">
+
+      <!-- ── 1. Dokumenty ───────────────────────────────── -->
+      <div class="zhp-card" x-data="bmFolderDocs()" x-init="init()">
+        <div class="zhp-card-header">
+          <span>📄</span>
+          <h3>Dokumenty obozu</h3>
+        </div>
+        <div class="zhp-card-body">
+          <div class="zhp-loader" x-show="loading"><div class="zhp-spinner"></div> Ładowanie…</div>
+          <div class="zhp-alert zhp-alert-error" x-show="error" x-text="error"></div>
+
+          <!-- Brak dokumentów -->
+          <template x-if="!loading && !error && documents.length === 0">
+            <div style="text-align:center;padding:24px 0;color:var(--zhp-text-muted);">
+              <div style="font-size:2rem;margin-bottom:8px;">📂</div>
+              <div>Brak dokumentów w bibliotece.</div>
+            </div>
+          </template>
+
+          <!-- Lista dokumentów -->
+          <template x-if="!loading && documents.length > 0">
+            <div>
+              <template x-for="doc in documents" :key="doc.id">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--zhp-bg);border-radius:var(--zhp-radius-sm);margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:1.3rem;" x-text="docIcon(doc.doc_type)"></span>
+                    <div>
+                      <div style="font-weight:600;font-size:.9rem;" x-text="doc.title"></div>
+                      <div x-show="doc.file_name" style="font-size:.73rem;color:var(--zhp-text-muted);" x-text="doc.file_name"></div>
+                    </div>
+                  </div>
+                  <a x-show="doc.file_url"
+                    :href="doc.file_url"
+                    target="_blank"
+                    class="zhp-btn zhp-btn-ghost zhp-btn-sm">
+                    ⬇ Pobierz
+                  </a>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ── 2. Szkody ───────────────────────────────────── -->
+      <div class="zhp-card" x-data="bmDamages()" x-init="init()">
+        <div class="zhp-card-header" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span>🔧</span>
+            <h3>Szkody i usterki</h3>
+          </div>
+          <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="openForm()" x-show="!showForm">
+            + Zgłoś szkodę
+          </button>
+        </div>
+        <div class="zhp-card-body">
+          <div class="zhp-loader" x-show="loading"><div class="zhp-spinner"></div> Ładowanie…</div>
+          <div class="zhp-alert zhp-alert-error" x-show="error && !showForm" x-text="error"></div>
+          <div class="zhp-alert zhp-alert-success" x-show="success" x-text="success"></div>
+
+          <!-- Formularz zgłoszenia -->
+          <template x-if="showForm">
+            <div style="background:var(--zhp-green-light);border:1px solid var(--zhp-green-border);border-radius:var(--zhp-radius);padding:16px;margin-bottom:16px;">
+              <div style="font-weight:700;margin-bottom:12px;color:var(--zhp-green);">Nowe zgłoszenie szkody</div>
+              <div class="zhp-alert zhp-alert-error" x-show="error" x-text="error" style="margin-bottom:10px;"></div>
+              <div class="zhp-field">
+                <label class="zhp-label">Nazwa szkody *</label>
+                <input class="zhp-input" x-model="form.name" placeholder="np. Uszkodzona umywalka" />
+              </div>
+              <div class="zhp-field">
+                <label class="zhp-label">Opis</label>
+                <textarea class="zhp-textarea" x-model="form.description" placeholder="Dokładny opis szkody…"></textarea>
+              </div>
+              <div class="zhp-field">
+                <label class="zhp-label">Szacunkowy koszt naprawy (zł)</label>
+                <input class="zhp-input" type="number" min="0" step="0.01" x-model="form.cost" placeholder="0.00" style="max-width:160px;" />
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <button class="zhp-btn zhp-btn-primary" @click="submit()" :disabled="saving">
+                  <span x-show="!saving">Zgłoś szkodę</span>
+                  <span x-show="saving"><div class="zhp-spinner" style="width:14px;height:14px;border-width:2px;"></div></span>
+                </button>
+                <button class="zhp-btn zhp-btn-ghost" @click="showForm=false; error=''">Anuluj</button>
+              </div>
+            </div>
+          </template>
+
+          <!-- Brak szkód -->
+          <template x-if="!loading && !showForm && damages.length === 0">
+            <div style="text-align:center;padding:20px 0;color:var(--zhp-text-muted);">
+              <div style="font-size:2rem;margin-bottom:8px;">✅</div>
+              <div>Brak zgłoszonych szkód.</div>
+            </div>
+          </template>
+
+          <!-- Lista szkód -->
+          <template x-if="!loading && damages.length > 0">
+            <div>
+              <template x-for="d in damages" :key="d.id">
+                <div style="padding:12px 14px;background:var(--zhp-bg);border-radius:var(--zhp-radius-sm);margin-bottom:8px;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                    <div>
+                      <div style="font-weight:600;font-size:.92rem;" x-text="d.name"></div>
+                      <template x-if="d.description">
+                        <div style="font-size:.8rem;color:var(--zhp-text-mid);margin-top:3px;" x-text="d.description"></div>
+                      </template>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+                      <span class="zhp-badge" :class="statusClass(d.status)" x-text="statusLabel(d.status)"></span>
+                      <template x-if="d.cost > 0">
+                        <span style="font-size:.8rem;color:var(--zhp-text-mid);">~<span x-text="d.cost.toFixed(2)"></span> zł</span>
+                      </template>
+                    </div>
+                  </div>
+                  <div style="font-size:.7rem;color:var(--zhp-text-muted);margin-top:6px;" x-text="'Zgłoszono: ' + d.created_at"></div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ── 3. Deklaracja ────────────────────────────────── -->
+      <div class="zhp-card" x-data="bmDeclaration()" x-init="init()">
+        <div class="zhp-card-header">
+          <span>📋</span>
+          <h3>Deklaracja pobytu</h3>
+        </div>
+        <div class="zhp-card-body">
+          <div class="zhp-loader" x-show="loading"><div class="zhp-spinner"></div> Ładowanie…</div>
+          <div class="zhp-alert zhp-alert-error" x-show="error && !editing" x-text="error"></div>
+
+          <!-- Status deklaracji ogólnej -->
+          <template x-if="!loading && declaration">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;background:var(--zhp-bg);border-radius:var(--zhp-radius-sm);">
+              <div style="flex:1;min-width:140px;">
+                <div class="zhp-label">Zadeklarowane osoby</div>
+                <div style="font-size:1.1rem;font-weight:700;" x-text="declaration.declared_persons"></div>
+              </div>
+              <div style="flex:1;min-width:140px;">
+                <div class="zhp-label">Przyjazd</div>
+                <div style="font-size:.9rem;" x-text="declaration.arrival_time || '—'"></div>
+              </div>
+              <div style="flex:1;min-width:140px;">
+                <div class="zhp-label">Odjazd</div>
+                <div style="font-size:.9rem;" x-text="declaration.departure_time || '—'"></div>
+              </div>
+              <div style="flex:1;min-width:140px;">
+                <div class="zhp-label">Status</div>
+                <span class="zhp-badge" :class="declaration.signed_at ? 'zhp-badge-green' : declaration.submitted_at ? 'zhp-badge-gold' : 'zhp-badge-gray'"
+                  x-text="declaration.signed_at ? 'Podpisana' : declaration.submitted_at ? 'Wysłana' : 'W przygotowaniu'">
+                </span>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="!loading && !declaration">
+            <div class="zhp-alert zhp-alert-info" style="margin-bottom:16px;">
+              Deklaracja obozu nie została jeszcze zainicjowana przez organizatora.
+            </div>
+          </template>
+
+          <!-- Nagłówek sekcji dni -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-weight:700;font-size:.9rem;color:var(--zhp-text-mid);">Deklaracja dzienna</div>
+            <button class="zhp-btn zhp-btn-ghost zhp-btn-sm" @click="newDay()" x-show="!editing">
+              + Dodaj dzień
+            </button>
+          </div>
+
+          <!-- Formularz edycji/dodawania dnia -->
+          <template x-if="editing">
+            <div style="background:var(--zhp-green-light);border:1px solid var(--zhp-green-border);border-radius:var(--zhp-radius);padding:16px;margin-bottom:16px;">
+              <div style="font-weight:700;margin-bottom:12px;color:var(--zhp-green);">
+                <span x-text="editing.id ? 'Edytuj dzień' : 'Nowy dzień deklaracji'"></span>
+              </div>
+              <div class="zhp-alert zhp-alert-error" x-show="error" x-text="error" style="margin-bottom:10px;"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="zhp-field" style="grid-column:1/-1;">
+                  <label class="zhp-label">Data *</label>
+                  <input class="zhp-input" type="date" x-model="editing.declaration_date" />
+                </div>
+                <div class="zhp-field">
+                  <label class="zhp-label">Liczba osób</label>
+                  <input class="zhp-input" type="number" min="0" x-model="editing.declared_persons" />
+                </div>
+                <div class="zhp-field">
+                  <label class="zhp-label">Godzina przyjazdu</label>
+                  <input class="zhp-input" type="time" x-model="editing.arrival_time" />
+                </div>
+                <div class="zhp-field">
+                  <label class="zhp-label">Godzina odjazdu</label>
+                  <input class="zhp-input" type="time" x-model="editing.departure_time" />
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <button class="zhp-btn zhp-btn-primary" @click="saveDay()" :disabled="saving">
+                  <span x-show="!saving">Zapisz</span>
+                  <span x-show="saving"><div class="zhp-spinner" style="width:14px;height:14px;border-width:2px;"></div></span>
+                </button>
+                <button class="zhp-btn zhp-btn-ghost" @click="cancelEdit()">Anuluj</button>
+              </div>
+            </div>
+          </template>
+
+          <!-- Brak dni -->
+          <template x-if="!loading && !editing && days.length === 0">
+            <div style="text-align:center;padding:16px 0;color:var(--zhp-text-muted);font-size:.87rem;">
+              Brak wpisów dziennych. Użyj przycisku „+ Dodaj dzień" aby dodać pierwszy.
+            </div>
+          </template>
+
+          <!-- Tabela dni -->
+          <template x-if="!loading && days.length > 0">
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:.86rem;">
+                <thead>
+                  <tr style="border-bottom:2px solid var(--zhp-border);">
+                    <th style="text-align:left;padding:6px 10px;color:var(--zhp-text-mid);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;">Data</th>
+                    <th style="text-align:right;padding:6px 10px;color:var(--zhp-text-mid);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;">Osoby</th>
+                    <th style="text-align:center;padding:6px 10px;color:var(--zhp-text-mid);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;">Przyjazd</th>
+                    <th style="text-align:center;padding:6px 10px;color:var(--zhp-text-mid);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;">Odjazd</th>
+                    <th style="width:60px;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="day in days" :key="day.id">
+                    <tr style="border-bottom:1px solid var(--zhp-border);">
+                      <td style="padding:8px 10px;" x-text="fmtDate(day.declaration_date)"></td>
+                      <td style="padding:8px 10px;text-align:right;font-weight:600;" x-text="day.declared_persons"></td>
+                      <td style="padding:8px 10px;text-align:center;" x-text="day.arrival_time || '—'"></td>
+                      <td style="padding:8px 10px;text-align:center;" x-text="day.departure_time || '—'"></td>
+                      <td style="padding:8px 10px;">
+                        <button class="zhp-btn zhp-btn-ghost zhp-btn-sm" @click="editDay(day)">✏️</button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+        </div>
+      </div>
+
+    </div><!-- /teczka -->
 
     <!-- Stopka -->
     <div style="text-align:center;padding:16px 20px 24px;color:var(--zhp-text-muted);font-size:.72rem;">

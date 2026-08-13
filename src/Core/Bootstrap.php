@@ -12,6 +12,7 @@ use BaseMgmt\License\LicenseManager;
 use BaseMgmt\Modules\Reservations\ReservationNotifier;
 use BaseMgmt\REST\AuthController;
 use BaseMgmt\REST\CommunicationController;
+use BaseMgmt\REST\FolderController;
 use BaseMgmt\REST\FormsController;
 use BaseMgmt\REST\HelpController;
 use BaseMgmt\REST\MenuController;
@@ -119,6 +120,7 @@ final class Bootstrap {
 		$this->loader->add_action('rest_api_init', new CommunicationController(),    'register_routes');
 		$this->loader->add_action('rest_api_init', new HelpController(),             'register_routes');
 		$this->loader->add_action('rest_api_init', new FormsController(),            'register_routes');
+		$this->loader->add_action('rest_api_init', new FolderController(),           'register_routes');
 	}
 
 	private function register_frontend(): void {

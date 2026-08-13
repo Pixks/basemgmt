@@ -98,6 +98,13 @@ window.bmApi = (function () {
 		getSubmissions:     (params) => request('panel/submissions' + (params ? '?' + new URLSearchParams(params).toString() : ''), 'GET'),
 		getSubmission:      (id)     => request(`panel/submissions/${id}`, 'GET'),
 		getAttachmentUrl:   (subId, attId) => bmConfig.restUrl + `panel/submissions/${subId}/attachment/${attId}`,
+
+		// Camp Folder (Teczka obozu)
+		getFolderDocuments:  ()        => request('panel/folder/documents', 'GET'),
+		getFolderDamages:    ()        => request('panel/folder/damages', 'GET'),
+		reportDamage:        (payload) => request('panel/folder/damages', 'POST', payload),
+		getFolderDeclaration:()        => request('panel/folder/declaration', 'GET'),
+		saveDeclarationDay:  (payload) => request('panel/folder/declaration/day', 'POST', payload),
 	};
 })();
 
@@ -174,6 +181,9 @@ Alpine.data('bmConversations', window.bmConversations);
 Alpine.data('bmHelp',          window.bmHelp);
 Alpine.data('bmForms',         window.bmForms);
 Alpine.data('bmSubmissions',   window.bmSubmissions);
+Alpine.data('bmFolderDocs',    window.bmFolderDocs);
+Alpine.data('bmDamages',       window.bmDamages);
+Alpine.data('bmDeclaration',   window.bmDeclaration);
 }
 }
 
@@ -1275,4 +1285,170 @@ const map = { low: 'Niski', normal: 'Normalny', high: 'Wysoki', urgent: 'Pilny' 
 return map[priority] || priority;
 },
 };
+};
+
+
+// ── bmFolderDocs – biblioteka dokumentów ─────────────────────────────────────
+
+window.bmFolderDocs = function () {
+	return {
+		loading:   false,
+		documents: [],
+		error:     '',
+
+		async init() {
+			this.loading = true;
+			const r = await bmApi.getFolderDocuments();
+			this.loading = false;
+			if (r.ok) {
+				this.documents = r.data.documents || [];
+			} else {
+				this.error = r.data.message || 'Błąd ładowania dokumentów.';
+			}
+		},
+
+		docIcon(type) {
+			const map = { contract: '📄', regulation: '📜', info: 'ℹ️', form: '📝', document: '📄' };
+			return map[type] || '📄';
+		},
+	};
+};
+
+
+// ── bmDamages – szkody obozu ─────────────────────────────────────────────────
+
+window.bmDamages = function () {
+	return {
+		loading:  false,
+		damages:  [],
+		error:    '',
+		success:  '',
+		showForm: false,
+		saving:   false,
+		form: { name: '', description: '', cost: '' },
+
+		async init() {
+			await this.load();
+		},
+
+		async load() {
+			this.loading = true;
+			const r = await bmApi.getFolderDamages();
+			this.loading = false;
+			if (r.ok) {
+				this.damages = r.data.damages || [];
+			} else {
+				this.error = r.data.message || 'Błąd ładowania szkód.';
+			}
+		},
+
+		openForm() {
+			this.form    = { name: '', description: '', cost: '' };
+			this.error   = '';
+			this.success = '';
+			this.showForm = true;
+		},
+
+		async submit() {
+			if (!this.form.name.trim()) { this.error = 'Podaj nazwę szkody.'; return; }
+			this.saving = true;
+			this.error  = '';
+			const r = await bmApi.reportDamage({
+				name:        this.form.name.trim(),
+				description: this.form.description.trim(),
+				cost:        parseFloat(this.form.cost) || 0,
+				nonce:       bmConfig.panelNonce,
+			});
+			this.saving = false;
+			if (r.ok) {
+				this.showForm = false;
+				this.success  = 'Szkoda zgłoszona pomyślnie.';
+				await this.load();
+			} else {
+				this.error = r.data.message || 'Błąd zapisu.';
+			}
+		},
+
+		statusLabel(s) {
+			return { reported: 'Zgłoszona', acknowledged: 'Przyjęta', resolved: 'Rozwiązana' }[s] || s;
+		},
+
+		statusClass(s) {
+			return { reported: 'zhp-badge-gold', acknowledged: 'zhp-badge-gray', resolved: 'zhp-badge-green' }[s] || 'zhp-badge-gray';
+		},
+	};
+};
+
+
+// ── bmDeclaration – deklaracja obozu ─────────────────────────────────────────
+
+window.bmDeclaration = function () {
+	return {
+		loading:     false,
+		declaration: null,
+		days:        [],
+		error:       '',
+		editing:     null,
+		saving:      false,
+
+		async init() {
+			await this.load();
+		},
+
+		async load() {
+			this.loading = true;
+			const r = await bmApi.getFolderDeclaration();
+			this.loading = false;
+			if (r.ok) {
+				this.declaration = r.data.declaration;
+				this.days        = r.data.days || [];
+			} else {
+				this.error = r.data.message || 'Błąd ładowania deklaracji.';
+			}
+		},
+
+		editDay(day) {
+			this.editing = {
+				declaration_date: day.declaration_date,
+				declared_persons: day.declared_persons,
+				arrival_time:     day.arrival_time,
+				departure_time:   day.departure_time,
+			};
+			this.error = '';
+		},
+
+		newDay() {
+			this.editing = { declaration_date: '', declared_persons: 0, arrival_time: '', departure_time: '' };
+			this.error = '';
+		},
+
+		cancelEdit() {
+			this.editing = null;
+		},
+
+		async saveDay() {
+			if (!this.editing.declaration_date) { this.error = 'Wybierz datę.'; return; }
+			this.saving = true;
+			this.error  = '';
+			const r = await bmApi.saveDeclarationDay({
+				declaration_date: this.editing.declaration_date,
+				declared_persons: parseInt(this.editing.declared_persons) || 0,
+				arrival_time:     this.editing.arrival_time || '',
+				departure_time:   this.editing.departure_time || '',
+				nonce:            bmConfig.panelNonce,
+			});
+			this.saving = false;
+			if (r.ok) {
+				this.editing = null;
+				await this.load();
+			} else {
+				this.error = r.data.message || 'Błąd zapisu.';
+			}
+		},
+
+		fmtDate(d) {
+			if (!d) return '—';
+			return new Date(d + 'T00:00:00').toLocaleDateString('pl-PL', { day: '2-digit', month: 'short', year: 'numeric' });
+		},
+	};
 };
