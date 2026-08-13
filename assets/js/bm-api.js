@@ -119,6 +119,7 @@ displayName:    bmConfig.displayName,
 camp:           null,
 latestCount:    null,
 submittedToday: false,
+unreadCount:    0,
 announcements:  { active: [], archived: [], own: [] },
 
 async init() {
@@ -794,6 +795,7 @@ window.bmReservations = function () {
 		resources:        [],
 		myReservations:   [],
 		takenSlots:       [],
+		blockWindows:     [],
 		selectedResource: null,
 		form: {
 			res_date:    '',
@@ -823,6 +825,7 @@ window.bmReservations = function () {
 			this.form.end_time    = '';
 			this.form.purpose     = '';
 			this.takenSlots       = [];
+			this.blockWindows     = [];
 			this.formError        = '';
 			this.success          = '';
 			this.loadSlots();
@@ -831,7 +834,10 @@ window.bmReservations = function () {
 		async loadSlots() {
 			if (!this.selectedResource || !this.form.res_date) return;
 			const { ok, data } = await bmApi.getReservationSlots(this.selectedResource.id, this.form.res_date);
-			if (ok) this.takenSlots = data.reserved_slots || [];
+			if (ok) {
+				this.takenSlots   = data.reserved_slots || [];
+				this.blockWindows = data.block_windows  || [];
+			}
 		},
 
 		async submitReservation() {
@@ -978,7 +984,12 @@ this.loading = false;
 
 async loadThreads() {
 const { ok, data } = await bmApi.getThreads();
-if (ok) this.threads = data.threads || [];
+if (ok) {
+this.threads = data.threads || [];
+if (typeof Alpine !== 'undefined') {
+Alpine.store('bm').unreadCount = this.threads.reduce((s, t) => s + (t.unread_camp || 0), 0);
+}
+}
 },
 
 async openThread(id) {

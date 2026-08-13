@@ -5,6 +5,13 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
 
 > Jedyne co musisz mieć globalnie to `[x-cloak] { display: none !important; }` w CSS strony (możesz dodać w Breakdance → Global CSS).
 
+**Zmiany względem poprzedniej wersji:**
+- Zakładka Meldunek korzysta z nowego `ReportsController` (`/panel/reports/*`) – obsługuje tryby roboczy i wysłany
+- Formularz rezerwacji pokazuje blokady techniczne (`block_windows`)
+- Pogoda pobierana z `/panel/weather` (wymaga sesji)
+- Naprawiono: `campName` w topbarze, licznik nieprzeczytanych wiadomości, lookup nazwy zasobu w rezerwacjach
+- Usunięto `role` z listy kadry w ekranie logowania (API nie zwraca tego pola)
+
 ---
 
 ```html
@@ -174,7 +181,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
               <select class="zhp-select" x-model="staffId">
                 <option value="">— wybierz osobę —</option>
                 <template x-for="s in staffList" :key="s.id">
-                  <option :value="s.id" x-text="s.display_name + ' · ' + s.role"></option>
+                  <option :value="s.id" x-text="s.display_name"></option>
                 </template>
               </select>
             </div>
@@ -223,7 +230,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
         </div>
         <div>
           <div style="font-weight:700;font-size:.9rem;" x-text="$store.bm.displayName || 'Zalogowany'"></div>
-          <div style="font-size:.72rem;color:var(--zhp-text-muted);" x-text="$store.bm.campName || ''"></div>
+          <div style="font-size:.72rem;color:var(--zhp-text-muted);" x-text="$store.bm.camp?.name || ''"></div>
         </div>
       </div>
       <button class="zhp-btn zhp-btn-ghost zhp-btn-sm" @click="logout()">Wyloguj się ↩</button>
@@ -750,6 +757,14 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
                       </template>
                     </div>
                   </template>
+                  <template x-if="blockWindows.length">
+                    <div class="zhp-alert zhp-alert-warn" style="font-size:.78rem;margin-bottom:9px;flex-direction:column;align-items:flex-start;">
+                      <strong>⚠ Blokady techniczne:</strong>
+                      <template x-for="bw in blockWindows" :key="bw.from">
+                        <div x-text="bw.from.slice(0,5) + '–' + bw.to.slice(0,5) + (bw.reason ? ' · ' + bw.reason : '')"></div>
+                      </template>
+                    </div>
+                  </template>
                   <div class="bm-grid-2" style="gap:11px;">
                     <div class="zhp-field">
                       <label class="zhp-label">Od *</label>
@@ -785,7 +800,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
                   <tbody>
                     <template x-for="r in myReservations" :key="r.id">
                       <tr>
-                        <td x-text="r.resource_name || r.resource_id"></td>
+                        <td x-text="resources.find(res => res.id === r.resource_id)?.name || ('#' + r.resource_id)"></td>
                         <td x-text="r.res_date"></td>
                         <td x-text="r.start_time.slice(0,5) + '–' + r.end_time.slice(0,5)"></td>
                         <td>

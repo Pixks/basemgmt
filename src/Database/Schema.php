@@ -296,6 +296,8 @@ final class Schema {
 			label           VARCHAR(255)    NOT NULL,
 			amount          DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
 			amount_type     VARCHAR(10)     NOT NULL DEFAULT 'fixed',
+			discount        DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
+			discount_type   VARCHAR(10)     NOT NULL DEFAULT 'fixed',
 			due_date        DATE            DEFAULT NULL,
 			status          VARCHAR(20)     NOT NULL DEFAULT 'expected',
 			description     TEXT            DEFAULT NULL,
@@ -1372,6 +1374,12 @@ final class Schema {
 		$sched_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_camp_payment_schedules");
 		if ( $sched_cols && ! in_array('amount_type', $sched_cols, true) ) {
 			$wpdb->query("ALTER TABLE {$p}bm_camp_payment_schedules ADD COLUMN amount_type VARCHAR(10) NOT NULL DEFAULT 'fixed' AFTER amount"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+		if ( $sched_cols && ! in_array('discount', $sched_cols, true) ) {
+			$wpdb->query("ALTER TABLE {$p}bm_camp_payment_schedules ADD COLUMN discount DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER amount_type"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+		if ( $sched_cols && ! in_array('discount_type', $sched_cols, true) ) {
+			$wpdb->query("ALTER TABLE {$p}bm_camp_payment_schedules ADD COLUMN discount_type VARCHAR(10) NOT NULL DEFAULT 'fixed' AFTER discount"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 }

@@ -893,13 +893,23 @@ final class CampsPage {
 		}
 
 		// Manual save.
-		$ids         = (array) ($_POST['sched_id']          ?? []);
-		$labels      = (array) ($_POST['sched_label']       ?? []);
-		$types       = (array) ($_POST['sched_type']        ?? []);
-		$amounts     = (array) ($_POST['sched_amount']      ?? []);
+		$ids         = (array) ($_POST['sched_id']           ?? []);
+		$labels      = (array) ($_POST['sched_label']        ?? []);
+		$types       = (array) ($_POST['sched_type']         ?? []);
+		$amounts     = (array) ($_POST['sched_amount']       ?? []);
 		$amount_types = (array) ($_POST['sched_amount_type'] ?? []);
-		$due_dates   = (array) ($_POST['sched_due_date']    ?? []);
-		$statuses    = (array) ($_POST['sched_status']      ?? []);
+		$discounts   = (array) ($_POST['sched_discount']     ?? []);
+		$discount_types = (array) ($_POST['sched_discount_type'] ?? []);
+		$due_dates   = (array) ($_POST['sched_due_date']     ?? []);
+		$statuses    = (array) ($_POST['sched_status']       ?? []);
+
+		// Save global discount.
+		$global_discount      = (float) str_replace(',', '.', sanitize_text_field($_POST['global_discount'] ?? '0'));
+		$global_discount_type = in_array(sanitize_key($_POST['global_discount_type'] ?? 'fixed'), ['fixed', 'percent'], true)
+			? sanitize_key($_POST['global_discount_type'])
+			: 'fixed';
+		update_post_meta($camp_id, '_bm_finance_global_discount', $global_discount);
+		update_post_meta($camp_id, '_bm_finance_global_discount_type', $global_discount_type);
 
 		// Delete removed rows.
 		$existing_ids = array_filter(array_map('intval', $ids));
@@ -920,13 +930,15 @@ final class CampsPage {
 			}
 			$row_id = (int) ($ids[$i] ?? 0);
 			$data   = [
-				'camp_id'      => $camp_id,
-				'payment_type' => sanitize_key($types[$i] ?? 'other'),
-				'label'        => $label,
-				'amount'       => (float) str_replace(',', '.', $amounts[$i] ?? '0'),
-				'amount_type'  => in_array(sanitize_key($amount_types[$i] ?? 'fixed'), ['fixed', 'percent'], true) ? sanitize_key($amount_types[$i] ?? 'fixed') : 'fixed',
-				'due_date'     => sanitize_text_field($due_dates[$i] ?? '') ?: null,
-				'status'       => sanitize_key($statuses[$i] ?? 'expected'),
+				'camp_id'       => $camp_id,
+				'payment_type'  => sanitize_key($types[$i] ?? 'other'),
+				'label'         => $label,
+				'amount'        => (float) str_replace(',', '.', $amounts[$i] ?? '0'),
+				'amount_type'   => 'fixed',
+				'discount'      => max(0.0, (float) str_replace(',', '.', $discounts[$i] ?? '0')),
+				'discount_type' => in_array(sanitize_key($discount_types[$i] ?? 'fixed'), ['fixed', 'percent'], true) ? sanitize_key($discount_types[$i] ?? 'fixed') : 'fixed',
+				'due_date'      => sanitize_text_field($due_dates[$i] ?? '') ?: null,
+				'status'        => sanitize_key($statuses[$i] ?? 'expected'),
 			];
 			if ( $row_id > 0 ) {
 				$wpdb->update($tbl, $data, ['id' => $row_id, 'camp_id' => $camp_id]);
