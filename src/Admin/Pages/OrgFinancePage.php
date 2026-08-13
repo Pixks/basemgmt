@@ -35,7 +35,6 @@ final class OrgFinancePage {
 		return [
 			'person_night' => __('za osobę', 'basemgmt'),
 			'days'         => __('liczba dni', 'basemgmt'),
-			'flat'         => __('ryczałt', 'basemgmt'),
 		];
 	}
 
