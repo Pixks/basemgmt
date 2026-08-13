@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BaseMgmt\Frontend;
 
+use BaseMgmt\Auth\FrontendAuth;
 use BaseMgmt\Auth\SessionManager;
 use BaseMgmt\Modules\Camps\StaffRepository;
 
@@ -146,6 +147,9 @@ final class ShortcodeHandler {
 			'staffId'       => $staff_id,
 			'displayName'   => esc_html($display_name),
 			'sessionExpires'=> $session ? $session->expires_at : null,
+			// Inject camp list server-side so the login dropdown works without
+			// requiring an authenticated REST request from the browser.
+			'activeCamps'   => FrontendAuth::get_active_camps(),
 		];
 	}
 }

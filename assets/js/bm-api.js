@@ -201,6 +201,11 @@ window.bmLogin = function () {
 		error:    '',
 
 		async init() {
+			// Use server-injected list when available (works without WP login).
+			if (Array.isArray(bmConfig.activeCamps) && bmConfig.activeCamps.length) {
+				this.camps = bmConfig.activeCamps;
+				return;
+			}
 			const { ok, data } = await bmApi.getCamps();
 			if (ok) this.camps = data;
 		},
