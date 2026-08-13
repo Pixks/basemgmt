@@ -592,6 +592,9 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 			<div class="bm-workcenter-header">
 				<h2 style="margin:0;"><?php esc_html_e('Dokumenty obozu', 'basemgmt'); ?></h2>
 				<div style="display:flex;gap:8px;">
+					<button type="button" class="button" id="bm-add-doc-custom">
+						<?php esc_html_e('+ Dodaj własny', 'basemgmt'); ?>
+					</button>
 					<button type="button" class="button" id="bm-add-doc-from-library">
 						<?php esc_html_e('+ Dodaj z biblioteki', 'basemgmt'); ?>
 					</button>
@@ -618,12 +621,26 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $camp_documents as $doc ) : ?>
+						<?php foreach ( $camp_documents as $doc ) :
+							$doc_atts = $camp_doc_attachments[(int) $doc->id] ?? [];
+						?>
 							<tr>
 								<td>
 									<strong><?php echo esc_html($doc->title); ?></strong>
 									<?php if ( ! empty($doc->locked) ) : ?>
 										<span title="<?php esc_attr_e('Dokument wysłany — zablokowany', 'basemgmt'); ?>"> 🔒</span>
+									<?php endif; ?>
+									<?php if ( ! empty($doc_atts) ) : ?>
+										<br><span class="bm-muted" style="font-size:11px;">
+											<?php foreach ( $doc_atts as $att ) : ?>
+												<a href="<?php echo esc_url($att->file_url); ?>" target="_blank"><?php echo esc_html($att->file_name ?: basename($att->file_url)); ?></a>
+												<?php if ( empty($doc->locked) ) : ?>
+													<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_doc_attachment&id={$id}&att_id={$att->id}"), "bm_delete_camp_doc_att_{$att->id}")); ?>"
+														class="bm-danger bm-link-small"
+														data-bm-confirm="<?php esc_attr_e('Usunąć załącznik?', 'basemgmt'); ?>">✕</a>
+												<?php endif; ?>
+											<?php endforeach; ?>
+										</span>
 									<?php endif; ?>
 								</td>
 								<td>
@@ -649,6 +666,11 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 										<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-camps&action=doc_view&id={$id}&doc_id={$doc->id}")); ?>" class="button button-small" target="_blank">
 											<?php esc_html_e('Podgląd', 'basemgmt'); ?>
 										</a>
+										<?php if ( empty($doc->locked) ) : ?>
+											<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-camps&action=doc_edit&id={$id}&doc_id={$doc->id}")); ?>" class="button button-small">
+												<?php esc_html_e('Edytuj treść', 'basemgmt'); ?>
+											</a>
+										<?php endif; ?>
 									<?php elseif ( ! empty($doc->file_url) ) : ?>
 										<a href="<?php echo esc_url($doc->file_url); ?>" class="button button-small" target="_blank">
 											<?php esc_html_e('Pobierz', 'basemgmt'); ?>
@@ -663,6 +685,12 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 										</button>
 									<?php endif; ?>
 									<?php if ( empty($doc->locked) ) : ?>
+										<button type="button" class="button button-small bm-modal-open"
+											data-modal="bm-modal-add-camp-doc-att"
+											data-doc-id="<?php echo esc_attr($doc->id); ?>"
+											data-doc-title="<?php echo esc_attr($doc->title); ?>">
+											<?php esc_html_e('+ Załącznik', 'basemgmt'); ?>
+										</button>
 										<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_send_camp_doc&id={$id}&doc_id={$doc->id}"), "bm_send_camp_doc_{$doc->id}")); ?>"
 											class="button button-small"
 											data-bm-confirm="<?php esc_attr_e('Wygenerować link do wysłania do klienta?', 'basemgmt'); ?>">
@@ -685,9 +713,14 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 			<div class="postbox" style="margin-top:24px;">
 				<div class="postbox-header" style="display:flex;align-items:center;justify-content:space-between;">
 					<h2 class="hndle"><?php esc_html_e('Deklaracje', 'basemgmt'); ?></h2>
-					<button type="button" class="button bm-modal-open" data-modal="bm-modal-add-decl" style="margin:8px 12px;">
-						<?php esc_html_e('+ Dodaj deklarację', 'basemgmt'); ?>
-					</button>
+					<div style="display:flex;gap:8px;margin:8px 12px;">
+						<button type="button" class="button bm-modal-open" data-modal="bm-modal-add-decl-custom">
+							<?php esc_html_e('+ Dodaj własną', 'basemgmt'); ?>
+						</button>
+						<button type="button" class="button button-primary bm-modal-open" data-modal="bm-modal-add-decl">
+							<?php esc_html_e('+ Dodaj z biblioteki', 'basemgmt'); ?>
+						</button>
+					</div>
 				</div>
 				<div class="inside">
 					<p class="description"><?php esc_html_e('Deklaracje wymagają jedynie kliknięcia „Zatwierdź" przez upoważnioną osobę — system rejestruje, kto i kiedy zatwierdził.', 'basemgmt'); ?></p>
@@ -706,15 +739,33 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 							<tbody>
 								<?php
 								$decl_status_map = [
-									'draft'    => ['label' => __('Oczekuje', 'basemgmt'),     'class' => 'bm-badge--normal'],
-									'approved' => ['label' => __('Zatwierdzona', 'basemgmt'),  'class' => 'bm-badge--success'],
+									'draft'    => ['label' => __('Oczekuje', 'basemgmt'),    'class' => 'bm-badge--normal'],
+									'approved' => ['label' => __('Zatwierdzona', 'basemgmt'), 'class' => 'bm-badge--success'],
 								];
 								foreach ( $camp_decl_docs as $ddoc ) :
-									$ds = $decl_status_map[$ddoc->status] ?? ['label' => $ddoc->status, 'class' => 'bm-badge--normal'];
-									$approver = ! empty($ddoc->approved_by) ? get_user_by('id', (int) $ddoc->approved_by) : null;
+									$ds        = $decl_status_map[$ddoc->status] ?? ['label' => $ddoc->status, 'class' => 'bm-badge--normal'];
+									$approver  = ! empty($ddoc->approved_by) ? get_user_by('id', (int) $ddoc->approved_by) : null;
+									$decl_atts = $camp_decl_attachments[(int) $ddoc->id] ?? [];
 								?>
 									<tr>
-										<td><strong><?php echo esc_html($ddoc->title); ?></strong></td>
+										<td>
+											<strong><?php echo esc_html($ddoc->title); ?></strong>
+											<?php if ( ! empty($ddoc->locked) ) : ?>
+												<span title="<?php esc_attr_e('Deklaracja wysłana — zablokowana', 'basemgmt'); ?>"> 🔒</span>
+											<?php endif; ?>
+											<?php if ( ! empty($decl_atts) ) : ?>
+												<br><span class="bm-muted" style="font-size:11px;">
+													<?php foreach ( $decl_atts as $att ) : ?>
+														<a href="<?php echo esc_url($att->file_url); ?>" target="_blank"><?php echo esc_html($att->file_name ?: basename($att->file_url)); ?></a>
+														<?php if ( empty($ddoc->locked) ) : ?>
+															<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_decl_attachment&id={$id}&att_id={$att->id}"), "bm_delete_camp_decl_att_{$att->id}")); ?>"
+																class="bm-danger bm-link-small"
+																data-bm-confirm="<?php esc_attr_e('Usunąć załącznik?', 'basemgmt'); ?>">✕</a>
+														<?php endif; ?>
+													<?php endforeach; ?>
+												</span>
+											<?php endif; ?>
+										</td>
 										<td><span class="bm-badge <?php echo esc_attr($ds['class']); ?>"><?php echo esc_html($ds['label']); ?></span></td>
 										<td class="bm-muted" style="font-size:11px;">
 											<?php if ( $approver && ! empty($ddoc->approved_at) ) : ?>
@@ -723,22 +774,40 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 											<?php else : ?>—<?php endif; ?>
 										</td>
 										<td>
-											<?php if ( ! empty($ddoc->html_content) ) : ?>
-												<a href="#" class="button button-small" onclick="event.preventDefault();"><?php esc_html_e('Podgląd', 'basemgmt'); ?></a>
+											<?php if ( ! empty($ddoc->html_content) && $ddoc->status === 'approved' ) : ?>
+												<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-camps&action=decl_view&id={$id}&decl_id={$ddoc->id}")); ?>" class="button button-small" target="_blank">
+													<?php esc_html_e('Podgląd', 'basemgmt'); ?>
+												</a>
+											<?php elseif ( ! empty($ddoc->file_url) && empty($ddoc->html_content) ) : ?>
+												<a href="<?php echo esc_url($ddoc->file_url); ?>" class="button button-small" target="_blank">
+													<?php esc_html_e('Pobierz', 'basemgmt'); ?>
+												</a>
 											<?php endif; ?>
-											<?php if ( $ddoc->status !== 'approved' ) : ?>
-												<button type="button" class="button button-small button-primary bm-modal-open"
-													data-modal="bm-modal-approve-decl"
+											<?php if ( empty($ddoc->locked) ) : ?>
+												<?php if ( $ddoc->status !== 'approved' ) : ?>
+													<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-camps&action=decl_edit&id={$id}&decl_id={$ddoc->id}")); ?>" class="button button-small button-primary">
+														<?php esc_html_e('Zatwierdź', 'basemgmt'); ?>
+													</a>
+												<?php endif; ?>
+												<button type="button" class="button button-small bm-modal-open"
+													data-modal="bm-modal-add-camp-decl-att"
 													data-decl-id="<?php echo esc_attr($ddoc->id); ?>"
 													data-decl-title="<?php echo esc_attr($ddoc->title); ?>">
-													<?php esc_html_e('Zatwierdź', 'basemgmt'); ?>
+													<?php esc_html_e('+ Załącznik', 'basemgmt'); ?>
 												</button>
+												<?php if ( $ddoc->status === 'approved' ) : ?>
+													<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_send_camp_decl_doc&id={$id}&decl_id={$ddoc->id}"), "bm_send_camp_decl_doc_{$ddoc->id}")); ?>"
+														class="button button-small"
+														data-bm-confirm="<?php esc_attr_e('Wysłać deklarację do podpisu?', 'basemgmt'); ?>">
+														<?php esc_html_e('Wyślij do podpisu', 'basemgmt'); ?>
+													</a>
+												<?php endif; ?>
+												<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_decl_doc&id={$id}&decl_doc_id={$ddoc->id}"), "bm_delete_camp_decl_doc_{$ddoc->id}")); ?>"
+													class="button button-small bm-danger"
+													data-bm-confirm="<?php esc_attr_e('Usunąć deklarację?', 'basemgmt'); ?>">
+													<?php esc_html_e('Usuń', 'basemgmt'); ?>
+												</a>
 											<?php endif; ?>
-											<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_camp_decl_doc&id={$id}&decl_doc_id={$ddoc->id}"), "bm_delete_camp_decl_doc_{$ddoc->id}")); ?>"
-												class="button button-small bm-danger"
-												data-bm-confirm="<?php esc_attr_e('Usunąć deklarację?', 'basemgmt'); ?>">
-												<?php esc_html_e('Usuń', 'basemgmt'); ?>
-											</a>
 										</td>
 									</tr>
 								<?php endforeach; ?>
@@ -748,24 +817,60 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 				</div>
 			</div>
 
-			<!-- Modal: Zatwierdź deklarację -->
-			<div id="bm-modal-approve-decl" style="display:none;" class="bm-modal-overlay">
+			<!-- Modal: Dodaj załącznik do dokumentu w teczce -->
+			<div id="bm-modal-add-camp-doc-att" style="display:none;" class="bm-modal-overlay">
 				<div class="bm-modal">
 					<div class="bm-modal-header">
-						<h3><?php esc_html_e('Zatwierdź deklarację', 'basemgmt'); ?></h3>
+						<h3><?php esc_html_e('Dodaj załącznik do dokumentu', 'basemgmt'); ?></h3>
 						<button type="button" class="bm-modal-close">✕</button>
 					</div>
 					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-						<?php wp_nonce_field('bm_approve_camp_decl_doc'); ?>
-						<input type="hidden" name="action" value="bm_approve_camp_decl_doc">
-						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
-						<input type="hidden" name="decl_doc_id" id="bm-approve-decl-id" value="">
+						<?php wp_nonce_field('bm_add_camp_doc_attachment'); ?>
+						<input type="hidden" name="action"    value="bm_add_camp_doc_attachment">
+						<input type="hidden" name="camp_id"   value="<?php echo esc_attr($id); ?>">
+						<input type="hidden" name="doc_id"    id="bm-camp-doc-att-doc-id"   value="">
+						<input type="hidden" name="file_id"   id="bm-camp-doc-att-file-id"   value="">
+						<input type="hidden" name="file_url"  id="bm-camp-doc-att-file-url"  value="">
+						<input type="hidden" name="file_name" id="bm-camp-doc-att-file-name" value="">
 						<div class="bm-modal-body">
-							<p id="bm-approve-decl-title" style="font-weight:600;"></p>
-							<p><?php esc_html_e('Potwierdzam zapoznanie się z treścią deklaracji i wyrażam zgodę na jej warunki. System zapisze Twoje imię i godzinę zatwierdzenia.', 'basemgmt'); ?></p>
+							<p id="bm-camp-doc-att-title" style="font-weight:600;"></p>
+							<p>
+								<span id="bm-camp-doc-att-display" class="bm-muted"><?php esc_html_e('Brak wybranego pliku', 'basemgmt'); ?></span><br>
+								<button type="button" class="button" id="bm-camp-doc-att-select" style="margin-top:6px;"><?php esc_html_e('Wybierz plik', 'basemgmt'); ?></button>
+							</p>
 						</div>
 						<div class="bm-modal-footer">
-							<button type="submit" class="button button-primary"><?php esc_html_e('Zatwierdź deklarację', 'basemgmt'); ?></button>
+							<button type="submit" class="button button-primary" id="bm-camp-doc-att-submit" disabled><?php esc_html_e('Dodaj załącznik', 'basemgmt'); ?></button>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<!-- Modal: Dodaj załącznik do deklaracji w teczce -->
+			<div id="bm-modal-add-camp-decl-att" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Dodaj załącznik do deklaracji', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+						<?php wp_nonce_field('bm_add_camp_decl_attachment'); ?>
+						<input type="hidden" name="action"    value="bm_add_camp_decl_attachment">
+						<input type="hidden" name="camp_id"   value="<?php echo esc_attr($id); ?>">
+						<input type="hidden" name="decl_id"   id="bm-camp-decl-att-decl-id"  value="">
+						<input type="hidden" name="file_id"   id="bm-camp-decl-att-file-id"   value="">
+						<input type="hidden" name="file_url"  id="bm-camp-decl-att-file-url"  value="">
+						<input type="hidden" name="file_name" id="bm-camp-decl-att-file-name" value="">
+						<div class="bm-modal-body">
+							<p id="bm-camp-decl-att-title" style="font-weight:600;"></p>
+							<p>
+								<span id="bm-camp-decl-att-display" class="bm-muted"><?php esc_html_e('Brak wybranego pliku', 'basemgmt'); ?></span><br>
+								<button type="button" class="button" id="bm-camp-decl-att-select" style="margin-top:6px;"><?php esc_html_e('Wybierz plik', 'basemgmt'); ?></button>
+							</p>
+						</div>
+						<div class="bm-modal-footer">
+							<button type="submit" class="button button-primary" id="bm-camp-decl-att-submit" disabled><?php esc_html_e('Dodaj załącznik', 'basemgmt'); ?></button>
 							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
 						</div>
 					</form>
@@ -813,11 +918,11 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 				</div>
 			</div>
 
-			<!-- Modal: Dodaj deklarację -->
+			<!-- Modal: Dodaj deklarację z biblioteki -->
 			<div id="bm-modal-add-decl" style="display:none;" class="bm-modal-overlay">
 				<div class="bm-modal">
 					<div class="bm-modal-header">
-						<h3><?php esc_html_e('Dodaj deklarację z szablonu', 'basemgmt'); ?></h3>
+						<h3><?php esc_html_e('Dodaj deklarację z biblioteki', 'basemgmt'); ?></h3>
 						<button type="button" class="bm-modal-close">✕</button>
 					</div>
 					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -826,9 +931,9 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 						<input type="hidden" name="camp_id" value="<?php echo esc_attr($id); ?>">
 						<div class="bm-modal-body">
 							<?php if ( empty($decl_tpl_options) ) : ?>
-								<p><?php esc_html_e('Brak szablonów deklaracji. Utwórz je w Organizacja → Deklaracje.', 'basemgmt'); ?></p>
+								<p><?php esc_html_e('Brak deklaracji w bibliotece. Dodaj najpierw deklaracje w Organizacja → Deklaracje.', 'basemgmt'); ?></p>
 							<?php else : ?>
-								<label><strong><?php esc_html_e('Wybierz szablon:', 'basemgmt'); ?></strong></label>
+								<label><strong><?php esc_html_e('Wybierz deklarację:', 'basemgmt'); ?></strong></label>
 								<select name="decl_template_id" class="widefat" required>
 									<option value=""><?php esc_html_e('— Wybierz —', 'basemgmt'); ?></option>
 									<?php foreach ( $decl_tpl_options as $dtpl ) : ?>
@@ -841,6 +946,82 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 							<?php if ( ! empty($decl_tpl_options) ) : ?>
 								<button type="submit" class="button button-primary"><?php esc_html_e('Dodaj', 'basemgmt'); ?></button>
 							<?php endif; ?>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<!-- Modal: Dodaj własną deklarację -->
+			<div id="bm-modal-add-decl-custom" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Dodaj własną deklarację', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+						<?php wp_nonce_field('bm_add_camp_decl_custom'); ?>
+						<input type="hidden" name="action"    value="bm_add_camp_decl_custom">
+						<input type="hidden" name="camp_id"   value="<?php echo esc_attr($id); ?>">
+						<input type="hidden" name="file_id"   id="bm-custom-decl-file-id"   value="">
+						<input type="hidden" name="file_url"  id="bm-custom-decl-file-url"  value="">
+						<input type="hidden" name="file_name" id="bm-custom-decl-file-name" value="">
+						<div class="bm-modal-body" style="display:flex;flex-direction:column;gap:12px;">
+							<div>
+								<label for="bm-custom-decl-title"><strong><?php esc_html_e('Tytuł deklaracji', 'basemgmt'); ?></strong></label><br>
+								<input type="text" id="bm-custom-decl-title" name="title" class="widefat" required placeholder="<?php esc_attr_e('np. Zgoda na przetwarzanie danych', 'basemgmt'); ?>">
+							</div>
+							<div>
+								<label><strong><?php esc_html_e('Plik (opcjonalnie)', 'basemgmt'); ?></strong></label><br>
+								<span id="bm-custom-decl-file-display" class="bm-muted"><?php esc_html_e('Brak wybranego pliku', 'basemgmt'); ?></span>
+								<button type="button" class="button" id="bm-custom-decl-select" style="margin-left:8px;"><?php esc_html_e('Wybierz plik', 'basemgmt'); ?></button>
+								<p class="description" style="margin-top:4px;"><?php esc_html_e('Możesz też pozostawić puste i wpisać treść HTML po dodaniu.', 'basemgmt'); ?></p>
+							</div>
+						</div>
+						<div class="bm-modal-footer">
+							<button type="submit" class="button button-primary"><?php esc_html_e('Dodaj deklarację', 'basemgmt'); ?></button>
+							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<!-- Modal: Dodaj własny dokument -->
+			<div id="bm-modal-custom-doc" style="display:none;" class="bm-modal-overlay">
+				<div class="bm-modal">
+					<div class="bm-modal-header">
+						<h3><?php esc_html_e('Dodaj własny dokument', 'basemgmt'); ?></h3>
+						<button type="button" class="bm-modal-close">✕</button>
+					</div>
+					<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+						<?php wp_nonce_field('bm_add_camp_doc_custom'); ?>
+						<input type="hidden" name="action"    value="bm_add_camp_doc_custom">
+						<input type="hidden" name="camp_id"   value="<?php echo esc_attr($id); ?>">
+						<input type="hidden" name="file_id"   id="bm-custom-doc-file-id"   value="">
+						<input type="hidden" name="file_url"  id="bm-custom-doc-file-url"  value="">
+						<input type="hidden" name="file_name" id="bm-custom-doc-file-name" value="">
+						<div class="bm-modal-body" style="display:flex;flex-direction:column;gap:12px;">
+							<div>
+								<label for="bm-custom-doc-title"><strong><?php esc_html_e('Tytuł dokumentu', 'basemgmt'); ?></strong></label><br>
+								<input type="text" id="bm-custom-doc-title" name="title" class="widefat" required placeholder="<?php esc_attr_e('np. Umowa najmu', 'basemgmt'); ?>">
+							</div>
+							<div>
+								<label for="bm-custom-doc-type"><strong><?php esc_html_e('Typ dokumentu', 'basemgmt'); ?></strong></label><br>
+								<select id="bm-custom-doc-type" name="document_type" class="widefat">
+									<?php foreach ( $doc_types_map as $key => $label ) : ?>
+										<option value="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+							<div>
+								<label><strong><?php esc_html_e('Plik (opcjonalnie)', 'basemgmt'); ?></strong></label><br>
+								<span id="bm-custom-doc-file-display" class="bm-muted"><?php esc_html_e('Brak wybranego pliku', 'basemgmt'); ?></span>
+								<button type="button" class="button" id="bm-custom-doc-select" style="margin-left:8px;"><?php esc_html_e('Wybierz plik', 'basemgmt'); ?></button>
+								<p class="description" style="margin-top:4px;"><?php esc_html_e('Możesz też pozostawić puste i edytować treść HTML po dodaniu.', 'basemgmt'); ?></p>
+							</div>
+						</div>
+						<div class="bm-modal-footer">
+							<button type="submit" class="button button-primary"><?php esc_html_e('Dodaj dokument', 'basemgmt'); ?></button>
 							<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
 						</div>
 					</form>
@@ -1443,10 +1624,29 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 	// ── Document modals ───────────────────────────────────────────────────────
 	function openModal(id) { document.getElementById(id).style.display = 'flex'; }
 	function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+	var customDocBtn = document.getElementById('bm-add-doc-custom');
 	var libBtn = document.getElementById('bm-add-doc-from-library');
 	var tplBtn = document.getElementById('bm-add-doc-from-template');
+	if (customDocBtn) customDocBtn.addEventListener('click', function() { openModal('bm-modal-custom-doc'); });
 	if (libBtn) libBtn.addEventListener('click', function() { openModal('bm-modal-library'); });
 	if (tplBtn) tplBtn.addEventListener('click', function() { openModal('bm-modal-template'); });
+
+	// Custom doc file picker
+	var customDocSelect = document.getElementById('bm-custom-doc-select');
+	if (customDocSelect) {
+		customDocSelect.addEventListener('click', function() {
+			var frame = wp.media({ title: '<?php esc_html_e('Wybierz dokument', 'basemgmt'); ?>', multiple: false });
+			frame.on('select', function() {
+				var att = frame.state().get('selection').first().toJSON();
+				document.getElementById('bm-custom-doc-file-id').value   = att.id;
+				document.getElementById('bm-custom-doc-file-url').value  = att.url;
+				document.getElementById('bm-custom-doc-file-name').value = att.filename;
+				var disp = document.getElementById('bm-custom-doc-file-display');
+				if (disp) { disp.textContent = att.filename; disp.classList.remove('bm-muted'); }
+			});
+			frame.open();
+		});
+	}
 	document.querySelectorAll('.bm-modal-close').forEach(function(btn) {
 		btn.addEventListener('click', function() {
 			var overlay = btn.closest('.bm-modal-overlay');
@@ -1602,6 +1802,102 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 			if (titleEl) titleEl.textContent = btn.getAttribute('data-decl-title');
 		});
 	});
+
+	// Custom decl file picker
+	var customDeclSelect = document.getElementById('bm-custom-decl-select');
+	if (customDeclSelect) {
+		customDeclSelect.addEventListener('click', function() {
+			var frame = wp.media({ title: '<?php esc_html_e('Wybierz plik deklaracji', 'basemgmt'); ?>', multiple: false });
+			frame.on('select', function() {
+				var att = frame.state().get('selection').first().toJSON();
+				document.getElementById('bm-custom-decl-file-id').value   = att.id;
+				document.getElementById('bm-custom-decl-file-url').value  = att.url;
+				document.getElementById('bm-custom-decl-file-name').value = att.filename;
+				var disp = document.getElementById('bm-custom-decl-file-display');
+				if (disp) { disp.textContent = att.filename; disp.classList.remove('bm-muted'); }
+			});
+			frame.open();
+		});
+	}
+
+	// ── Camp doc attachment modal ─────────────────────────────────────────
+	document.querySelectorAll('[data-modal="bm-modal-add-camp-doc-att"]').forEach(function(btn) {
+		btn.addEventListener('click', function() {
+			var el = document.getElementById('bm-camp-doc-att-doc-id');
+			var ti = document.getElementById('bm-camp-doc-att-title');
+			if (el) el.value = btn.getAttribute('data-doc-id');
+			if (ti) ti.textContent = btn.getAttribute('data-doc-title');
+			['file-id','file-url','file-name'].forEach(function(f) {
+				var inp = document.getElementById('bm-camp-doc-att-' + f);
+				if (inp) inp.value = '';
+			});
+			var disp = document.getElementById('bm-camp-doc-att-display');
+			if (disp) { disp.textContent = '<?php esc_html_e('Brak wybranego pliku', 'basemgmt'); ?>'; disp.classList.add('bm-muted'); }
+			var sub = document.getElementById('bm-camp-doc-att-submit');
+			if (sub) sub.disabled = true;
+		});
+	});
+	var bmCampDocAttBtn = document.getElementById('bm-camp-doc-att-select');
+	if (bmCampDocAttBtn) {
+		bmCampDocAttBtn.addEventListener('click', function() {
+			var frame = wp.media({ title: '<?php esc_html_e('Wybierz załącznik', 'basemgmt'); ?>', multiple: false });
+			frame.on('select', function() {
+				var att = frame.state().get('selection').first().toJSON();
+				document.getElementById('bm-camp-doc-att-file-id').value   = att.id;
+				document.getElementById('bm-camp-doc-att-file-url').value  = att.url;
+				document.getElementById('bm-camp-doc-att-file-name').value = att.filename;
+				var disp = document.getElementById('bm-camp-doc-att-display');
+				if (disp) { disp.textContent = att.filename; disp.classList.remove('bm-muted'); }
+				var sub = document.getElementById('bm-camp-doc-att-submit');
+				if (sub) sub.disabled = false;
+			});
+			frame.open();
+		});
+	}
+
+	// ── Camp decl attachment modal ────────────────────────────────────────
+	document.querySelectorAll('[data-modal="bm-modal-add-camp-decl-att"]').forEach(function(btn) {
+		btn.addEventListener('click', function() {
+			var el = document.getElementById('bm-camp-decl-att-decl-id');
+			var ti = document.getElementById('bm-camp-decl-att-title');
+			if (el) el.value = btn.getAttribute('data-decl-id');
+			if (ti) ti.textContent = btn.getAttribute('data-decl-title');
+			['file-id','file-url','file-name'].forEach(function(f) {
+				var inp = document.getElementById('bm-camp-decl-att-' + f);
+				if (inp) inp.value = '';
+			});
+			var disp = document.getElementById('bm-camp-decl-att-display');
+			if (disp) { disp.textContent = '<?php esc_html_e('Brak wybranego pliku', 'basemgmt'); ?>'; disp.classList.add('bm-muted'); }
+			var sub = document.getElementById('bm-camp-decl-att-submit');
+			if (sub) sub.disabled = true;
+		});
+	});
+	var bmCampDeclAttBtn = document.getElementById('bm-camp-decl-att-select');
+	if (bmCampDeclAttBtn) {
+		bmCampDeclAttBtn.addEventListener('click', function() {
+			var frame = wp.media({ title: '<?php esc_html_e('Wybierz załącznik', 'basemgmt'); ?>', multiple: false });
+			frame.on('select', function() {
+				var att = frame.state().get('selection').first().toJSON();
+				document.getElementById('bm-camp-decl-att-file-id').value   = att.id;
+				document.getElementById('bm-camp-decl-att-file-url').value  = att.url;
+				document.getElementById('bm-camp-decl-att-file-name').value = att.filename;
+				var disp = document.getElementById('bm-camp-decl-att-display');
+				if (disp) { disp.textContent = att.filename; disp.classList.remove('bm-muted'); }
+				var sub = document.getElementById('bm-camp-decl-att-submit');
+				if (sub) sub.disabled = false;
+			});
+			frame.open();
+		});
+	}
+
+	// ── Auto-open print window after decl finalize ────────────────────────
+	(function() {
+		var params = new URLSearchParams(window.location.search);
+		var printUrl = params.get('bm_open_print');
+		if (printUrl) {
+			window.open(decodeURIComponent(printUrl), '_blank');
+		}
+	})();
 })();
 </script>
 <?php endif; ?>

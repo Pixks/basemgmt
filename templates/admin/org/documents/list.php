@@ -75,9 +75,24 @@
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $documents as $doc ) : ?>
+						<?php foreach ( $documents as $doc ) : 
+							$doc_atts = $attachments_by_doc[(int) $doc->id] ?? [];
+						?>
 							<tr>
-								<td><strong><?php echo esc_html($doc->title); ?></strong></td>
+								<td>
+									<strong><?php echo esc_html($doc->title); ?></strong>
+									<?php if ( ! empty($doc_atts) ) : ?>
+										<br><span class="bm-muted" style="font-size:11px;">
+											<?php
+											$att_links = array_map(
+												fn($a) => '<a href="' . esc_url($a->file_url) . '" target="_blank">' . esc_html($a->file_name ?: basename($a->file_url)) . '</a>',
+												$doc_atts
+											);
+											echo implode(', ', $att_links); // phpcs:ignore WordPress.Security.EscapeOutput
+											?>
+										</span>
+									<?php endif; ?>
+								</td>
 								<td>
 									<span class="bm-badge bm-badge--doctype-<?php echo esc_attr($doc->doc_type); ?>">
 										<?php echo esc_html($doc_types[$doc->doc_type] ?? $doc->doc_type); ?>
@@ -100,6 +115,12 @@
 									<?php endif; ?>
 								</td>
 								<td>
+									<button type="button" class="button button-small bm-modal-open"
+										data-modal="bm-modal-add-doc-att"
+										data-doc-id="<?php echo esc_attr($doc->id); ?>"
+										data-doc-title="<?php echo esc_attr($doc->title); ?>">
+										<?php esc_html_e('+ Załącznik', 'basemgmt'); ?>
+									</button>
 									<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_doc_library&id={$doc->id}"), "bm_delete_doc_library_{$doc->id}")); ?>"
 										class="button button-small bm-danger"
 										data-bm-confirm="<?php esc_attr_e('Usunąć dokument z biblioteki?', 'basemgmt'); ?>">
@@ -171,6 +192,36 @@
 		</div>
 	</div>
 </div>
+
+<!-- Modal: Dodaj załącznik do dokumentu -->
+<div id="bm-modal-add-doc-att" style="display:none;" class="bm-modal-overlay">
+	<div class="bm-modal">
+		<div class="bm-modal-header">
+			<h3><?php esc_html_e('Dodaj załącznik', 'basemgmt'); ?></h3>
+			<button type="button" class="bm-modal-close">✕</button>
+		</div>
+		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+			<?php wp_nonce_field('bm_add_doc_library_attachment'); ?>
+			<input type="hidden" name="action"    value="bm_add_doc_library_attachment">
+			<input type="hidden" name="doc_id"    id="bm-doc-att-doc-id"   value="">
+			<input type="hidden" name="file_id"   id="bm-doc-att-file-id"   value="">
+			<input type="hidden" name="file_url"  id="bm-doc-att-file-url"  value="">
+			<input type="hidden" name="file_name" id="bm-doc-att-file-name" value="">
+			<div class="bm-modal-body">
+				<p id="bm-doc-att-title" style="font-weight:600;"></p>
+				<p>
+					<span id="bm-doc-att-display" class="bm-muted"><?php esc_html_e('Brak wybranego pliku', 'basemgmt'); ?></span><br>
+					<button type="button" class="button" id="bm-doc-att-select" style="margin-top:6px;"><?php esc_html_e('Wybierz plik', 'basemgmt'); ?></button>
+				</p>
+			</div>
+			<div class="bm-modal-footer">
+				<button type="submit" class="button button-primary" id="bm-doc-att-submit" disabled><?php esc_html_e('Dodaj załącznik', 'basemgmt'); ?></button>
+				<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+			</div>
+		</form>
+	</div>
+</div>
+
 <script>
 (function($) {
 	$('#bm_select_file').on('click', function() {
@@ -181,6 +232,30 @@
 			$('#bm_file_url').val(att.url);
 			$('#bm_file_name').val(att.filename);
 			$('#bm_file_display').text(att.filename).removeClass('bm-muted');
+		});
+		frame.open();
+	});
+
+	// Attachment modal
+	$(document).on('click', '.bm-modal-open[data-modal="bm-modal-add-doc-att"]', function() {
+		var docId    = $(this).data('doc-id');
+		var docTitle = $(this).data('doc-title');
+		$('#bm-doc-att-doc-id').val(docId);
+		$('#bm-doc-att-title').text(docTitle);
+		$('#bm-doc-att-file-id, #bm-doc-att-file-url, #bm-doc-att-file-name').val('');
+		$('#bm-doc-att-display').text('<?php esc_html_e('Brak wybranego pliku', 'basemgmt'); ?>').addClass('bm-muted');
+		$('#bm-doc-att-submit').prop('disabled', true);
+	});
+
+	$('#bm-doc-att-select').on('click', function() {
+		var frame = wp.media({ title: '<?php esc_js(esc_html_e('Wybierz załącznik', 'basemgmt')); ?>', multiple: false });
+		frame.on('select', function() {
+			var att = frame.state().get('selection').first().toJSON();
+			$('#bm-doc-att-file-id').val(att.id);
+			$('#bm-doc-att-file-url').val(att.url);
+			$('#bm-doc-att-file-name').val(att.filename);
+			$('#bm-doc-att-display').text(att.filename).removeClass('bm-muted');
+			$('#bm-doc-att-submit').prop('disabled', false);
 		});
 		frame.open();
 	});

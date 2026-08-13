@@ -409,8 +409,8 @@ final class AdminMenu {
 		// Sortable.js – only on schedule edit page.
 		$page = sanitize_key($_GET['page'] ?? '');
 
-		// WP media uploader – on Org documents page.
-		if ( $page === 'basemgmt-org-documents' || $page === 'basemgmt-org-doc-templates' ) {
+		// WP media uploader – on Org documents, doc templates, declarations, and camps pages.
+		if ( in_array($page, ['basemgmt-org-documents', 'basemgmt-org-doc-templates', 'basemgmt-org-declarations', 'basemgmt-camps'], true) ) {
 			wp_enqueue_media();
 		}
 
@@ -586,6 +586,7 @@ final class AdminMenu {
 			'bm_add_camp_damage'                => [$this->camps,      'handle_add_camp_damage'],
 			'bm_delete_camp_damage'             => [$this->camps,      'handle_delete_camp_damage'],
 			// Camp documents
+			'bm_add_camp_doc_custom'            => [$this->camps, 'handle_add_camp_doc_custom'],
 			'bm_add_camp_doc_library'           => [$this->camps, 'handle_add_camp_doc_library'],
 			'bm_create_camp_doc_from_template'  => [$this->camps, 'handle_create_camp_doc_from_template'],
 			'bm_send_camp_doc'                  => [$this->camps, 'handle_send_camp_doc'],
@@ -594,6 +595,7 @@ final class AdminMenu {
 			'bm_save_decl_template'             => [$this->org_declarations, 'handle_save'],
 			'bm_delete_decl_template'           => [$this->org_declarations, 'handle_delete'],
 			// Camp declaration docs
+			'bm_add_camp_decl_custom'           => [$this->camps, 'handle_add_camp_decl_custom'],
 			'bm_add_camp_decl_doc'              => [$this->camps, 'handle_add_camp_decl_doc'],
 			'bm_delete_camp_decl_doc'           => [$this->camps, 'handle_delete_camp_decl_doc'],
 			'bm_approve_camp_decl_doc'          => [$this->camps, 'handle_approve_camp_decl_doc'],
@@ -605,6 +607,20 @@ final class AdminMenu {
 			'bm_edit_camp_damage'               => [$this->camps, 'handle_edit_camp_damage'],
 			// Camp documents – signing
 			'bm_sign_camp_doc'                  => [$this->camps, 'handle_sign_camp_doc'],
+			// Camp document content editing
+			'bm_save_camp_doc_content'          => [$this->camps, 'handle_save_camp_doc_content'],
+			'bm_finalize_camp_decl_doc'         => [$this->camps, 'handle_finalize_camp_decl_doc'],
+			'bm_send_camp_decl_doc'             => [$this->camps, 'handle_send_camp_decl_doc'],
+			// Camp attachments
+			'bm_add_camp_doc_attachment'        => [$this->camps, 'handle_add_camp_doc_attachment'],
+			'bm_delete_camp_doc_attachment'     => [$this->camps, 'handle_delete_camp_doc_attachment'],
+			'bm_add_camp_decl_attachment'       => [$this->camps, 'handle_add_camp_decl_attachment'],
+			'bm_delete_camp_decl_attachment'    => [$this->camps, 'handle_delete_camp_decl_attachment'],
+			// Org library + declaration attachments
+			'bm_add_doc_library_attachment'     => [$this->org_documents,    'handle_add_attachment'],
+			'bm_delete_doc_library_attachment'  => [$this->org_documents,    'handle_delete_attachment'],
+			'bm_add_decl_attachment'            => [$this->org_declarations, 'handle_add_attachment'],
+			'bm_delete_decl_attachment'         => [$this->org_declarations, 'handle_delete_attachment'],
 			// Camp finance
 			'bm_save_camp_finance'              => [$this->camps, 'handle_save_camp_finance'],
 		];

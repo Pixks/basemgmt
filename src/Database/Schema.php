@@ -99,6 +99,8 @@ final class Schema {
 			// Declaration documents (Org → Deklaracje)
 			'decl_templates'                    => $wpdb->prefix . 'bm_decl_templates',
 			'camp_decl_docs'                    => $wpdb->prefix . 'bm_camp_decl_docs',
+			// Document attachments (all parent types)
+			'doc_attachments'                   => $wpdb->prefix . 'bm_doc_attachments',
 		];
 	}
 
@@ -1477,6 +1479,48 @@ final class Schema {
 			if ( ! in_array('approved_at', $decl_doc_cols, true) ) {
 				$wpdb->query("ALTER TABLE {$p}bm_camp_decl_docs ADD COLUMN approved_at DATETIME DEFAULT NULL AFTER approved_by"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			}
+			if ( ! in_array('sent_at', $decl_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_decl_docs ADD COLUMN sent_at DATETIME DEFAULT NULL AFTER approved_at"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('sent_token', $decl_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_decl_docs ADD COLUMN sent_token VARCHAR(64) NOT NULL DEFAULT '' AFTER sent_at"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('locked', $decl_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_decl_docs ADD COLUMN locked TINYINT(1) NOT NULL DEFAULT 0 AFTER sent_token"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+		}
+
+		// ── ALTER: file columns on bm_decl_templates ─────────────────────────────
+		$decl_tpl_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_decl_templates");
+		if ( $decl_tpl_cols ) {
+			if ( ! in_array('file_id', $decl_tpl_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_decl_templates ADD COLUMN file_id BIGINT UNSIGNED DEFAULT NULL AFTER html_content"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('file_url', $decl_tpl_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_decl_templates ADD COLUMN file_url VARCHAR(500) NOT NULL DEFAULT '' AFTER file_id"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('file_name', $decl_tpl_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_decl_templates ADD COLUMN file_name VARCHAR(255) NOT NULL DEFAULT '' AFTER file_url"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+		}
+
+		// ── Dokument-attachments (all parent types) ───────────────────────────────
+		// parent_type: doc_library | decl | camp_doc | camp_decl_doc
+		$att_sql = [];
+		$att_sql[] = "CREATE TABLE {$p}bm_doc_attachments (
+			id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			parent_type VARCHAR(20)     NOT NULL DEFAULT 'doc_library',
+			parent_id   BIGINT UNSIGNED NOT NULL,
+			file_id     BIGINT UNSIGNED DEFAULT NULL,
+			file_url    VARCHAR(500)    NOT NULL DEFAULT '',
+			file_name   VARCHAR(255)    NOT NULL DEFAULT '',
+			uploaded_by BIGINT UNSIGNED DEFAULT NULL,
+			created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			KEY idx_parent (parent_type, parent_id)
+		) $charset;";
+		foreach ( $att_sql as $statement ) {
+			dbDelta($statement);
 		}
 
 		// ── ALTER: signing fields on bm_camp_documents ───────────────────────────

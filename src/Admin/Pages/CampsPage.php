@@ -39,12 +39,15 @@ final class CampsPage {
 		$id     = (int) ($_GET['id'] ?? 0);
 
 		match ($action) {
-			'new'      => $this->render_edit_form(null),
-			'edit'     => $this->render_edit_form(CampRepository::get($id)),
-			'task_edit'=> $this->render_task_edit((int) ($_GET['task_id'] ?? 0), $id),
-			'task_new' => $this->render_task_edit(0, $id),
-			'doc_view' => $this->render_doc_view($id, (int) ($_GET['doc_id'] ?? 0)),
-			default    => $this->render_list(),
+			'new'       => $this->render_edit_form(null),
+			'edit'      => $this->render_edit_form(CampRepository::get($id)),
+			'task_edit' => $this->render_task_edit((int) ($_GET['task_id'] ?? 0), $id),
+			'task_new'  => $this->render_task_edit(0, $id),
+			'doc_view'  => $this->render_doc_view($id, (int) ($_GET['doc_id'] ?? 0)),
+			'doc_edit'  => $this->render_doc_content_edit($id, (int) ($_GET['doc_id'] ?? 0), 'document'),
+			'decl_edit' => $this->render_doc_content_edit($id, (int) ($_GET['decl_id'] ?? 0), 'declaration'),
+			'decl_view' => $this->render_decl_view($id, (int) ($_GET['decl_id'] ?? 0)),
+			default     => $this->render_list(),
 		};
 	}
 
@@ -242,6 +245,30 @@ final class CampsPage {
 			$camp_id
 		)) : [];
 		$decl_tpl_options = \BaseMgmt\Admin\Pages\OrgDeclarationsPage::get_all();
+
+		// ── Attachments for camp documents and declarations ───────────────────
+		$att_table = Schema::table('doc_attachments');
+		$camp_doc_attachments  = [];
+		$camp_decl_attachments = [];
+		if ( $camp_id > 0 && $att_table ) {
+			$all_camp_atts = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT * FROM {$att_table} WHERE parent_type IN ('camp_doc','camp_decl_doc') AND parent_id IN (
+						SELECT id FROM " . Schema::table('camp_documents') . " WHERE camp_id = %d
+						UNION SELECT id FROM " . Schema::table('camp_decl_docs') . " WHERE camp_id = %d
+					) ORDER BY id ASC",
+					$camp_id,
+					$camp_id
+				)
+			) ?: [];
+			foreach ( $all_camp_atts as $att ) {
+				if ( $att->parent_type === 'camp_doc' ) {
+					$camp_doc_attachments[(int) $att->parent_id][] = $att;
+				} else {
+					$camp_decl_attachments[(int) $att->parent_id][] = $att;
+				}
+			}
+		}
 
 		include BASEMGMT_DIR . 'templates/admin/camps/edit.php';
 	}
@@ -622,6 +649,98 @@ final class CampsPage {
 		</html>
 		<?php
 		exit;
+	}
+
+	private function render_doc_content_edit(int $camp_id, int $doc_id, string $mode): void {
+		Capabilities::require_admin();
+		global $wpdb;
+
+		if ( $mode === 'declaration' ) {
+			$doc  = $wpdb->get_row($wpdb->prepare(
+				"SELECT * FROM " . Schema::table('camp_decl_docs') . " WHERE id = %d AND camp_id = %d",
+				$doc_id, $camp_id
+			));
+		} else {
+			$doc  = $wpdb->get_row($wpdb->prepare(
+				"SELECT * FROM " . Schema::table('camp_documents') . " WHERE id = %d AND camp_id = %d",
+				$doc_id, $camp_id
+			));
+		}
+
+		$camp = CampRepository::get($camp_id);
+		if ( ! $doc || ! $camp ) {
+			wp_die(esc_html__('Dokument nie istnieje.', 'basemgmt'));
+		}
+
+		include BASEMGMT_DIR . 'templates/admin/camps/doc-content-edit.php';
+	}
+
+	private function render_decl_view(int $camp_id, int $doc_id): void {
+		Capabilities::require_admin();
+		global $wpdb;
+		$doc  = $wpdb->get_row($wpdb->prepare(
+			"SELECT * FROM " . Schema::table('camp_decl_docs') . " WHERE id = %d AND camp_id = %d",
+			$doc_id, $camp_id
+		));
+		$camp = CampRepository::get($camp_id);
+		if ( ! $doc || empty($doc->html_content) ) {
+			wp_die(esc_html__('Deklaracja nie istnieje lub nie ma zawartości HTML.', 'basemgmt'));
+		}
+		$back_url = admin_url("admin.php?page=basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+		?>
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="utf-8">
+			<title><?php echo esc_html($doc->title); ?></title>
+			<style>
+				body { font-family: Georgia, serif; max-width: 800px; margin: 30px auto; padding: 20px; color: #1d2327; }
+				.bm-doc-toolbar { background: #f0f0f1; border-bottom: 1px solid #ddd; padding: 10px 20px; position: fixed; top: 0; left: 0; right: 0; display: flex; gap: 10px; align-items: center; z-index: 100; }
+				.bm-doc-body { margin-top: 60px; }
+				@media print { .bm-doc-toolbar { display: none; } .bm-doc-body { margin-top: 0; } }
+			</style>
+		</head>
+		<body>
+			<div class="bm-doc-toolbar">
+				<a href="<?php echo esc_url($back_url); ?>">&larr; <?php esc_html_e('Powrót', 'basemgmt'); ?></a>
+				<button onclick="window.print()" style="margin-left:auto;"><?php esc_html_e('Drukuj / Zapisz PDF', 'basemgmt'); ?></button>
+			</div>
+			<div class="bm-doc-body">
+				<?php echo wp_kses_post($doc->html_content); ?>
+			</div>
+		</body>
+		</html>
+		<?php
+		exit;
+	}
+
+	public function handle_add_camp_doc_custom(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_add_camp_doc_custom');
+		$camp_id       = (int) ($_POST['camp_id'] ?? 0);
+		$title         = sanitize_text_field(wp_unslash($_POST['title'] ?? ''));
+		$document_type = sanitize_key($_POST['document_type'] ?? 'contract');
+		$file_id       = (int) ($_POST['file_id'] ?? 0);
+		$file_url      = esc_url_raw(wp_unslash($_POST['file_url'] ?? ''));
+		$file_name     = sanitize_text_field(wp_unslash($_POST['file_name'] ?? ''));
+
+		if ( $camp_id <= 0 || empty($title) ) {
+			AdminMenu::set_notice(__('Tytuł dokumentu jest wymagany.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		global $wpdb;
+		$wpdb->insert(Schema::table('camp_documents'), [
+			'camp_id'       => $camp_id,
+			'document_type' => $document_type,
+			'doc_category'  => 'document',
+			'title'         => $title,
+			'status'        => 'draft',
+			'file_id'       => $file_id ?: null,
+			'file_url'      => $file_url,
+		]);
+		AdminMenu::set_notice(__('Dokument dodany.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
 	}
 
 	public function handle_add_camp_doc_library(): void {
@@ -1402,6 +1521,32 @@ final class CampsPage {
 
 	// ── Declaration doc handlers ───────────────────────────────────────────────
 
+	public function handle_add_camp_decl_custom(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_add_camp_decl_custom');
+		$camp_id   = (int) ($_POST['camp_id'] ?? 0);
+		$title     = sanitize_text_field(wp_unslash($_POST['title'] ?? ''));
+		$file_id   = (int) ($_POST['file_id'] ?? 0);
+		$file_url  = esc_url_raw(wp_unslash($_POST['file_url'] ?? ''));
+
+		if ( $camp_id <= 0 || empty($title) ) {
+			AdminMenu::set_notice(__('Tytuł deklaracji jest wymagany.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		global $wpdb;
+		$wpdb->insert(Schema::table('camp_decl_docs'), [
+			'camp_id'      => $camp_id,
+			'template_id'  => null,
+			'title'        => $title,
+			'status'       => 'draft',
+			'html_content' => '',
+			'file_url'     => $file_url,
+		]);
+		AdminMenu::set_notice(__('Deklaracja dodana.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+	}
+
 	public function handle_add_camp_decl_doc(): void {
 		Capabilities::require_admin();
 		check_admin_referer('bm_add_camp_decl_doc');
@@ -1415,27 +1560,17 @@ final class CampsPage {
 		global $wpdb;
 		$tpl  = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . Schema::table('decl_templates') . " WHERE id = %d", $template_id));
 		$camp = CampRepository::get($camp_id);
-		$org  = CampCaseRepository::get_organizer($camp_id);
-		$pre  = CampCaseRepository::get_prearrival($camp_id);
 		if ( ! $tpl || ! $camp ) {
-			AdminMenu::set_notice(__('Nie znaleziono szablonu lub obozu.', 'basemgmt'), 'error');
+			AdminMenu::set_notice(__('Nie znaleziono deklaracji lub obozu.', 'basemgmt'), 'error');
 			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
 			return;
 		}
-		$vars = [
-			'{{camp_name}}'       => $camp->name,
-			'{{organizer_name}}'  => $org->organization_name ?? '',
-			'{{start_date}}'      => $camp->start_date,
-			'{{end_date}}'        => $camp->end_date,
-			'{{participants}}'    => (string) ($pre->declared_participants ?? 0),
-		];
-		$html = str_replace(array_keys($vars), array_values($vars), $tpl->html_content ?? '');
 		$wpdb->insert(Schema::table('camp_decl_docs'), [
 			'camp_id'      => $camp_id,
 			'template_id'  => $template_id,
 			'title'        => $tpl->title . ' — ' . $camp->name,
 			'status'       => 'draft',
-			'html_content' => $html,
+			'html_content' => $tpl->html_content ?? '',
 		]);
 		AdminMenu::set_notice(__('Deklaracja dodana do obozu.', 'basemgmt'));
 		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
@@ -1463,12 +1598,161 @@ final class CampsPage {
 			return;
 		}
 		global $wpdb;
+		$doc = $wpdb->get_row($wpdb->prepare(
+			"SELECT * FROM " . Schema::table('camp_decl_docs') . " WHERE id = %d AND camp_id = %d",
+			$doc_id, $camp_id
+		));
+		if ( ! $doc ) {
+			AdminMenu::set_notice(__('Nie znaleziono deklaracji.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		// If there is HTML content to edit, redirect to editor first.
+		if ( ! empty($doc->html_content) ) {
+			wp_safe_redirect(admin_url("admin.php?page=basemgmt-camps&action=decl_edit&id={$camp_id}&decl_id={$doc_id}"));
+			exit;
+		}
+		// No HTML content — approve directly.
 		$wpdb->update(Schema::table('camp_decl_docs'), [
 			'status'      => 'approved',
 			'approved_by' => get_current_user_id(),
 			'approved_at' => current_time('mysql'),
 		], ['id' => $doc_id, 'camp_id' => $camp_id]);
 		AdminMenu::set_notice(__('Deklaracja zatwierdzona.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+	}
+
+	public function handle_save_camp_doc_content(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_save_camp_doc_content');
+		$camp_id = (int) ($_POST['camp_id'] ?? 0);
+		$doc_id  = (int) ($_POST['doc_id'] ?? 0);
+		$content = wp_kses_post(wp_unslash($_POST['html_content'] ?? ''));
+		global $wpdb;
+		$wpdb->update(Schema::table('camp_documents'), [
+			'html_content' => $content,
+		], ['id' => $doc_id, 'camp_id' => $camp_id]);
+		AdminMenu::set_notice(__('Treść dokumentu zapisana.', 'basemgmt'));
+		wp_safe_redirect(admin_url("admin.php?page=basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents"));
+		exit;
+	}
+
+	public function handle_finalize_camp_decl_doc(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_finalize_camp_decl_doc');
+		$camp_id = (int) ($_POST['camp_id'] ?? 0);
+		$doc_id  = (int) ($_POST['decl_id'] ?? 0);
+		$content = wp_kses_post(wp_unslash($_POST['html_content'] ?? ''));
+		global $wpdb;
+		$wpdb->update(Schema::table('camp_decl_docs'), [
+			'html_content' => $content,
+			'status'       => 'approved',
+			'approved_by'  => get_current_user_id(),
+			'approved_at'  => current_time('mysql'),
+		], ['id' => $doc_id, 'camp_id' => $camp_id]);
+		AdminMenu::set_notice(__('Deklaracja zatwierdzona.', 'basemgmt'));
+		$print_url = admin_url("admin.php?page=basemgmt-camps&action=decl_view&id={$camp_id}&decl_id={$doc_id}");
+		wp_safe_redirect(add_query_arg('bm_open_print', urlencode($print_url), admin_url("admin.php?page=basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents")));
+		exit;
+	}
+
+	public function handle_send_camp_decl_doc(): void {
+		Capabilities::require_admin();
+		$camp_id = (int) ($_GET['id'] ?? 0);
+		$doc_id  = (int) ($_GET['decl_id'] ?? 0);
+		check_admin_referer("bm_send_camp_decl_doc_{$doc_id}");
+		global $wpdb;
+		$doc = $wpdb->get_row($wpdb->prepare(
+			"SELECT * FROM " . Schema::table('camp_decl_docs') . " WHERE id = %d AND camp_id = %d",
+			$doc_id, $camp_id
+		));
+		if ( ! $doc || ! empty($doc->locked) || $doc->status !== 'approved' ) {
+			AdminMenu::set_notice(__('Nie można wysłać tej deklaracji.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		$token = bin2hex(random_bytes(32));
+		$wpdb->update(Schema::table('camp_decl_docs'), [
+			'sent_at'    => current_time('mysql'),
+			'sent_token' => $token,
+			'locked'     => 1,
+		], ['id' => $doc_id]);
+		$sign_url = add_query_arg(['bm_decl_token' => $token], home_url('/'));
+		AdminMenu::set_notice(sprintf(__('Deklaracja zablokowana. Link do podpisu: %s', 'basemgmt'), $sign_url));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+	}
+
+	public function handle_add_camp_doc_attachment(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_add_camp_doc_attachment');
+		$camp_id   = (int) ($_POST['camp_id'] ?? 0);
+		$doc_id    = (int) ($_POST['doc_id'] ?? 0);
+		$file_id   = (int) ($_POST['file_id'] ?? 0);
+		$file_url  = esc_url_raw(wp_unslash($_POST['file_url'] ?? ''));
+		$file_name = sanitize_text_field(wp_unslash($_POST['file_name'] ?? ''));
+		if ( $camp_id <= 0 || $doc_id <= 0 || empty($file_url) ) {
+			AdminMenu::set_notice(__('Nieprawidłowe dane załącznika.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		global $wpdb;
+		$wpdb->insert(Schema::table('doc_attachments'), [
+			'parent_type' => 'camp_doc',
+			'parent_id'   => $doc_id,
+			'file_id'     => $file_id ?: null,
+			'file_url'    => $file_url,
+			'file_name'   => $file_name,
+			'created_by'  => get_current_user_id(),
+		]);
+		AdminMenu::set_notice(__('Załącznik dodany.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+	}
+
+	public function handle_delete_camp_doc_attachment(): void {
+		Capabilities::require_admin();
+		$att_id  = (int) ($_GET['att_id'] ?? 0);
+		$camp_id = (int) ($_GET['id'] ?? 0);
+		check_admin_referer("bm_delete_camp_doc_att_{$att_id}");
+		global $wpdb;
+		$wpdb->delete(Schema::table('doc_attachments'), ['id' => $att_id, 'parent_type' => 'camp_doc']);
+		AdminMenu::set_notice(__('Załącznik usunięty.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+	}
+
+	public function handle_add_camp_decl_attachment(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_add_camp_decl_attachment');
+		$camp_id   = (int) ($_POST['camp_id'] ?? 0);
+		$doc_id    = (int) ($_POST['decl_id'] ?? 0);
+		$file_id   = (int) ($_POST['file_id'] ?? 0);
+		$file_url  = esc_url_raw(wp_unslash($_POST['file_url'] ?? ''));
+		$file_name = sanitize_text_field(wp_unslash($_POST['file_name'] ?? ''));
+		if ( $camp_id <= 0 || $doc_id <= 0 || empty($file_url) ) {
+			AdminMenu::set_notice(__('Nieprawidłowe dane załącznika.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		global $wpdb;
+		$wpdb->insert(Schema::table('doc_attachments'), [
+			'parent_type' => 'camp_decl_doc',
+			'parent_id'   => $doc_id,
+			'file_id'     => $file_id ?: null,
+			'file_url'    => $file_url,
+			'file_name'   => $file_name,
+			'created_by'  => get_current_user_id(),
+		]);
+		AdminMenu::set_notice(__('Załącznik dodany.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+	}
+
+	public function handle_delete_camp_decl_attachment(): void {
+		Capabilities::require_admin();
+		$att_id  = (int) ($_GET['att_id'] ?? 0);
+		$camp_id = (int) ($_GET['id'] ?? 0);
+		check_admin_referer("bm_delete_camp_decl_att_{$att_id}");
+		global $wpdb;
+		$wpdb->delete(Schema::table('doc_attachments'), ['id' => $att_id, 'parent_type' => 'camp_decl_doc']);
+		AdminMenu::set_notice(__('Załącznik usunięty.', 'basemgmt'));
 		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
 	}
 

@@ -40,6 +40,17 @@ final class OrgDocumentsPage {
 		$doc_types = self::doc_types();
 		$tpl_table = Schema::table('doc_templates');
 		$templates = $wpdb->get_results("SELECT id, title, doc_type, auto_add FROM {$tpl_table} ORDER BY sort_order ASC, id ASC");
+
+		// Load attachments for all library documents
+		$att_table   = Schema::table('doc_attachments');
+		$all_attachments = $att_table && $documents
+			? $wpdb->get_results("SELECT * FROM {$att_table} WHERE parent_type = 'doc_library' ORDER BY id ASC")
+			: [];
+		$attachments_by_doc = [];
+		foreach ( $all_attachments as $att ) {
+			$attachments_by_doc[(int) $att->parent_id][] = $att;
+		}
+
 		include BASEMGMT_DIR . 'templates/admin/org/documents/list.php';
 	}
 
@@ -96,7 +107,55 @@ final class OrgDocumentsPage {
 
 		global $wpdb;
 		$wpdb->delete(Schema::table('doc_library'), ['id' => $id]);
+
+		// Clean up attachments
+		$wpdb->delete(Schema::table('doc_attachments'), ['parent_type' => 'doc_library', 'parent_id' => $id]);
+
 		AdminMenu::set_notice(__('Dokument usunięty.', 'basemgmt'));
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-documents'));
+		exit;
+	}
+
+	public function handle_add_attachment(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_add_doc_library_attachment');
+
+		$doc_id    = (int) ($_POST['doc_id'] ?? 0);
+		$file_id   = (int) ($_POST['file_id'] ?? 0);
+		$file_url  = esc_url_raw(wp_unslash($_POST['file_url'] ?? ''));
+		$file_name = sanitize_file_name(wp_unslash($_POST['file_name'] ?? ''));
+
+		if ( $doc_id <= 0 || empty($file_url) ) {
+			AdminMenu::set_notice(__('Nieprawidłowe dane załącznika.', 'basemgmt'), 'error');
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-documents'));
+			exit;
+		}
+
+		global $wpdb;
+		$wpdb->insert(Schema::table('doc_attachments'), [
+			'parent_type' => 'doc_library',
+			'parent_id'   => $doc_id,
+			'file_id'     => $file_id ?: null,
+			'file_url'    => $file_url,
+			'file_name'   => $file_name,
+			'uploaded_by' => get_current_user_id(),
+		]);
+
+		AdminMenu::set_notice(__('Załącznik dodany.', 'basemgmt'));
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-documents'));
+		exit;
+	}
+
+	public function handle_delete_attachment(): void {
+		Capabilities::require_admin();
+		$att_id = (int) ($_GET['att_id'] ?? 0);
+		$doc_id = (int) ($_GET['doc_id'] ?? 0);
+		check_admin_referer("bm_delete_doc_library_attachment_{$att_id}");
+
+		global $wpdb;
+		$wpdb->delete(Schema::table('doc_attachments'), ['id' => $att_id, 'parent_type' => 'doc_library', 'parent_id' => $doc_id]);
+
+		AdminMenu::set_notice(__('Załącznik usunięty.', 'basemgmt'));
 		wp_safe_redirect(admin_url('admin.php?page=basemgmt-org-documents'));
 		exit;
 	}
