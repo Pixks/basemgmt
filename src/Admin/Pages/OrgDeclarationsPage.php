@@ -7,6 +7,7 @@ namespace BaseMgmt\Admin\Pages;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Database\Schema;
+use BaseMgmt\Modules\Camps\CampRepository;
 
 defined('ABSPATH') || exit;
 
@@ -34,6 +35,7 @@ final class OrgDeclarationsPage {
 		global $wpdb;
 		$table        = Schema::table('decl_templates');
 		$declarations = $table ? $wpdb->get_results("SELECT * FROM {$table} ORDER BY sort_order ASC, id ASC") : [];
+		$camps        = CampRepository::get_all();
 		include BASEMGMT_DIR . 'templates/admin/org/declarations/list.php';
 	}
 
@@ -158,6 +160,54 @@ final class OrgDeclarationsPage {
 
 		AdminMenu::set_notice(__('Załącznik usunięty.', 'basemgmt'));
 		$this->redirect("basemgmt-org-declarations&action=edit&id={$decl_id}");
+	}
+
+	public function handle_push_to_camp(): void {
+		Capabilities::require_admin();
+		check_admin_referer('bm_push_decl_to_camp');
+
+		$decl_id = (int) ($_POST['decl_id'] ?? 0);
+		$camp_id = (int) ($_POST['camp_id'] ?? 0);
+
+		if ( $decl_id <= 0 || $camp_id <= 0 ) {
+			AdminMenu::set_notice(__('Nieprawidłowe dane.', 'basemgmt'), 'error');
+			$this->redirect('basemgmt-org-declarations');
+			return;
+		}
+
+		global $wpdb;
+		$tpl  = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . Schema::table('decl_templates') . " WHERE id = %d", $decl_id));
+		$camp = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . Schema::table('camps') . " WHERE id = %d", $camp_id));
+
+		if ( ! $tpl || ! $camp ) {
+			AdminMenu::set_notice(__('Nie znaleziono deklaracji lub obozu.', 'basemgmt'), 'error');
+			$this->redirect('basemgmt-org-declarations');
+			return;
+		}
+
+		// Check if this template is already assigned to the camp
+		$existing = $wpdb->get_var($wpdb->prepare(
+			"SELECT id FROM " . Schema::table('camp_decl_docs') . " WHERE camp_id = %d AND template_id = %d",
+			$camp_id, $decl_id
+		));
+
+		if ( $existing ) {
+			AdminMenu::set_notice(__('Deklaracja jest już przypisana do tego obozu.', 'basemgmt'), 'error');
+			$this->redirect('basemgmt-org-declarations');
+			return;
+		}
+
+		$wpdb->insert(Schema::table('camp_decl_docs'), [
+			'camp_id'      => $camp_id,
+			'template_id'  => $decl_id,
+			'title'        => $tpl->title . ' — ' . $camp->name,
+			'status'       => 'draft',
+			'html_content' => $tpl->html_content ?? '',
+			'file_url'     => $tpl->file_url ?? '',
+		]);
+
+		AdminMenu::set_notice(sprintf(__('Deklaracja „%s" wysłana do obozu „%s".', 'basemgmt'), $tpl->title, $camp->name));
+		$this->redirect('basemgmt-org-declarations');
 	}
 
 	/**

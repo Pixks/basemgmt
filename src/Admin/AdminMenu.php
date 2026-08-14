@@ -72,6 +72,7 @@ final class AdminMenu {
 	public function __construct() {
 		$this->dashboard       = new DashboardPage();
 		$this->camps           = new CampsPage();
+		add_action('admin_init', [$this->camps, 'maybe_early_exit']);
 		$this->staff           = new StaffPage();
 		$this->announcements   = new AnnouncementsPage();
 		$this->reports         = new ReportsPage();
@@ -611,6 +612,7 @@ final class AdminMenu {
 			'bm_save_camp_doc_content'          => [$this->camps, 'handle_save_camp_doc_content'],
 			'bm_finalize_camp_decl_doc'         => [$this->camps, 'handle_finalize_camp_decl_doc'],
 			'bm_send_camp_decl_doc'             => [$this->camps, 'handle_send_camp_decl_doc'],
+			'bm_send_decl_to_camp'              => [$this->camps, 'handle_send_decl_to_camp'],
 			// Camp attachments
 			'bm_add_camp_doc_attachment'        => [$this->camps, 'handle_add_camp_doc_attachment'],
 			'bm_delete_camp_doc_attachment'     => [$this->camps, 'handle_delete_camp_doc_attachment'],
@@ -621,6 +623,7 @@ final class AdminMenu {
 			'bm_delete_doc_library_attachment'  => [$this->org_documents,    'handle_delete_attachment'],
 			'bm_add_decl_attachment'            => [$this->org_declarations, 'handle_add_attachment'],
 			'bm_delete_decl_attachment'         => [$this->org_declarations, 'handle_delete_attachment'],
+			'bm_push_decl_to_camp'              => [$this->org_declarations, 'handle_push_to_camp'],
 			// Camp finance
 			'bm_save_camp_finance'              => [$this->camps, 'handle_save_camp_finance'],
 		];

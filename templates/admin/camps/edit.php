@@ -746,12 +746,20 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 									$ds        = $decl_status_map[$ddoc->status] ?? ['label' => $ddoc->status, 'class' => 'bm-badge--normal'];
 									$approver  = ! empty($ddoc->approved_by) ? get_user_by('id', (int) $ddoc->approved_by) : null;
 									$decl_atts = $camp_decl_attachments[(int) $ddoc->id] ?? [];
+									$sent_to_camp = ! empty($ddoc->sent_to_camp);
+									$camp_approved = ! empty($ddoc->camp_approved_at);
 								?>
 									<tr>
 										<td>
 											<strong><?php echo esc_html($ddoc->title); ?></strong>
 											<?php if ( ! empty($ddoc->locked) ) : ?>
 												<span title="<?php esc_attr_e('Deklaracja wysłana — zablokowana', 'basemgmt'); ?>"> 🔒</span>
+											<?php endif; ?>
+											<?php if ( $sent_to_camp ) : ?>
+												<span class="bm-badge bm-badge--info" style="margin-left:4px;font-size:10px;"><?php esc_html_e('W obozie', 'basemgmt'); ?></span>
+											<?php endif; ?>
+											<?php if ( $camp_approved ) : ?>
+												<span class="bm-badge bm-badge--success" style="margin-left:4px;font-size:10px;"><?php esc_html_e('Obóz zatwierdził', 'basemgmt'); ?></span>
 											<?php endif; ?>
 											<?php if ( ! empty($decl_atts) ) : ?>
 												<br><span class="bm-muted" style="font-size:11px;">
@@ -795,6 +803,13 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 													data-decl-title="<?php echo esc_attr($ddoc->title); ?>">
 													<?php esc_html_e('+ Załącznik', 'basemgmt'); ?>
 												</button>
+												<?php if ( $ddoc->status === 'approved' && ! $sent_to_camp ) : ?>
+													<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_send_decl_to_camp&id={$id}&decl_id={$ddoc->id}"), "bm_send_decl_to_camp_{$ddoc->id}")); ?>"
+														class="button button-small button-primary"
+														data-bm-confirm="<?php esc_attr_e('Wysłać deklarację do obozu?', 'basemgmt'); ?>">
+														<?php esc_html_e('Prześlij do obozu', 'basemgmt'); ?>
+													</a>
+												<?php endif; ?>
 												<?php if ( $ddoc->status === 'approved' ) : ?>
 													<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_send_camp_decl_doc&id={$id}&decl_id={$ddoc->id}"), "bm_send_camp_decl_doc_{$ddoc->id}")); ?>"
 														class="button button-small"
@@ -1220,8 +1235,24 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 						<input type="hidden" name="equip_id" id="bm-return-equip-id-input" value="">
 						<div class="bm-modal-body">
 							<p id="bm-return-equip-desc"></p>
-							<label><strong><?php esc_html_e('Ilość zwracana', 'basemgmt'); ?></strong></label><br>
-							<input type="number" name="qty" id="bm-return-qty-input" min="1" value="1" class="small-text">
+							<div id="bm-return-normal-fields">
+								<label><strong><?php esc_html_e('Ilość zwracana', 'basemgmt'); ?></strong></label><br>
+								<input type="number" name="qty" id="bm-return-qty-input" min="1" value="1" class="small-text">
+							</div>
+							<hr style="margin:14px 0;">
+							<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+								<input type="checkbox" name="is_loss" id="bm-return-is-loss" value="1"
+									onchange="document.getElementById('bm-return-loss-fields').style.display=this.checked?'block':'none';document.getElementById('bm-return-normal-fields').style.opacity=this.checked?'.4':'1';">
+								<strong><?php esc_html_e('Nalicz stratę finansową (sprzęt nie zwrócony / uszkodzony)', 'basemgmt'); ?></strong>
+							</label>
+							<div id="bm-return-loss-fields" style="display:none;margin-top:12px;padding:12px;background:#fff3cd;border-radius:4px;">
+								<p style="margin:0 0 8px;color:#856404;font-size:12px;"><?php esc_html_e('Cały niezwrócony sprzęt zostanie zapisany jako zwrócony, a strata zostanie dodana do finansów obozu.', 'basemgmt'); ?></p>
+								<label><strong><?php esc_html_e('Kwota straty (PLN)', 'basemgmt'); ?></strong></label><br>
+								<input type="text" name="loss_amount" class="small-text" placeholder="0.00" style="margin-bottom:8px;">
+								<br>
+								<label><strong><?php esc_html_e('Opis straty', 'basemgmt'); ?></strong></label><br>
+								<input type="text" name="loss_description" class="widefat" placeholder="<?php esc_attr_e('Opcjonalnie — zostanie uzupełniony automatycznie', 'basemgmt'); ?>">
+							</div>
 						</div>
 						<div class="bm-modal-footer">
 							<button type="submit" class="button button-primary"><?php esc_html_e('Zarejestruj zwrot', 'basemgmt'); ?></button>

@@ -19,6 +19,26 @@ defined('ABSPATH') || exit;
  */
 final class CampsPage {
 
+	/**
+	 * Hook: admin_init — intercepts doc_view / decl_view early so WP doesn't render admin chrome.
+	 */
+	public function maybe_early_exit(): void {
+		if ( ! is_admin() ) return;
+		$page   = sanitize_key($_GET['page']   ?? '');
+		$action = sanitize_key($_GET['action'] ?? '');
+		if ( $page !== 'basemgmt-camps' ) return;
+		if ( ! in_array($action, ['doc_view', 'decl_view'], true) ) return;
+
+		Capabilities::require_admin();
+		$id = (int) ($_GET['id'] ?? 0);
+		if ( $action === 'doc_view' ) {
+			$this->render_doc_view($id, (int) ($_GET['doc_id'] ?? 0));
+		} else {
+			$this->render_decl_view($id, (int) ($_GET['decl_id'] ?? 0));
+		}
+		exit;
+	}
+
 	public function render(): void {
 		Capabilities::require_admin();
 		$this->ensure_tables_ready();
@@ -615,40 +635,58 @@ final class CampsPage {
 
 	// ── Document handlers ─────────────────────────────────────────────────────
 
+
+	/** Renders a standalone print-ready HTML page — no WP admin chrome. */
+	private static function render_clean_doc_page(string $title, string $html_content, string $back_url, string $badge = ''): void {
+		?>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title><?php echo esc_html($title); ?></title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{font-family:Georgia,'Times New Roman',serif;background:#f5f5f5;margin:0;padding:0;color:#1d2327}
+.bm-tb{background:#1d2327;color:#fff;padding:10px 24px;position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.bm-tb a{color:#a7aaad;text-decoration:none;font-size:13px;font-family:-apple-system,sans-serif}
+.bm-tb a:hover{color:#fff}
+.bm-tb .ttl{color:#fff;font-size:13px;font-family:-apple-system,sans-serif;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bm-tb .bdg{background:#2271b1;color:#fff;padding:2px 8px;border-radius:3px;font-size:11px;font-family:-apple-system,sans-serif}
+.bm-tb button{background:#2271b1;color:#fff;border:none;padding:7px 16px;border-radius:3px;cursor:pointer;font-size:13px;font-family:-apple-system,sans-serif}
+.bm-tb button:hover{background:#135e96}
+.bm-pg{max-width:820px;margin:72px auto 40px;background:#fff;padding:48px 56px;box-shadow:0 1px 4px rgba(0,0,0,.15);min-height:900px}
+@media print{.bm-tb{display:none!important}body{background:#fff}.bm-pg{margin:0;box-shadow:none;padding:32px 40px}}
+</style>
+</head>
+<body>
+<div class="bm-tb">
+	<a href="<?php echo esc_url($back_url); ?>">&larr; <?php esc_html_e('Powrót', 'basemgmt'); ?></a>
+	<span class="ttl"><?php echo esc_html($title); ?></span>
+	<?php if ( $badge ) : ?><span class="bdg"><?php echo esc_html($badge); ?></span><?php endif; ?>
+	<button onclick="window.print()"><?php esc_html_e('Drukuj / PDF', 'basemgmt'); ?></button>
+</div>
+<div class="bm-pg">
+<?php echo wp_kses_post($html_content); ?>
+</div>
+</body>
+</html>
+<?php
+		exit;
+	}
+
 	private function render_doc_view(int $camp_id, int $doc_id): void {
 		Capabilities::require_admin();
 		global $wpdb;
-		$doc  = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . Schema::table('camp_documents') . " WHERE id = %d AND camp_id = %d", $doc_id, $camp_id));
-		$camp = CampRepository::get($camp_id);
+		$doc = $wpdb->get_row($wpdb->prepare(
+			"SELECT * FROM " . Schema::table('camp_documents') . " WHERE id = %d AND camp_id = %d",
+			$doc_id, $camp_id
+		));
 		if ( ! $doc || empty($doc->html_content) ) {
 			wp_die(esc_html__('Dokument nie istnieje lub nie ma zawartości HTML.', 'basemgmt'));
 		}
 		$back_url = admin_url("admin.php?page=basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
-		?>
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<meta charset="utf-8">
-			<title><?php echo esc_html($doc->title); ?></title>
-			<style>
-				body { font-family: Georgia, serif; max-width: 800px; margin: 30px auto; padding: 20px; color: #1d2327; }
-				.bm-doc-toolbar { background: #f0f0f1; border-bottom: 1px solid #ddd; padding: 10px 20px; position: fixed; top: 0; left: 0; right: 0; display: flex; gap: 10px; align-items: center; z-index: 100; }
-				.bm-doc-body { margin-top: 60px; }
-				@media print { .bm-doc-toolbar { display: none; } .bm-doc-body { margin-top: 0; } }
-			</style>
-		</head>
-		<body>
-			<div class="bm-doc-toolbar">
-				<a href="<?php echo esc_url($back_url); ?>">&larr; <?php esc_html_e('Powrót', 'basemgmt'); ?></a>
-				<button onclick="window.print()" style="margin-left:auto;"><?php esc_html_e('Drukuj / Zapisz PDF', 'basemgmt'); ?></button>
-			</div>
-			<div class="bm-doc-body">
-				<?php echo wp_kses_post($doc->html_content); ?>
-			</div>
-		</body>
-		</html>
-		<?php
-		exit;
+		self::render_clean_doc_page($doc->title, $doc->html_content, $back_url, __('Dokument', 'basemgmt'));
 	}
 
 	private function render_doc_content_edit(int $camp_id, int $doc_id, string $mode): void {
@@ -678,40 +716,36 @@ final class CampsPage {
 	private function render_decl_view(int $camp_id, int $doc_id): void {
 		Capabilities::require_admin();
 		global $wpdb;
-		$doc  = $wpdb->get_row($wpdb->prepare(
+		$doc = $wpdb->get_row($wpdb->prepare(
 			"SELECT * FROM " . Schema::table('camp_decl_docs') . " WHERE id = %d AND camp_id = %d",
 			$doc_id, $camp_id
 		));
-		$camp = CampRepository::get($camp_id);
 		if ( ! $doc || empty($doc->html_content) ) {
 			wp_die(esc_html__('Deklaracja nie istnieje lub nie ma zawartości HTML.', 'basemgmt'));
 		}
 		$back_url = admin_url("admin.php?page=basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
-		?>
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<meta charset="utf-8">
-			<title><?php echo esc_html($doc->title); ?></title>
-			<style>
-				body { font-family: Georgia, serif; max-width: 800px; margin: 30px auto; padding: 20px; color: #1d2327; }
-				.bm-doc-toolbar { background: #f0f0f1; border-bottom: 1px solid #ddd; padding: 10px 20px; position: fixed; top: 0; left: 0; right: 0; display: flex; gap: 10px; align-items: center; z-index: 100; }
-				.bm-doc-body { margin-top: 60px; }
-				@media print { .bm-doc-toolbar { display: none; } .bm-doc-body { margin-top: 0; } }
-			</style>
-		</head>
-		<body>
-			<div class="bm-doc-toolbar">
-				<a href="<?php echo esc_url($back_url); ?>">&larr; <?php esc_html_e('Powrót', 'basemgmt'); ?></a>
-				<button onclick="window.print()" style="margin-left:auto;"><?php esc_html_e('Drukuj / Zapisz PDF', 'basemgmt'); ?></button>
-			</div>
-			<div class="bm-doc-body">
-				<?php echo wp_kses_post($doc->html_content); ?>
-			</div>
-		</body>
-		</html>
-		<?php
-		exit;
+		self::render_clean_doc_page($doc->title, $doc->html_content, $back_url, __('Deklaracja', 'basemgmt'));
+	}
+
+
+	public function handle_send_decl_to_camp(): void {
+		Capabilities::require_admin();
+		$camp_id = (int) ($_GET['id']      ?? 0);
+		$doc_id  = (int) ($_GET['decl_id'] ?? 0);
+		check_admin_referer("bm_send_decl_to_camp_{$doc_id}");
+		global $wpdb;
+		$doc = $wpdb->get_row($wpdb->prepare(
+			"SELECT * FROM " . Schema::table('camp_decl_docs') . " WHERE id = %d AND camp_id = %d",
+			$doc_id, $camp_id
+		));
+		if ( ! $doc ) {
+			AdminMenu::set_notice(__('Nie znaleziono deklaracji.', 'basemgmt'), 'error');
+			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
+			return;
+		}
+		$wpdb->update(Schema::table('camp_decl_docs'), ['sent_to_camp' => 1], ['id' => $doc_id]);
+		AdminMenu::set_notice(__('Deklaracja wysłana do obozu.', 'basemgmt'));
+		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-documents");
 	}
 
 	public function handle_add_camp_doc_custom(): void {
@@ -1486,9 +1520,13 @@ final class CampsPage {
 	public function handle_return_camp_equipment(): void {
 		Capabilities::require_admin();
 		check_admin_referer('bm_return_camp_equipment');
-		$camp_id  = (int) ($_POST['camp_id'] ?? 0);
-		$equip_id = (int) ($_POST['equip_id'] ?? 0);
-		$qty      = max(0, (int) ($_POST['qty'] ?? 0));
+		$camp_id    = (int) ($_POST['camp_id']    ?? 0);
+		$equip_id   = (int) ($_POST['equip_id']   ?? 0);
+		$qty        = max(0, (int) ($_POST['qty']  ?? 0));
+		$is_loss    = ! empty($_POST['is_loss']);
+		$loss_amt   = $is_loss ? (float) str_replace(',', '.', ($_POST['loss_amount'] ?? '0')) : 0.0;
+		$loss_desc  = $is_loss ? sanitize_text_field(wp_unslash($_POST['loss_description'] ?? '')) : '';
+
 		if ( $equip_id <= 0 || $camp_id <= 0 ) {
 			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
 			return;
@@ -1502,9 +1540,32 @@ final class CampsPage {
 			$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
 			return;
 		}
-		$new_returned = min((int) $row->issued_qty, (int) $row->returned_qty + $qty);
-		$wpdb->update(Schema::table('camp_equipment'), ['returned_qty' => $new_returned], ['id' => $equip_id]);
-		AdminMenu::set_notice(sprintf(__('Zarejestrowano zwrot %d szt.', 'basemgmt'), $qty));
+
+		if ( $is_loss ) {
+			// Mark all remaining qty as returned (write-off) + create damage entry
+			$new_returned = (int) $row->issued_qty;
+			$damage_name  = sprintf(
+				__('Strata sprzętu: %s', 'basemgmt'),
+				$row->name
+			);
+			$description  = $loss_desc ?: sprintf(
+				__('Obóz nie zwrócił sprzętu: %s (zwrócono %d z %d szt.)', 'basemgmt'),
+				$row->name, (int) $row->returned_qty, (int) $row->issued_qty
+			);
+			$wpdb->insert(Schema::table('camp_damages'), [
+				'camp_id'     => $camp_id,
+				'name'        => $damage_name,
+				'description' => $description,
+				'cost'        => $loss_amt,
+				'status'      => 'reported',
+			]);
+			$wpdb->update(Schema::table('camp_equipment'), ['returned_qty' => $new_returned], ['id' => $equip_id]);
+			AdminMenu::set_notice(__('Strata zarejestrowana i zapisana w finansach.', 'basemgmt'));
+		} else {
+			$new_returned = min((int) $row->issued_qty, (int) $row->returned_qty + $qty);
+			$wpdb->update(Schema::table('camp_equipment'), ['returned_qty' => $new_returned], ['id' => $equip_id]);
+			AdminMenu::set_notice(sprintf(__('Zarejestrowano zwrot %d szt.', 'basemgmt'), $qty));
+		}
 		$this->redirect_back("basemgmt-camps&action=edit&id={$camp_id}#bm-section-equipment");
 	}
 

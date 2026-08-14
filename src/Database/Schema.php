@@ -1488,6 +1488,12 @@ final class Schema {
 			if ( ! in_array('locked', $decl_doc_cols, true) ) {
 				$wpdb->query("ALTER TABLE {$p}bm_camp_decl_docs ADD COLUMN locked TINYINT(1) NOT NULL DEFAULT 0 AFTER sent_token"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			}
+			if ( ! in_array('sent_to_camp', $decl_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_decl_docs ADD COLUMN sent_to_camp TINYINT(1) NOT NULL DEFAULT 0 AFTER locked"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+			if ( ! in_array('camp_approved_at', $decl_doc_cols, true) ) {
+				$wpdb->query("ALTER TABLE {$p}bm_camp_decl_docs ADD COLUMN camp_approved_at DATETIME DEFAULT NULL AFTER sent_to_camp"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
 		}
 
 		// ── ALTER: file columns on bm_decl_templates ─────────────────────────────

@@ -1,6 +1,15 @@
 <?php defined('ABSPATH') || exit;
+/** @var \stdClass|null $declaration */
 $is_new   = is_null($declaration);
 $decl_id  = $is_new ? 0 : (int) $declaration->id;
+$d_title      = $declaration?->title ?? '';
+$d_desc       = $declaration?->description ?? '';
+$d_html       = $declaration?->html_content ?? '';
+$d_auto_add   = ! empty($declaration?->auto_add);
+$d_sort_order = $declaration?->sort_order ?? 0;
+$d_file_id    = $declaration?->file_id ?? '';
+$d_file_url   = $declaration?->file_url ?? '';
+$d_file_name  = $declaration?->file_name ?? '';
 ?>
 <div class="wrap bm-admin-wrap">
 	<div class="bm-page-header">
@@ -8,7 +17,7 @@ $decl_id  = $is_new ? 0 : (int) $declaration->id;
 			<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-org-declarations')); ?>" class="bm-back-link">← <?php esc_html_e('Deklaracje', 'basemgmt'); ?></a>
 		</h1>
 		<h1 style="margin-top:8px;">
-			<?php echo $is_new ? esc_html__('Nowa deklaracja', 'basemgmt') : esc_html($declaration->title); ?>
+			<?php echo $is_new ? esc_html__('Nowa deklaracja', 'basemgmt') : esc_html($d_title); ?>
 		</h1>
 	</div>
 
@@ -16,9 +25,9 @@ $decl_id  = $is_new ? 0 : (int) $declaration->id;
 		<?php wp_nonce_field('bm_save_decl_template'); ?>
 		<input type="hidden" name="action"       value="bm_save_decl_template">
 		<input type="hidden" name="decl_tpl_id"  value="<?php echo esc_attr($decl_id); ?>">
-		<input type="hidden" name="file_id"      id="bm_decl_file_id"   value="<?php echo esc_attr($declaration->file_id ?? ''); ?>">
-		<input type="hidden" name="file_url"     id="bm_decl_file_url"  value="<?php echo esc_attr($declaration->file_url ?? ''); ?>">
-		<input type="hidden" name="file_name"    id="bm_decl_file_name" value="<?php echo esc_attr($declaration->file_name ?? ''); ?>">
+		<input type="hidden" name="file_id"      id="bm_decl_file_id"   value="<?php echo esc_attr($d_file_id); ?>">
+		<input type="hidden" name="file_url"     id="bm_decl_file_url"  value="<?php echo esc_attr($d_file_url); ?>">
+		<input type="hidden" name="file_name"    id="bm_decl_file_name" value="<?php echo esc_attr($d_file_name); ?>">
 
 		<div class="bm-task-body">
 			<div class="bm-task-main">
@@ -29,22 +38,22 @@ $decl_id  = $is_new ? 0 : (int) $declaration->id;
 						<p>
 							<label for="bm_decl_title"><strong><?php esc_html_e('Tytuł', 'basemgmt'); ?></strong></label><br>
 							<input type="text" id="bm_decl_title" name="title" class="widefat" required
-								value="<?php echo esc_attr($declaration->title ?? ''); ?>"
+								value="<?php echo esc_attr($d_title); ?>"
 								placeholder="<?php esc_attr_e('np. Deklaracja uczestnictwa w obozie', 'basemgmt'); ?>">
 						</p>
 						<p>
 							<label for="bm_decl_desc"><strong><?php esc_html_e('Krótki opis', 'basemgmt'); ?></strong></label><br>
-							<textarea id="bm_decl_desc" name="description" class="widefat" rows="2"><?php echo esc_textarea($declaration->description ?? ''); ?></textarea>
+							<textarea id="bm_decl_desc" name="description" class="widefat" rows="2"><?php echo esc_textarea($d_desc); ?></textarea>
 						</p>
 
 						<!-- ── Plik główny ──────────────────────────────────── -->
 						<p><strong><?php esc_html_e('Plik dokumentu (opcjonalny)', 'basemgmt'); ?></strong></p>
 						<p>
 							<span id="bm_decl_file_display" class="bm-muted">
-								<?php echo ! empty($declaration->file_name) ? esc_html($declaration->file_name) : esc_html__('Brak wybranego pliku', 'basemgmt'); ?>
+								<?php echo !empty($d_file_name) ? esc_html($d_file_name) : esc_html__('Brak wybranego pliku', 'basemgmt'); ?>
 							</span>
-							<?php if ( ! empty($declaration->file_url) ) : ?>
-								<a href="<?php echo esc_url($declaration->file_url); ?>" target="_blank" style="margin-left:8px;" class="bm-link-small"><?php esc_html_e('Otwórz', 'basemgmt'); ?></a>
+							<?php if ( !empty($d_file_url) ) : ?>
+								<a href="<?php echo esc_url($d_file_url); ?>" target="_blank" style="margin-left:8px;" class="bm-link-small"><?php esc_html_e('Otwórz', 'basemgmt'); ?></a>
 							<?php endif; ?>
 							<br>
 							<button type="button" class="button" id="bm_decl_select_file" style="margin-top:6px;">
@@ -57,7 +66,7 @@ $decl_id  = $is_new ? 0 : (int) $declaration->id;
 						<p class="description"><?php esc_html_e('Możesz wpisać treść deklaracji bezpośrednio w formacie HTML. Jeśli podasz plik powyżej, będzie on traktowany jako dokument główny.', 'basemgmt'); ?></p>
 						<?php
 						wp_editor(
-							$declaration->html_content ?? '',
+							$d_html,
 							'html_content',
 							[
 								'textarea_name' => 'html_content',
@@ -77,7 +86,7 @@ $decl_id  = $is_new ? 0 : (int) $declaration->id;
 					<div class="inside">
 						<p>
 							<label>
-								<input type="checkbox" name="auto_add" value="1" <?php checked(!empty($declaration->auto_add)); ?>>
+								<input type="checkbox" name="auto_add" value="1" <?php checked(!empty($d_auto_add)); ?>>
 								<strong><?php esc_html_e('Automatycznie dodaj do nowego obozu', 'basemgmt'); ?></strong>
 							</label>
 							<p class="description"><?php esc_html_e('Gdy włączone, deklaracja zostanie automatycznie dołączona przy tworzeniu każdego nowego obozu.', 'basemgmt'); ?></p>
@@ -85,7 +94,7 @@ $decl_id  = $is_new ? 0 : (int) $declaration->id;
 						<p>
 							<label for="bm_decl_order"><strong><?php esc_html_e('Kolejność', 'basemgmt'); ?></strong></label><br>
 							<input type="number" id="bm_decl_order" name="sort_order" class="small-text"
-								value="<?php echo esc_attr($declaration->sort_order ?? 0); ?>">
+								value="<?php echo esc_attr($d_sort_order); ?>">
 						</p>
 					</div>
 				</div>

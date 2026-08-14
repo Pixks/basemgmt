@@ -28,7 +28,7 @@
 					<th style="width:80px;"><?php esc_html_e('Plik', 'basemgmt'); ?></th>
 					<th style="width:100px;"><?php esc_html_e('Auto-dodaj', 'basemgmt'); ?></th>
 					<th style="width:80px;"><?php esc_html_e('Kolejność', 'basemgmt'); ?></th>
-					<th style="width:140px;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
+					<th style="width:200px;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -63,6 +63,13 @@
 							<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-org-declarations&action=edit&id={$decl->id}")); ?>" class="button button-small">
 								<?php esc_html_e('Edytuj', 'basemgmt'); ?>
 							</a>
+							<?php if ( ! empty($camps) ) : ?>
+								<button type="button" class="button button-small button-primary bm-push-decl-btn"
+									data-decl-id="<?php echo esc_attr($decl->id); ?>"
+									data-decl-title="<?php echo esc_attr($decl->title); ?>">
+									<?php esc_html_e('Prześlij do obozu', 'basemgmt'); ?>
+								</button>
+							<?php endif; ?>
 							<a href="<?php echo esc_url(wp_nonce_url(admin_url("admin-post.php?action=bm_delete_decl_template&id={$decl->id}"), "bm_delete_decl_template_{$decl->id}")); ?>"
 								class="button button-small bm-danger"
 								data-bm-confirm="<?php esc_attr_e('Usunąć deklarację?', 'basemgmt'); ?>">
@@ -75,3 +82,69 @@
 		</table>
 	<?php endif; ?>
 </div>
+
+<?php if ( ! empty($camps) ) : ?>
+<!-- Modal: Prześlij deklarację do obozu -->
+<div id="bm-modal-push-decl" style="display:none;" class="bm-modal-overlay">
+	<div class="bm-modal">
+		<div class="bm-modal-header">
+			<h3><?php esc_html_e('Prześlij deklarację do obozu', 'basemgmt'); ?></h3>
+			<button type="button" class="bm-modal-close">✕</button>
+		</div>
+		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+			<?php wp_nonce_field('bm_push_decl_to_camp'); ?>
+			<input type="hidden" name="action"  value="bm_push_decl_to_camp">
+			<input type="hidden" name="decl_id" id="bm-push-decl-id" value="">
+			<div class="bm-modal-body">
+				<p id="bm-push-decl-name" style="font-weight:600;margin-bottom:12px;"></p>
+				<p>
+					<label for="bm-push-camp-select"><strong><?php esc_html_e('Wybierz obóz:', 'basemgmt'); ?></strong></label><br>
+					<select name="camp_id" id="bm-push-camp-select" class="widefat" style="margin-top:6px;">
+						<option value=""><?php esc_html_e('— wybierz obóz —', 'basemgmt'); ?></option>
+						<?php foreach ( $camps as $camp ) : ?>
+							<option value="<?php echo esc_attr($camp->id); ?>">
+								<?php echo esc_html($camp->name); ?>
+								<?php if ( ! empty($camp->start_date) ) : ?>
+									(<?php echo esc_html(substr($camp->start_date, 0, 10)); ?>)
+								<?php endif; ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</p>
+			</div>
+			<div class="bm-modal-footer">
+				<button type="submit" class="button button-primary" id="bm-push-decl-submit" disabled>
+					<?php esc_html_e('Prześlij', 'basemgmt'); ?>
+				</button>
+				<button type="button" class="button bm-modal-close"><?php esc_html_e('Anuluj', 'basemgmt'); ?></button>
+			</div>
+		</form>
+	</div>
+</div>
+<script>
+(function($) {
+	$(document).on('click', '.bm-push-decl-btn', function() {
+		var $btn = $(this);
+		$('#bm-push-decl-id').val($btn.data('decl-id'));
+		$('#bm-push-decl-name').text($btn.data('decl-title'));
+		$('#bm-push-camp-select').val('');
+		$('#bm-push-decl-submit').prop('disabled', true);
+		$('#bm-modal-push-decl').show();
+	});
+
+	$(document).on('change', '#bm-push-camp-select', function() {
+		$('#bm-push-decl-submit').prop('disabled', $(this).val() === '');
+	});
+
+	$(document).on('click', '#bm-modal-push-decl .bm-modal-close', function() {
+		$('#bm-modal-push-decl').hide();
+	});
+
+	$(document).on('click', '#bm-modal-push-decl.bm-modal-overlay', function(e) {
+		if ($(e.target).is('.bm-modal-overlay')) {
+			$(this).hide();
+		}
+	});
+})(jQuery);
+</script>
+<?php endif; ?>

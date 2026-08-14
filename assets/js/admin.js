@@ -10,6 +10,7 @@
         'bm-section-checklist'   : 'workcenter',
         'bm-section-organizer'   : 'organizer',
         'bm-section-documents'   : 'documents',
+        'bm-section-equipment'   : 'equipment',
         'bm-section-finance'     : 'finance',
     };
 
