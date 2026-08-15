@@ -5,13 +5,14 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
 
 > Jedyne co musisz mieć globalnie to `[x-cloak] { display: none !important; }` w CSS strony (możesz dodać w Breakdance → Global CSS).
 
-**Zmiany względem poprzedniej wersji:**
-- Zakładka Meldunek korzysta z nowego `ReportsController` (`/panel/reports/*`) – obsługuje tryby roboczy i wysłany
-- Formularz rezerwacji pokazuje blokady techniczne (`block_windows`)
-- Pogoda pobierana z `/panel/weather` (wymaga sesji)
-- Naprawiono: `campName` w topbarze, licznik nieprzeczytanych wiadomości, lookup nazwy zasobu w rezerwacjach
-- Usunięto `role` z listy kadry w ekranie logowania (API nie zwraca tego pola)
-- **Nowa zakładka 📁 Teczka**: dokumenty obozu, szkody/usterki, deklaracja dzienna pobytu
+**Zmiany v2.0.0-beta:**
+- **Architektura JS**: `bm-api.js` zastąpiony przez 4 moduły — `bm-store.js` (Alpine store + bootstrap), `bm-components-auth.js` (logowanie, sesja, wylogowanie, hero obozu), `bm-components-content.js` (meldunek, pogoda, plan dnia, rezerwacje), `bm-components-social.js` (jadłospis, komunikacja, pomoc, formularze, teczka)
+- **Deklaracja obozu**: dodane pole `declared_diets` (zadeklarowana liczba diet) i `notes` (uwagi organizatora) w nagłówku deklaracji pobytu
+- **Teczka – dokumenty**: sekcja korzysta z biblioteki org (`/panel/folder/documents`); dokumenty przypisane bezpośrednio do obozu oraz deklaracje organizacyjne są dostępne w panelu admina
+- **Teczka – sprzęt**: moduł sprzętu (`bm_camp_equipment`) dostępny wyłącznie w panelu admina — brak endpointu REST dla kadry w v2.0.0-beta
+- CSS: dodane brakujące aliasy `.zhp-alert-error` i `.zhp-alert-success`
+- Bezpieczeństwo REST: wzmocniona walidacja danych wejściowych i uprawnień w `AuthController`, `FormsController`, `WeatherController`
+- Poprzednie: `ReportsController` (tryby roboczy/wysłany), blokady techniczne rezerwacji, zakładka 📁 Teczka (dokumenty, szkody, deklaracja dzienna)
 
 ---
 
@@ -85,6 +86,8 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
 .zhp-alert-warn   { background: var(--zhp-gold-light); border-left: 4px solid var(--zhp-gold); color: #7A5800; }
 .zhp-alert-ok     { background: var(--zhp-green-light);border-left: 4px solid var(--zhp-green);color: var(--zhp-green); }
 .zhp-alert-info   { background: #EBF4FF; border-left: 4px solid #1A5494; color: #1A5494; }
+.zhp-alert-error   { background: var(--zhp-red-light);   border-left: 4px solid var(--zhp-red);   color: var(--zhp-red); }
+.zhp-alert-success { background: var(--zhp-green-light); border-left: 4px solid var(--zhp-green); color: var(--zhp-green); }
 .zhp-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
 .zhp-table th { background: var(--zhp-green-light); color: var(--zhp-green); text-align: left; padding: 7px 11px; font-size: .73rem; text-transform: uppercase; letter-spacing: .04em; }
 .zhp-table td { padding: 8px 11px; border-bottom: 1px solid var(--zhp-border); }
@@ -1303,7 +1306,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
     <!-- ─────────────────────────────────────────────────── -->
     <div x-show="tab==='teczka'" class="bm-section">
 
-      <!-- ── 1. Dokumenty ───────────────────────────────── -->
+      <!-- ── 1. Dokumenty (biblioteka organizacji) ──────── -->
       <div class="zhp-card" x-data="bmFolderDocs()" x-init="init()">
         <div class="zhp-card-header">
           <span>📄</span>
@@ -1437,24 +1440,34 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
           <!-- Status deklaracji ogólnej -->
           <template x-if="!loading && declaration">
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;background:var(--zhp-bg);border-radius:var(--zhp-radius-sm);">
-              <div style="flex:1;min-width:140px;">
-                <div class="zhp-label">Zadeklarowane osoby</div>
+              <div style="flex:1;min-width:130px;">
+                <div class="zhp-label">Zad. osoby</div>
                 <div style="font-size:1.1rem;font-weight:700;" x-text="declaration.declared_persons"></div>
               </div>
-              <div style="flex:1;min-width:140px;">
+              <div style="flex:1;min-width:130px;">
+                <div class="zhp-label">Zad. diety</div>
+                <div style="font-size:1.1rem;font-weight:700;color:var(--zhp-green-mid);"
+                  x-text="declaration.declared_diets || '—'"></div>
+              </div>
+              <div style="flex:1;min-width:130px;">
                 <div class="zhp-label">Przyjazd</div>
                 <div style="font-size:.9rem;" x-text="declaration.arrival_time || '—'"></div>
               </div>
-              <div style="flex:1;min-width:140px;">
+              <div style="flex:1;min-width:130px;">
                 <div class="zhp-label">Odjazd</div>
                 <div style="font-size:.9rem;" x-text="declaration.departure_time || '—'"></div>
               </div>
-              <div style="flex:1;min-width:140px;">
+              <div style="flex:1;min-width:130px;">
                 <div class="zhp-label">Status</div>
                 <span class="zhp-badge" :class="declaration.signed_at ? 'zhp-badge-green' : declaration.submitted_at ? 'zhp-badge-gold' : 'zhp-badge-gray'"
                   x-text="declaration.signed_at ? 'Podpisana' : declaration.submitted_at ? 'Wysłana' : 'W przygotowaniu'">
                 </span>
               </div>
+              <template x-if="declaration.notes">
+                <div style="flex-basis:100%;background:var(--zhp-gold-light);border-radius:var(--zhp-radius-sm);padding:8px 12px;font-size:.83rem;color:#7A5800;">
+                  📝 <span x-text="declaration.notes"></span>
+                </div>
+              </template>
             </div>
           </template>
 
@@ -1476,7 +1489,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
           <template x-if="editing">
             <div style="background:var(--zhp-green-light);border:1px solid var(--zhp-green-border);border-radius:var(--zhp-radius);padding:16px;margin-bottom:16px;">
               <div style="font-weight:700;margin-bottom:12px;color:var(--zhp-green);">
-                <span x-text="editing.id ? 'Edytuj dzień' : 'Nowy dzień deklaracji'"></span>
+                <span x-text="editing.declaration_date ? 'Edytuj dzień: ' + editing.declaration_date : 'Nowy dzień deklaracji'"></span>
               </div>
               <div class="zhp-alert zhp-alert-error" x-show="error" x-text="error" style="margin-bottom:10px;"></div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -1544,6 +1557,19 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
             </div>
           </template>
 
+        </div>
+      </div>
+
+      <!-- ── Informacja: funkcje dostępne tylko w panelu admina ── -->
+      <div class="zhp-alert zhp-alert-info" style="margin-top:4px;font-size:.83rem;">
+        <div>
+          <strong>ℹ Funkcje dostępne tylko w panelu admina:</strong>
+          <ul style="margin:6px 0 0 16px;padding:0;line-height:1.7;">
+            <li>📦 <strong>Sprzęt</strong> – wydawanie i rejestrowanie zwrotów sprzętu obozu (<code>bm_camp_equipment</code>)</li>
+            <li>📑 <strong>Deklaracje organizacji</strong> – dokumenty deklaracyjne przesyłane przez organizatora do obozu (<code>bm_camp_decl_docs</code>)</li>
+            <li>📋 <strong>Dokumenty obozowe</strong> – dokumenty przypisane bezpośrednio do obozu z biblioteki lub z szablonu (<code>bm_camp_documents</code>)</li>
+          </ul>
+          <p style="margin:6px 0 0;">Powyższe moduły będą udostępnione przez REST API (/panel/folder/*) w kolejnej wersji.</p>
         </div>
       </div>
 
