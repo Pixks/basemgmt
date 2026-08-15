@@ -1545,5 +1545,49 @@ final class Schema {
 				$wpdb->query("ALTER TABLE {$p}bm_camp_documents ADD COLUMN signed_file_url VARCHAR(500) NOT NULL DEFAULT '' AFTER signed_by"); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			}
 		}
+
+		// ── ALTER: extended settlement columns on bm_camp_settlements ────────────
+		$sett_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_camp_settlements");
+		if ( $sett_cols ) {
+			$new_sett_cols = [
+				'document_number'      => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN document_number      VARCHAR(60)    NOT NULL DEFAULT '' AFTER camp_id",
+				'issue_date'           => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN issue_date           DATE           DEFAULT NULL AFTER document_number",
+				'due_date'             => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN due_date             DATE           DEFAULT NULL AFTER issue_date",
+				'payment_terms'        => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN payment_terms        TEXT           DEFAULT NULL AFTER due_date",
+				'global_discount'      => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN global_discount      DECIMAL(12,2)  NOT NULL DEFAULT 0.00 AFTER payment_terms",
+				'global_discount_type' => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN global_discount_type VARCHAR(10)    NOT NULL DEFAULT 'fixed' AFTER global_discount",
+				'total_discounts'      => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN total_discounts      DECIMAL(12,2)  NOT NULL DEFAULT 0.00 AFTER total_gross",
+				'total_damages'        => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN total_damages        DECIMAL(12,2)  NOT NULL DEFAULT 0.00 AFTER total_discounts",
+				'amount_paid'          => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN amount_paid          DECIMAL(12,2)  NOT NULL DEFAULT 0.00 AFTER total_damages",
+				'organizer_snapshot'   => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN organizer_snapshot   LONGTEXT       DEFAULT NULL AFTER notes",
+				'stay_summary_snapshot'=> "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN stay_summary_snapshot LONGTEXT      DEFAULT NULL AFTER organizer_snapshot",
+				'created_by'           => "ALTER TABLE {$p}bm_camp_settlements ADD COLUMN created_by           BIGINT UNSIGNED DEFAULT NULL AFTER stay_summary_snapshot",
+			];
+			foreach ( $new_sett_cols as $col => $alter ) {
+				if ( ! in_array($col, $sett_cols, true) ) {
+					$wpdb->query($alter); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				}
+			}
+		}
+
+		// ── ALTER: extended columns on bm_camp_settlement_lines ──────────────────
+		$sett_line_cols = $wpdb->get_col("SHOW COLUMNS FROM {$p}bm_camp_settlement_lines");
+		if ( $sett_line_cols ) {
+			$new_sline_cols = [
+				'discount'              => "ALTER TABLE {$p}bm_camp_settlement_lines ADD COLUMN discount              DECIMAL(12,2)  NOT NULL DEFAULT 0.00 AFTER total_amount",
+				'discount_type'         => "ALTER TABLE {$p}bm_camp_settlement_lines ADD COLUMN discount_type         VARCHAR(10)    NOT NULL DEFAULT 'fixed' AFTER discount",
+				'sort_order'            => "ALTER TABLE {$p}bm_camp_settlement_lines ADD COLUMN sort_order            INT            NOT NULL DEFAULT 0 AFTER discount_type",
+				'include_in_settlement' => "ALTER TABLE {$p}bm_camp_settlement_lines ADD COLUMN include_in_settlement TINYINT(1)     NOT NULL DEFAULT 1 AFTER sort_order",
+				'payment_status'        => "ALTER TABLE {$p}bm_camp_settlement_lines ADD COLUMN payment_status        VARCHAR(20)    NOT NULL DEFAULT 'expected' AFTER include_in_settlement",
+				'source_schedule_id'    => "ALTER TABLE {$p}bm_camp_settlement_lines ADD COLUMN source_schedule_id    BIGINT UNSIGNED DEFAULT NULL AFTER payment_status",
+				'source_damage_id'      => "ALTER TABLE {$p}bm_camp_settlement_lines ADD COLUMN source_damage_id      BIGINT UNSIGNED DEFAULT NULL AFTER source_schedule_id",
+				'source_equipment_id'   => "ALTER TABLE {$p}bm_camp_settlement_lines ADD COLUMN source_equipment_id   BIGINT UNSIGNED DEFAULT NULL AFTER source_damage_id",
+			];
+			foreach ( $new_sline_cols as $col => $alter ) {
+				if ( ! in_array($col, $sett_line_cols, true) ) {
+					$wpdb->query($alter); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				}
+			}
+		}
 	}
 }

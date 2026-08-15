@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BaseMgmt\Admin;
 
 use BaseMgmt\Admin\Pages\AnnouncementsPage;
+use BaseMgmt\Admin\Pages\CampSettlementPage;
 use BaseMgmt\Admin\Pages\CampsPage;
 use BaseMgmt\Admin\Pages\CommunicationPage;
 use BaseMgmt\Admin\Pages\DashboardPage;
@@ -42,9 +43,10 @@ defined('ABSPATH') || exit;
  */
 final class AdminMenu {
 
-	private DashboardPage     $dashboard;
-	private CampsPage         $camps;
-	private StaffPage         $staff;
+	private DashboardPage       $dashboard;
+	private CampsPage           $camps;
+	private CampSettlementPage  $settlement;
+	private StaffPage           $staff;
 	private AnnouncementsPage $announcements;
 	private ReportsPage       $reports;
 	private WeatherPage       $weather;
@@ -72,6 +74,7 @@ final class AdminMenu {
 	public function __construct() {
 		$this->dashboard       = new DashboardPage();
 		$this->camps           = new CampsPage();
+		$this->settlement      = new CampSettlementPage();
 		add_action('admin_init', [$this->camps, 'maybe_early_exit']);
 		$this->staff           = new StaffPage();
 		$this->announcements   = new AnnouncementsPage();
@@ -408,11 +411,23 @@ final class AdminMenu {
 		);
 
 		// Sortable.js – only on schedule edit page.
-		$page = sanitize_key($_GET['page'] ?? '');
+		$page   = sanitize_key($_GET['page'] ?? '');
+		$action = sanitize_key($_GET['action'] ?? '');
 
 		// WP media uploader – on Org documents, doc templates, declarations, and camps pages.
 		if ( in_array($page, ['basemgmt-org-documents', 'basemgmt-org-doc-templates', 'basemgmt-org-declarations', 'basemgmt-camps'], true) ) {
 			wp_enqueue_media();
+		}
+
+		// Settlement JS – only on settlement edit.
+		if ( $page === 'basemgmt-camps' && $action === 'settlement' ) {
+			wp_enqueue_script(
+				'basemgmt-settlement',
+				BASEMGMT_URL . 'assets/js/bm-settlement.js',
+				['jquery'],
+				BASEMGMT_VERSION,
+				true
+			);
 		}
 
 		if ( $page === 'basemgmt-schedule' && ! empty($_GET['edit']) ) {
@@ -477,19 +492,21 @@ final class AdminMenu {
 	 */
 	public function post_actions(): array {
 		return [
-			'bm_save_camp'             => [$this->camps,         'handle_save'],
-			'bm_save_camp_overview'    => [$this->camps,         'handle_save_overview'],
-			'bm_save_camp_process'     => [$this->camps,         'handle_save_process'],
-			'bm_save_camp_organizer'   => [$this->camps,         'handle_save_organizer'],
-			'bm_save_camp_checklist'   => [$this->camps,         'handle_save_checklist'],
-			'bm_save_camp_prearrival'  => [$this->camps,         'handle_save_prearrival'],
-			'bm_save_camp_task'        => [$this->camps,         'handle_save_task'],
-			'bm_delete_camp_task'      => [$this->camps,         'handle_delete_task'],
-			'bm_delete_camp'           => [$this->camps,         'handle_delete'],
-			'bm_save_staff'            => [$this->staff,         'handle_save'],
-			'bm_delete_staff'          => [$this->staff,         'handle_delete'],
-			'bm_toggle_staff_active'   => [$this->staff,         'handle_toggle_active'],
-			'bm_reset_staff_code'      => [$this->staff,         'handle_reset_code'],
+			'bm_save_camp'             => [$this->camps,       'handle_save'],
+			'bm_save_camp_overview'    => [$this->camps,       'handle_save_overview'],
+			'bm_save_camp_process'     => [$this->camps,       'handle_save_process'],
+			'bm_save_camp_organizer'   => [$this->camps,       'handle_save_organizer'],
+			'bm_save_camp_checklist'   => [$this->camps,       'handle_save_checklist'],
+			'bm_save_camp_prearrival'  => [$this->camps,       'handle_save_prearrival'],
+			'bm_save_camp_task'        => [$this->camps,       'handle_save_task'],
+			'bm_delete_camp_task'      => [$this->camps,       'handle_delete_task'],
+			'bm_delete_camp'           => [$this->camps,       'handle_delete'],
+			// Settlement
+			'bm_save_settlement'       => [$this->settlement,  'handle_save'],
+			'bm_save_staff'            => [$this->staff,       'handle_save'],
+			'bm_delete_staff'          => [$this->staff,       'handle_delete'],
+			'bm_toggle_staff_active'   => [$this->staff,       'handle_toggle_active'],
+			'bm_reset_staff_code'      => [$this->staff,       'handle_reset_code'],
 			'bm_save_announcement'     => [$this->announcements, 'handle_save'],
 			'bm_delete_announcement'   => [$this->announcements, 'handle_delete'],
 			'bm_approve_announcement'   => [$this->announcements, 'handle_approve'],

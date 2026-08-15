@@ -53,12 +53,12 @@
 		<table class="wp-list-table widefat fixed striped bm-table bm-camps-list">
 			<thead>
 				<tr>
-					<th style="width:28%;"><?php esc_html_e('Obóz', 'basemgmt'); ?></th>
-					<th style="width:20%;"><?php esc_html_e('Organizator', 'basemgmt'); ?></th>
+					<th style="width:25%;"><?php esc_html_e('Obóz', 'basemgmt'); ?></th>
+					<th style="width:17%;"><?php esc_html_e('Organizator', 'basemgmt'); ?></th>
 					<th style="width:15%;"><?php esc_html_e('Etap / Stan', 'basemgmt'); ?></th>
-					<th style="width:15%;"><?php esc_html_e('Termin', 'basemgmt'); ?></th>
-					<th style="width:12%;"><?php esc_html_e('Gotowość', 'basemgmt'); ?></th>
-					<th style="width:10%;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
+					<th style="width:14%;"><?php esc_html_e('Termin', 'basemgmt'); ?></th>
+					<th style="width:11%;"><?php esc_html_e('Gotowość', 'basemgmt'); ?></th>
+					<th style="width:18%;"><?php esc_html_e('Akcje', 'basemgmt'); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -153,7 +153,7 @@
 					</td>
 
 					<!-- Akcje -->
-					<td class="bm-actions" style="white-space:nowrap;">
+					<td class="bm-actions">
 						<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-camps&action=edit&id={$camp->id}")); ?>" class="button button-small">
 							<?php esc_html_e('Teczka', 'basemgmt'); ?>
 						</a>
@@ -181,4 +181,6 @@
 <style>
 .bm-camps-list td { vertical-align: middle; padding: 10px 8px; }
 .bm-row--attention > td:first-child { border-left: 3px solid #d63638; }
+.bm-camps-list .bm-actions { white-space: nowrap; }
+.bm-camps-list .bm-actions .button { margin: 1px 2px 1px 0; }
 </style>

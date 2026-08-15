@@ -11,6 +11,7 @@ use BaseMgmt\Database\Schema;
 use BaseMgmt\Modules\Camps\CampCaseRepository;
 use BaseMgmt\Modules\Camps\CampRepository;
 use BaseMgmt\Modules\Camps\CampWorkflowAutomationRepository;
+use BaseMgmt\Admin\Pages\CampSettlementPage;
 
 defined('ABSPATH') || exit;
 
@@ -20,21 +21,23 @@ defined('ABSPATH') || exit;
 final class CampsPage {
 
 	/**
-	 * Hook: admin_init — intercepts doc_view / decl_view early so WP doesn't render admin chrome.
+	 * Hook: admin_init — intercepts doc_view / decl_view / settlement_pdf early so WP doesn't render admin chrome.
 	 */
 	public function maybe_early_exit(): void {
 		if ( ! is_admin() ) return;
 		$page   = sanitize_key($_GET['page']   ?? '');
 		$action = sanitize_key($_GET['action'] ?? '');
 		if ( $page !== 'basemgmt-camps' ) return;
-		if ( ! in_array($action, ['doc_view', 'decl_view'], true) ) return;
+		if ( ! in_array($action, ['doc_view', 'decl_view', 'settlement_pdf'], true) ) return;
 
 		Capabilities::require_admin();
 		$id = (int) ($_GET['id'] ?? 0);
 		if ( $action === 'doc_view' ) {
 			$this->render_doc_view($id, (int) ($_GET['doc_id'] ?? 0));
-		} else {
+		} elseif ( $action === 'decl_view' ) {
 			$this->render_decl_view($id, (int) ($_GET['decl_id'] ?? 0));
+		} else {
+			(new CampSettlementPage())->render_pdf($id);
 		}
 		exit;
 	}
@@ -59,15 +62,16 @@ final class CampsPage {
 		$id     = (int) ($_GET['id'] ?? 0);
 
 		match ($action) {
-			'new'       => $this->render_edit_form(null),
-			'edit'      => $this->render_edit_form(CampRepository::get($id)),
-			'task_edit' => $this->render_task_edit((int) ($_GET['task_id'] ?? 0), $id),
-			'task_new'  => $this->render_task_edit(0, $id),
-			'doc_view'  => $this->render_doc_view($id, (int) ($_GET['doc_id'] ?? 0)),
-			'doc_edit'  => $this->render_doc_content_edit($id, (int) ($_GET['doc_id'] ?? 0), 'document'),
-			'decl_edit' => $this->render_doc_content_edit($id, (int) ($_GET['decl_id'] ?? 0), 'declaration'),
-			'decl_view' => $this->render_decl_view($id, (int) ($_GET['decl_id'] ?? 0)),
-			default     => $this->render_list(),
+			'new'        => $this->render_edit_form(null),
+			'edit'       => $this->render_edit_form(CampRepository::get($id)),
+			'settlement' => (new CampSettlementPage())->render_edit($id),
+			'task_edit'  => $this->render_task_edit((int) ($_GET['task_id'] ?? 0), $id),
+			'task_new'   => $this->render_task_edit(0, $id),
+			'doc_view'   => $this->render_doc_view($id, (int) ($_GET['doc_id'] ?? 0)),
+			'doc_edit'   => $this->render_doc_content_edit($id, (int) ($_GET['doc_id'] ?? 0), 'document'),
+			'decl_edit'  => $this->render_doc_content_edit($id, (int) ($_GET['decl_id'] ?? 0), 'declaration'),
+			'decl_view'  => $this->render_decl_view($id, (int) ($_GET['decl_id'] ?? 0)),
+			default      => $this->render_list(),
 		};
 	}
 

@@ -51,9 +51,12 @@ $super_status = $super_status_map[$process_stage] ?? ['label' => __('Zapytanie',
 			<a href="#" class="nav-tab" data-tab="equipment"><?php esc_html_e('Sprzęt', 'basemgmt'); ?></a>
 			<a href="#" class="nav-tab" data-tab="finance"><?php esc_html_e('Finanse', 'basemgmt'); ?></a>
 			<span style="flex:1;"></span>
-			<button type="button" class="button button-primary" style="margin:4px 0 4px 8px;" data-bm-alert="<?php esc_attr_e('Funkcja rozliczenia zostanie wkrótce uruchomiona.', 'basemgmt'); ?>">
-				<?php esc_html_e('Rozlicz', 'basemgmt'); ?>
-			</button>
+			<?php if ( $is_edit && $id > 0 ) : ?>
+			<a href="<?php echo esc_url(admin_url("admin.php?page=basemgmt-camps&action=settlement&id={$id}")); ?>"
+				class="button button-primary" style="margin:4px 0 4px 8px;">
+				📋 <?php esc_html_e('Rozlicz', 'basemgmt'); ?>
+			</a>
+			<?php endif; ?>
 		</nav>
 
 		<!-- ── PANEL ─────────────────────────────────────────────────────────── -->
