@@ -77,15 +77,21 @@ final class EmailService {
 
 		$settings = self::get_settings();
 
-		add_filter('wp_mail_content_type', fn() => 'text/html');
-		add_filter('wp_mail_from',         fn() => $settings['from_email']);
-		add_filter('wp_mail_from_name',    fn() => $settings['from_name']);
+		// Store closure references so we can remove exactly these callbacks,
+		// leaving any other plugin's wp_mail_* filters intact.
+		$cb_content_type = static fn() => 'text/html';
+		$cb_from         = static fn() => $settings['from_email'];
+		$cb_from_name    = static fn() => $settings['from_name'];
+
+		add_filter('wp_mail_content_type', $cb_content_type);
+		add_filter('wp_mail_from',         $cb_from);
+		add_filter('wp_mail_from_name',    $cb_from_name);
 
 		$result = wp_mail($to, $subject, $body);
 
-		remove_all_filters('wp_mail_content_type');
-		remove_all_filters('wp_mail_from');
-		remove_all_filters('wp_mail_from_name');
+		remove_filter('wp_mail_content_type', $cb_content_type);
+		remove_filter('wp_mail_from',         $cb_from);
+		remove_filter('wp_mail_from_name',    $cb_from_name);
 
 		return $result;
 	}

@@ -176,14 +176,28 @@ final class OperationLogger {
 
 	// ── Private helpers ───────────────────────────────────────────────────────
 
+	/**
+	 * Returns the client IP address for audit logging.
+	 *
+	 * Only REMOTE_ADDR is used by default because HTTP_CLIENT_IP and
+	 * HTTP_X_FORWARDED_FOR can be set arbitrarily by any client.
+	 *
+	 * If the site runs behind a trusted reverse proxy, hook into
+	 * 'bm_log_ip_address' to return the real client IP after validating
+	 * the forwarded header yourself:
+	 *
+	 *   add_filter('bm_log_ip_address', function( string $ip ): string {
+	 *       $fwd = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+	 *       $first = trim( explode( ',', $fwd )[0] );
+	 *       return filter_var( $first, FILTER_VALIDATE_IP ) ?: $ip;
+	 *   });
+	 */
 	private static function get_ip(): string {
-		foreach (['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'] as $key) {
-			if ( ! empty($_SERVER[$key]) ) {
-				$ip = sanitize_text_field(wp_unslash($_SERVER[$key]));
-				// Take only first IP if comma-list.
-				return trim(explode(',', $ip)[0]);
-			}
-		}
-		return '';
+		$ip = isset($_SERVER['REMOTE_ADDR'])
+			? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR']))
+			: '';
+
+		/** @param string $ip Validated REMOTE_ADDR. */
+		return (string) apply_filters('bm_log_ip_address', $ip);
 	}
 }

@@ -491,158 +491,232 @@ final class AdminMenu {
 	 * @return array<string, array{0:object, 1:string}>
 	 */
 	public function post_actions(): array {
+		return array_merge(
+			$this->camp_actions(),
+			$this->staff_actions(),
+			$this->schedule_actions(),
+			$this->reservations_actions(),
+			$this->menu_actions(),
+			$this->announcements_actions(),
+			$this->communication_actions(),
+			$this->forms_actions(),
+			$this->org_actions(),
+			$this->settings_actions(),
+			$this->misc_actions()
+		);
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function camp_actions(): array {
 		return [
-			'bm_save_camp'             => [$this->camps,       'handle_save'],
-			'bm_save_camp_overview'    => [$this->camps,       'handle_save_overview'],
-			'bm_save_camp_process'     => [$this->camps,       'handle_save_process'],
-			'bm_save_camp_organizer'   => [$this->camps,       'handle_save_organizer'],
-			'bm_save_camp_checklist'   => [$this->camps,       'handle_save_checklist'],
-			'bm_save_camp_prearrival'  => [$this->camps,       'handle_save_prearrival'],
-			'bm_save_camp_task'        => [$this->camps,       'handle_save_task'],
-			'bm_delete_camp_task'      => [$this->camps,       'handle_delete_task'],
-			'bm_delete_camp'           => [$this->camps,       'handle_delete'],
-			// Settlement
-			'bm_save_settlement'       => [$this->settlement,  'handle_save'],
-			'bm_save_staff'            => [$this->staff,       'handle_save'],
-			'bm_delete_staff'          => [$this->staff,       'handle_delete'],
-			'bm_toggle_staff_active'   => [$this->staff,       'handle_toggle_active'],
-			'bm_reset_staff_code'      => [$this->staff,       'handle_reset_code'],
-			'bm_save_announcement'     => [$this->announcements, 'handle_save'],
-			'bm_delete_announcement'   => [$this->announcements, 'handle_delete'],
-			'bm_approve_announcement'   => [$this->announcements, 'handle_approve'],
-			'bm_save_report'            => [$this->reports,       'handle_save'],
-			'bm_save_weather_settings'  => [$this->weather,       'handle_save_settings'],
-			'bm_save_weather_alert'     => [$this->weather,       'handle_save_alert'],
-			'bm_delete_weather_alert'   => [$this->weather,       'handle_delete_alert'],
-			'bm_refresh_weather'        => [$this->weather,       'handle_refresh_weather'],
-			'bm_sync_imgw'              => [$this->weather,       'handle_sync_imgw'],
-			// Schedule (Plan dnia)
-			'bm_save_schedule'          => [$this->schedule,      'handle_save'],
-			'bm_delete_plan'            => [$this->schedule,      'handle_delete'],
-			'bm_save_plan_item'         => [$this->schedule,      'handle_save_item'],
-			'bm_delete_plan_item'       => [$this->schedule,      'handle_delete_item'],
-			'bm_copy_plan'              => [$this->schedule,      'handle_copy'],
-			'bm_reset_plan_flags'       => [$this->schedule,      'handle_reset_flags'],
-			'bm_bulk_create_plans'      => [$this->schedule,      'handle_bulk_create'],
-			// Reservations (Rezerwacje)
-			'bm_save_resource'          => [$this->reservations,  'handle_save_resource'],
-			'bm_delete_resource'        => [$this->reservations,  'handle_delete_resource'],
-			'bm_save_resource_block'    => [$this->reservations,  'handle_save_block'],
-			'bm_delete_resource_block'  => [$this->reservations,  'handle_delete_block'],
-			'bm_reservation_action'     => [$this->reservations,  'handle_reservation_action'],
-			'bm_admin_create_reservation' => [$this->reservations,'handle_admin_create_reservation'],
-			// Settings
-			'bm_save_settings'            => [$this->settings,     'handle_save'],
-			'bm_send_test_email'          => [$this->settings,     'handle_send_test'],
-			'bm_save_email_template'      => [$this->settings,     'handle_save_template'],
-			'bm_reset_email_template'     => [$this->settings,     'handle_reset_template'],
-			'bm_backup_data'              => [$this->settings,     'handle_backup'],
-			'bm_import_data'              => [$this->settings,     'handle_import'],
-			'bm_clear_data'               => [$this->settings,     'handle_clear'],
-			'bm_compile_mo'               => [$this->settings,     'handle_compile_mo'],
-			// Menu (Jadłospis)
-			'bm_save_menu'                => [$this->menu,         'handle_save'],
-			'bm_delete_menu'              => [$this->menu,         'handle_delete'],
-			'bm_save_meal_item'           => [$this->menu,         'handle_save_item'],
-			'bm_delete_meal_item'         => [$this->menu,         'handle_delete_item'],
-			'bm_copy_menu'                => [$this->menu,         'handle_copy'],
-			'bm_reset_menu_flags'         => [$this->menu,         'handle_reset_flags'],
-			'bm_import_day_to_plan'       => [$this->menu,         'handle_import_day_to_plan'],
-			// Communication (Komunikacja)
-			'bm_create_thread'            => [$this->communication,'handle_create_thread'],
-			'bm_admin_reply'              => [$this->communication,'handle_reply'],
-			'bm_update_thread'            => [$this->communication,'handle_update_thread'],
-			'bm_create_thread_from_submission' => [$this->forms,   'handle_create_thread_from_submission'],
-			// Help (Pomoc)
-			'bm_save_help'                => [$this->help,         'handle_save'],
-			'bm_delete_help'              => [$this->help,         'handle_delete'],
-			// Forms & Submissions (Formularze i Zgłoszenia)
-			'bm_save_form'                => [$this->forms,        'handle_save_form'],
-			'bm_delete_form'              => [$this->forms,        'handle_delete_form'],
-			'bm_save_form_field'          => [$this->forms,        'handle_save_field'],
-			'bm_delete_form_field'        => [$this->forms,        'handle_delete_field'],
-			'bm_update_submission'        => [$this->forms,        'handle_update_submission'],
-			'bm_download_attachment'      => [$this->forms,        'handle_download_attachment'],
-			// Plan Templates (Szablony planów dnia)
-			'bm_save_plan_template'       => [$this->plan_templates, 'handle_save'],
-			'bm_delete_plan_template'     => [$this->plan_templates, 'handle_delete'],
-			'bm_save_template_item'       => [$this->plan_templates, 'handle_save_item'],
-			'bm_delete_template_item'     => [$this->plan_templates, 'handle_delete_item'],
-			'bm_apply_plan_template'      => [$this->plan_templates, 'handle_apply'],
-			// Meal Options (Opcje jadłospisu)
-			'bm_save_meal_diet'           => [$this->meal_options,   'handle_save_diet'],
-			'bm_delete_meal_diet'         => [$this->meal_options,   'handle_delete_diet'],
-			'bm_save_meal_location'       => [$this->meal_options,   'handle_save_location'],
-			'bm_delete_meal_location'     => [$this->meal_options,   'handle_delete_location'],
-			// Staff unlock
-			'bm_unlock_staff'             => [$this->staff,          'handle_unlock'],
-			// Meal Templates (Szablony jadłospisów)
-			'bm_save_meal_template'       => [$this->meal_templates, 'handle_save'],
-			'bm_delete_meal_template'     => [$this->meal_templates, 'handle_delete'],
-			'bm_save_meal_template_item'  => [$this->meal_templates, 'handle_save_item'],
-			'bm_delete_meal_template_item'=> [$this->meal_templates, 'handle_delete_item'],
-			'bm_apply_meal_template'      => [$this->meal_templates, 'handle_apply'],
-			'bm_render_pdf'               => [$this->pdf,            'handle_render'],
+			'bm_save_camp'                     => [$this->camps, 'handle_save'],
+			'bm_save_camp_overview'            => [$this->camps, 'handle_save_overview'],
+			'bm_save_camp_process'             => [$this->camps, 'handle_save_process'],
+			'bm_save_camp_organizer'           => [$this->camps, 'handle_save_organizer'],
+			'bm_save_camp_checklist'           => [$this->camps, 'handle_save_checklist'],
+			'bm_save_camp_prearrival'          => [$this->camps, 'handle_save_prearrival'],
+			'bm_delete_camp'                   => [$this->camps, 'handle_delete'],
+			// Tasks
+			'bm_save_camp_task'                => [$this->camps, 'handle_save_task'],
+			'bm_delete_camp_task'              => [$this->camps, 'handle_delete_task'],
+			'bm_add_task_from_template'        => [$this->camps, 'handle_add_task_from_template'],
+			// Declarations & damage
+			'bm_save_camp_declaration'         => [$this->camps, 'handle_save_camp_declaration'],
+			'bm_add_camp_damage'               => [$this->camps, 'handle_add_camp_damage'],
+			'bm_delete_camp_damage'            => [$this->camps, 'handle_delete_camp_damage'],
+			'bm_edit_camp_damage'              => [$this->camps, 'handle_edit_camp_damage'],
+			// Documents
+			'bm_add_camp_doc_custom'           => [$this->camps, 'handle_add_camp_doc_custom'],
+			'bm_add_camp_doc_library'          => [$this->camps, 'handle_add_camp_doc_library'],
+			'bm_create_camp_doc_from_template' => [$this->camps, 'handle_create_camp_doc_from_template'],
+			'bm_send_camp_doc'                 => [$this->camps, 'handle_send_camp_doc'],
+			'bm_delete_camp_doc'               => [$this->camps, 'handle_delete_camp_doc'],
+			'bm_sign_camp_doc'                 => [$this->camps, 'handle_sign_camp_doc'],
+			'bm_save_camp_doc_content'         => [$this->camps, 'handle_save_camp_doc_content'],
+			// Declaration docs
+			'bm_add_camp_decl_custom'          => [$this->camps, 'handle_add_camp_decl_custom'],
+			'bm_add_camp_decl_doc'             => [$this->camps, 'handle_add_camp_decl_doc'],
+			'bm_delete_camp_decl_doc'          => [$this->camps, 'handle_delete_camp_decl_doc'],
+			'bm_approve_camp_decl_doc'         => [$this->camps, 'handle_approve_camp_decl_doc'],
+			'bm_finalize_camp_decl_doc'        => [$this->camps, 'handle_finalize_camp_decl_doc'],
+			'bm_send_camp_decl_doc'            => [$this->camps, 'handle_send_camp_decl_doc'],
+			'bm_send_decl_to_camp'             => [$this->camps, 'handle_send_decl_to_camp'],
+			// Attachments
+			'bm_add_camp_doc_attachment'       => [$this->camps, 'handle_add_camp_doc_attachment'],
+			'bm_delete_camp_doc_attachment'    => [$this->camps, 'handle_delete_camp_doc_attachment'],
+			'bm_add_camp_decl_attachment'      => [$this->camps, 'handle_add_camp_decl_attachment'],
+			'bm_delete_camp_decl_attachment'   => [$this->camps, 'handle_delete_camp_decl_attachment'],
+			// Equipment
+			'bm_add_camp_equipment'            => [$this->camps, 'handle_add_camp_equipment'],
+			'bm_return_camp_equipment'         => [$this->camps, 'handle_return_camp_equipment'],
+			'bm_delete_camp_equipment'         => [$this->camps, 'handle_delete_camp_equipment'],
+			// Finance & settlement
+			'bm_save_camp_finance'             => [$this->camps,      'handle_save_camp_finance'],
+			'bm_save_settlement'               => [$this->settlement, 'handle_save'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function staff_actions(): array {
+		return [
+			'bm_save_staff'          => [$this->staff, 'handle_save'],
+			'bm_delete_staff'        => [$this->staff, 'handle_delete'],
+			'bm_toggle_staff_active' => [$this->staff, 'handle_toggle_active'],
+			'bm_reset_staff_code'    => [$this->staff, 'handle_reset_code'],
+			'bm_unlock_staff'        => [$this->staff, 'handle_unlock'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function schedule_actions(): array {
+		return [
+			'bm_save_schedule'        => [$this->schedule,       'handle_save'],
+			'bm_delete_plan'          => [$this->schedule,       'handle_delete'],
+			'bm_save_plan_item'       => [$this->schedule,       'handle_save_item'],
+			'bm_delete_plan_item'     => [$this->schedule,       'handle_delete_item'],
+			'bm_copy_plan'            => [$this->schedule,       'handle_copy'],
+			'bm_reset_plan_flags'     => [$this->schedule,       'handle_reset_flags'],
+			'bm_bulk_create_plans'    => [$this->schedule,       'handle_bulk_create'],
+			// Plan templates
+			'bm_save_plan_template'   => [$this->plan_templates, 'handle_save'],
+			'bm_delete_plan_template' => [$this->plan_templates, 'handle_delete'],
+			'bm_save_template_item'   => [$this->plan_templates, 'handle_save_item'],
+			'bm_delete_template_item' => [$this->plan_templates, 'handle_delete_item'],
+			'bm_apply_plan_template'  => [$this->plan_templates, 'handle_apply'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function reservations_actions(): array {
+		return [
+			'bm_save_resource'            => [$this->reservations, 'handle_save_resource'],
+			'bm_delete_resource'          => [$this->reservations, 'handle_delete_resource'],
+			'bm_save_resource_block'      => [$this->reservations, 'handle_save_block'],
+			'bm_delete_resource_block'    => [$this->reservations, 'handle_delete_block'],
+			'bm_reservation_action'       => [$this->reservations, 'handle_reservation_action'],
+			'bm_admin_create_reservation' => [$this->reservations, 'handle_admin_create_reservation'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function menu_actions(): array {
+		return [
+			'bm_save_menu'               => [$this->menu,          'handle_save'],
+			'bm_delete_menu'             => [$this->menu,          'handle_delete'],
+			'bm_save_meal_item'          => [$this->menu,          'handle_save_item'],
+			'bm_delete_meal_item'        => [$this->menu,          'handle_delete_item'],
+			'bm_copy_menu'               => [$this->menu,          'handle_copy'],
+			'bm_reset_menu_flags'        => [$this->menu,          'handle_reset_flags'],
+			'bm_import_day_to_plan'      => [$this->menu,          'handle_import_day_to_plan'],
+			// Meal templates
+			'bm_save_meal_template'      => [$this->meal_templates, 'handle_save'],
+			'bm_delete_meal_template'    => [$this->meal_templates, 'handle_delete'],
+			'bm_save_meal_template_item' => [$this->meal_templates, 'handle_save_item'],
+			'bm_delete_meal_template_item' => [$this->meal_templates, 'handle_delete_item'],
+			'bm_apply_meal_template'     => [$this->meal_templates, 'handle_apply'],
+			// Meal options
+			'bm_save_meal_diet'          => [$this->meal_options,   'handle_save_diet'],
+			'bm_delete_meal_diet'        => [$this->meal_options,   'handle_delete_diet'],
+			'bm_save_meal_location'      => [$this->meal_options,   'handle_save_location'],
+			'bm_delete_meal_location'    => [$this->meal_options,   'handle_delete_location'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function announcements_actions(): array {
+		return [
+			'bm_save_announcement'   => [$this->announcements, 'handle_save'],
+			'bm_delete_announcement' => [$this->announcements, 'handle_delete'],
+			'bm_approve_announcement' => [$this->announcements, 'handle_approve'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function communication_actions(): array {
+		return [
+			'bm_create_thread'  => [$this->communication, 'handle_create_thread'],
+			'bm_admin_reply'    => [$this->communication, 'handle_reply'],
+			'bm_update_thread'  => [$this->communication, 'handle_update_thread'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function forms_actions(): array {
+		return [
+			'bm_save_form'                     => [$this->forms, 'handle_save_form'],
+			'bm_delete_form'                   => [$this->forms, 'handle_delete_form'],
+			'bm_save_form_field'               => [$this->forms, 'handle_save_field'],
+			'bm_delete_form_field'             => [$this->forms, 'handle_delete_field'],
+			'bm_update_submission'             => [$this->forms, 'handle_update_submission'],
+			'bm_download_attachment'           => [$this->forms, 'handle_download_attachment'],
+			'bm_create_thread_from_submission' => [$this->forms, 'handle_create_thread_from_submission'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function org_actions(): array {
+		return [
+			// Document templates
+			'bm_save_doc_template'         => [$this->org_doc_templates, 'handle_save'],
+			'bm_delete_doc_template'       => [$this->org_doc_templates, 'handle_delete'],
+			// Document library
+			'bm_save_doc_library'          => [$this->org_documents,     'handle_save'],
+			'bm_delete_doc_library'        => [$this->org_documents,     'handle_delete'],
+			'bm_add_doc_library_attachment'   => [$this->org_documents,  'handle_add_attachment'],
+			'bm_delete_doc_library_attachment' => [$this->org_documents, 'handle_delete_attachment'],
+			// Finance / payment packages
+			'bm_save_payment_package'      => [$this->org_finance,       'handle_save'],
+			'bm_delete_payment_package'    => [$this->org_finance,       'handle_delete'],
+			// Task templates
+			'bm_save_task_template'        => [$this->org_tasks,          'handle_save'],
+			'bm_delete_task_template'      => [$this->org_tasks,          'handle_delete'],
+			// Accommodation types
+			'bm_save_accommodation_type'   => [$this->org_accommodations, 'handle_save'],
+			'bm_delete_accommodation_type' => [$this->org_accommodations, 'handle_delete'],
+			// Diets
+			'bm_save_org_diet'             => [$this->org_diets,          'handle_save'],
+			'bm_delete_org_diet'           => [$this->org_diets,          'handle_delete'],
+			// Declaration templates
+			'bm_save_decl_template'        => [$this->org_declarations,   'handle_save'],
+			'bm_delete_decl_template'      => [$this->org_declarations,   'handle_delete'],
+			'bm_add_decl_attachment'       => [$this->org_declarations,   'handle_add_attachment'],
+			'bm_delete_decl_attachment'    => [$this->org_declarations,   'handle_delete_attachment'],
+			'bm_push_decl_to_camp'         => [$this->org_declarations,   'handle_push_to_camp'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function settings_actions(): array {
+		return [
+			'bm_save_settings'        => [$this->settings, 'handle_save'],
+			'bm_send_test_email'      => [$this->settings, 'handle_send_test'],
+			'bm_save_email_template'  => [$this->settings, 'handle_save_template'],
+			'bm_reset_email_template' => [$this->settings, 'handle_reset_template'],
+			'bm_backup_data'          => [$this->settings, 'handle_backup'],
+			'bm_import_data'          => [$this->settings, 'handle_import'],
+			'bm_clear_data'           => [$this->settings, 'handle_clear'],
+			'bm_compile_mo'           => [$this->settings, 'handle_compile_mo'],
+		];
+	}
+
+	/** @return array<string, array{0:object, 1:string}> */
+	private function misc_actions(): array {
+		return [
+			'bm_save_report'       => [$this->reports, 'handle_save'],
+			// Weather
+			'bm_save_weather_settings' => [$this->weather, 'handle_save_settings'],
+			'bm_save_weather_alert'    => [$this->weather, 'handle_save_alert'],
+			'bm_delete_weather_alert'  => [$this->weather, 'handle_delete_alert'],
+			'bm_refresh_weather'       => [$this->weather, 'handle_refresh_weather'],
+			'bm_sync_imgw'             => [$this->weather, 'handle_sync_imgw'],
+			// Help
+			'bm_save_help'   => [$this->help, 'handle_save'],
+			'bm_delete_help' => [$this->help, 'handle_delete'],
+			// PDF
+			'bm_render_pdf' => [$this->pdf, 'handle_render'],
 			// License
-			'bm_activate_license'         => [$this->license,        'handle_activate'],
-			'bm_deactivate_license'       => [$this->license,        'handle_deactivate'],
-			// Organizacja
-			'bm_save_doc_template'              => [$this->org_doc_templates, 'handle_save'],
-			'bm_delete_doc_template'            => [$this->org_doc_templates, 'handle_delete'],
-			'bm_save_doc_library'               => [$this->org_documents,     'handle_save'],
-			'bm_delete_doc_library'             => [$this->org_documents,     'handle_delete'],
-			'bm_save_payment_package'           => [$this->org_finance,       'handle_save'],
-			'bm_delete_payment_package'         => [$this->org_finance,       'handle_delete'],
-			'bm_save_task_template'             => [$this->org_tasks,          'handle_save'],
-			'bm_delete_task_template'           => [$this->org_tasks,          'handle_delete'],
-			'bm_save_accommodation_type'        => [$this->org_accommodations,  'handle_save'],
-			'bm_delete_accommodation_type'      => [$this->org_accommodations,  'handle_delete'],
-			'bm_save_org_diet'                  => [$this->org_diets,            'handle_save'],
-			'bm_delete_org_diet'                => [$this->org_diets,            'handle_delete'],
-			'bm_add_task_from_template'         => [$this->camps,      'handle_add_task_from_template'],
-			'bm_save_camp_declaration'          => [$this->camps,      'handle_save_camp_declaration'],
-			'bm_add_camp_damage'                => [$this->camps,      'handle_add_camp_damage'],
-			'bm_delete_camp_damage'             => [$this->camps,      'handle_delete_camp_damage'],
-			// Camp documents
-			'bm_add_camp_doc_custom'            => [$this->camps, 'handle_add_camp_doc_custom'],
-			'bm_add_camp_doc_library'           => [$this->camps, 'handle_add_camp_doc_library'],
-			'bm_create_camp_doc_from_template'  => [$this->camps, 'handle_create_camp_doc_from_template'],
-			'bm_send_camp_doc'                  => [$this->camps, 'handle_send_camp_doc'],
-			'bm_delete_camp_doc'                => [$this->camps, 'handle_delete_camp_doc'],
-			// Organizacja – Deklaracje
-			'bm_save_decl_template'             => [$this->org_declarations, 'handle_save'],
-			'bm_delete_decl_template'           => [$this->org_declarations, 'handle_delete'],
-			// Camp declaration docs
-			'bm_add_camp_decl_custom'           => [$this->camps, 'handle_add_camp_decl_custom'],
-			'bm_add_camp_decl_doc'              => [$this->camps, 'handle_add_camp_decl_doc'],
-			'bm_delete_camp_decl_doc'           => [$this->camps, 'handle_delete_camp_decl_doc'],
-			'bm_approve_camp_decl_doc'          => [$this->camps, 'handle_approve_camp_decl_doc'],
-			// Camp equipment
-			'bm_add_camp_equipment'             => [$this->camps, 'handle_add_camp_equipment'],
-			'bm_return_camp_equipment'          => [$this->camps, 'handle_return_camp_equipment'],
-			'bm_delete_camp_equipment'          => [$this->camps, 'handle_delete_camp_equipment'],
-			// Camp damages
-			'bm_edit_camp_damage'               => [$this->camps, 'handle_edit_camp_damage'],
-			// Camp documents – signing
-			'bm_sign_camp_doc'                  => [$this->camps, 'handle_sign_camp_doc'],
-			// Camp document content editing
-			'bm_save_camp_doc_content'          => [$this->camps, 'handle_save_camp_doc_content'],
-			'bm_finalize_camp_decl_doc'         => [$this->camps, 'handle_finalize_camp_decl_doc'],
-			'bm_send_camp_decl_doc'             => [$this->camps, 'handle_send_camp_decl_doc'],
-			'bm_send_decl_to_camp'              => [$this->camps, 'handle_send_decl_to_camp'],
-			// Camp attachments
-			'bm_add_camp_doc_attachment'        => [$this->camps, 'handle_add_camp_doc_attachment'],
-			'bm_delete_camp_doc_attachment'     => [$this->camps, 'handle_delete_camp_doc_attachment'],
-			'bm_add_camp_decl_attachment'       => [$this->camps, 'handle_add_camp_decl_attachment'],
-			'bm_delete_camp_decl_attachment'    => [$this->camps, 'handle_delete_camp_decl_attachment'],
-			// Org library + declaration attachments
-			'bm_add_doc_library_attachment'     => [$this->org_documents,    'handle_add_attachment'],
-			'bm_delete_doc_library_attachment'  => [$this->org_documents,    'handle_delete_attachment'],
-			'bm_add_decl_attachment'            => [$this->org_declarations, 'handle_add_attachment'],
-			'bm_delete_decl_attachment'         => [$this->org_declarations, 'handle_delete_attachment'],
-			'bm_push_decl_to_camp'              => [$this->org_declarations, 'handle_push_to_camp'],
-			// Camp finance
-			'bm_save_camp_finance'              => [$this->camps, 'handle_save_camp_finance'],
+			'bm_activate_license'   => [$this->license, 'handle_activate'],
+			'bm_deactivate_license' => [$this->license, 'handle_deactivate'],
 		];
 	}
 

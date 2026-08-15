@@ -53,10 +53,10 @@ final class ShortcodeHandler {
 		add_shortcode('camp_daily_count',   [$this, 'render_init']);
 	}
 
-	/** Enqueues Alpine.js + bmApi helper. Called on wp_enqueue_scripts. */
+	/** Enqueues Alpine.js + all plugin frontend scripts. Called on wp_enqueue_scripts. */
 	public function enqueue_assets(): void {
 		// Idempotent guard – safe to call from multiple hooks.
-		if ( wp_script_is('basemgmt-api', 'enqueued') ) {
+		if ( wp_script_is('basemgmt-store', 'enqueued') ) {
 			return;
 		}
 
@@ -78,10 +78,48 @@ final class ShortcodeHandler {
 			return $tag;
 		}, 10, 2);
 
+		// REST API wrapper – no framework dependency, loaded first.
 		wp_enqueue_script(
 			'basemgmt-api',
 			BASEMGMT_URL . 'assets/js/bm-api.js',
-			['alpinejs'],
+			[],
+			BASEMGMT_VERSION,
+			true
+		);
+
+		// Alpine components must be defined BEFORE bm-store.js calls
+		// bmRegisterAll() on 'alpine:init'. Since all scripts go in the
+		// footer they load synchronously in the order below.
+		wp_enqueue_script(
+			'basemgmt-components-auth',
+			BASEMGMT_URL . 'assets/js/bm-components-auth.js',
+			['basemgmt-api'],
+			BASEMGMT_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
+			'basemgmt-components-content',
+			BASEMGMT_URL . 'assets/js/bm-components-content.js',
+			['basemgmt-api'],
+			BASEMGMT_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
+			'basemgmt-components-social',
+			BASEMGMT_URL . 'assets/js/bm-components-social.js',
+			['basemgmt-api'],
+			BASEMGMT_VERSION,
+			true
+		);
+
+		// Alpine store + component registration – must load after all
+		// window.bmXxx component functions are defined above.
+		wp_enqueue_script(
+			'basemgmt-store',
+			BASEMGMT_URL . 'assets/js/bm-store.js',
+			['alpinejs', 'basemgmt-api', 'basemgmt-components-auth', 'basemgmt-components-content', 'basemgmt-components-social'],
 			BASEMGMT_VERSION,
 			true
 		);
@@ -98,7 +136,7 @@ final class ShortcodeHandler {
 	 */
 	public function render_init(): string {
 		// Force asset enqueue even if called late (e.g. inside Breakdance builder).
-		if ( ! wp_script_is('basemgmt-api', 'enqueued') ) {
+		if ( ! wp_script_is('basemgmt-store', 'enqueued') ) {
 			$this->enqueue_assets();
 		}
 		return '';
