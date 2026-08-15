@@ -1,5 +1,97 @@
 # Changelog
 
+## [2.0.0-beta] – 2026-08-15
+
+Pierwsze wydanie **beta** — konsolidacja wszystkich alpha. Wszystkie kluczowe moduły obozu są kompletne i gotowe do testów integracyjnych.
+
+### Podsumowanie zmian względem alpha.3
+
+- Moduł rozliczeń obozu (PDF, edytor, repozytorium)
+- Zakładka Sprzęt i system deklaracji organizacyjnych
+- Wysyłanie deklaracji do obozów
+- Uproszczone etapy procesu (7 zamiast 12)
+- Zasoby per-jednostka z automatycznym kosztem rezerwacji
+- Podpisywanie dokumentów (kwalifikowany e-podpis + skan)
+- Podział monolitycznego JS na moduły
+- Wzmocnione bezpieczeństwo REST API i walidacja danych wejściowych
+- Rozbudowany `uninstall.php`
+
+---
+
+## [2.0.0-alpha.7] – 2026-08-15
+
+### Nowe funkcje
+
+- **Moduł rozliczeń obozu** — nowa strona `CampSettlementPage`; formularz edycji rozliczenia z sekcjami: dane organizatora, podsumowanie pobytu, pozycje finansowe, uwagi końcowe; generowanie PDF (`templates/admin/pdf/settlement.php`) z pełnym układem: dane obozu, nabywca, podsumowanie pobytu, pozycje rozliczenia, uzgodnienie płatności.
+- **`CampSettlementRepository`** — pełny CRUD rozliczeń i pozycji; nowe tabele `bm_camp_settlements`, `bm_camp_settlement_lines`, `bm_camp_settlement_issues`.
+
+### Refaktoring
+
+- **Podział JavaScript** — monolityczne `bm-api.js` i `frontend.js` zastąpione przez 4 moduły: `bm-store.js` (stan globalny), `bm-components-auth.js` (logowanie/sesja), `bm-components-content.js` (treść panelu), `bm-components-social.js` (komunikacja/ogłoszenia); usunięty stary `frontend.css`.
+- **Czyszczenie danych demo** — usunięty plik `camplink-demo-backup.json` z repozytorium.
+
+### Bezpieczeństwo
+
+- Walidacja i sanityzacja danych wejściowych w `CampsPage`, `FormsPage`, `SettingsPage`.
+- Dodatkowe sprawdzenie uprawnień w REST: `AuthController`, `FormsController`, `WeatherController`.
+- Ochrona przed SSRF w `LicenseClient` i `OpenMeteoProvider`.
+- Wzmocniona izolacja sesji w `FrontendAuth` i `ShortcodeHandler`.
+- Rozbudowany `.gitignore` (pliki środowiskowe, lokalne konfiguracje).
+- Pełne czyszczenie wtyczki przy deinstalacji w `uninstall.php`.
+
+---
+
+## [2.0.0-alpha.6] – 2026-08-14
+
+### Nowe funkcje
+
+- **Wysyłanie deklaracji do obozów** — nowa metoda `handle_push_to_camp` w `OrgDeclarationsPage`; przycisk „Wyślij do obozu" z modalem wyboru obozu na liście deklaracji; zaktualizowany widok teczki obozu z informacją o statusie deklaracji.
+- **Schemat bazy danych** — nowe kolumny `sent_to_camp` i `camp_approved_at` w tabeli `bm_camp_decl_docs`.
+
+### Refaktoring
+
+- **Edytor deklaracji** — ujednolicone szablony `edit.php` / `list.php` deklaracji; obsługa załączników plików; ulepszony edytor HTML treści.
+- **Edytor treści dokumentów** — nowy szablon `doc-content-edit.php` obsługujący zarówno dokumenty zwykłe, jak i deklaracje.
+- **Modal załączania plików** — nowy modal w liście dokumentów do dołączania plików do istniejących pozycji.
+- Lepsza nawigacja i responsywność list i formularzy obozów.
+
+---
+
+## [2.0.0-alpha.5] – 2026-08-13
+
+### Nowe funkcje
+
+- **Zakładka Sprzęt** — nowa zakładka „Sprzęt" w teczce obozu: wydawanie sprzętu (typ, nazwa, ilość), rejestrowanie zwrotów, usuwanie pozycji; nowa tabela `bm_camp_equipment`.
+- **System deklaracji organizacyjnych** — nowa sekcja „Deklaracje" w menu Org (powyżej Finanse): CRUD szablonów deklaracji z flagą `auto_add`; szablony z `auto_add = 1` dodawane automatycznie przy tworzeniu obozu; deklaracje wyświetlane w zakładce Dokumenty teczki; nowe tabele `bm_decl_templates`, `bm_camp_decl_docs`.
+- **Podpisywanie dokumentów** — kwalifikowany e-podpis (PDF z walidacją heurystyczną) + manualne skanowanie (PDF/JPG/PNG); semantyczne rozróżnienie: dokumenty = „Prześlij podpisany", deklaracje = „Zatwierdź".
+- **Uproszczenie etapów procesu** — zmiana z 12 na 7 etapów: `inquiry`, `offer`, `contract_signed`, `on_site`, `settlement`, `closed`, `cancelled`; wsteczna kompatybilność przejść z poprzednich wersji.
+- **Zasoby per-jednostka** — pola `pricing_mode` (`flat`/`per_unit`) i `total_units` w zasobach; rezerwacje z `reserved_units` i walidacją dostępności inwentarza; koszt per-jednostka (`reserved_units × cost_per_reservation`) automatycznie dodawany do harmonogramu płatności.
+
+### Poprawki
+
+- Poprawione nonce przy zwrocie sprzętu (formularz POST zamiast linku GET).
+- Edycja szkód: modal + handler `handle_edit_camp_damage()`.
+- Usunięto automatyczne tworzenie zadań z automatyzacji workflow (tylko ręczne przez szablony).
+- Usunięto bloki „Co blokuje przejście dalej" i „Sugerowane działania" z zakładki Panel.
+- Naprawiony błąd `str_replace` z argumentem float w `ResourceRepository`.
+
+### Schemat bazy danych
+
+- Nowe tabele: `bm_camp_equipment`, `bm_decl_templates`, `bm_camp_decl_docs`.
+- ALTER: `pricing_mode`, `total_units` w `bm_resources`; `reserved_units` w `bm_resource_reservations`; `approved_by`, `approved_at` w `bm_camp_decl_docs`; `signed_method`, `signed_at`, `signed_by`, `signed_file_url` w `bm_camp_documents`.
+
+---
+
+## [2.0.0-alpha.4] – 2026-08-13
+
+### Nowe funkcje
+
+- **Camp Folder REST API** — nowy `FolderController` z endpointami do zarządzania dokumentami obozu, szkodami i deklaracjami dziennymi z poziomu frontendu.
+- **Rozbudowa `bm-api.js`** — wrappery JS dla nowych endpointów teczki.
+- **Dokumentacja Breakdance** — dodany `docs/15-panel-full-breakdance.md` z pełną strukturą panelu frontendowego opartego na Breakdance.
+
+---
+
 ## [2.0.0-alpha.3] – 2026-08-13
 
 ### Poprawki i ulepszenia
