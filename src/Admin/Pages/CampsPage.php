@@ -226,17 +226,26 @@ final class CampsPage {
 		$decl_accom_lines_by_day_id = [];
 		if ( $camp_declaration_days ) {
 			$day_ids = array_map(static fn( $d ) => (int) $d->id, $camp_declaration_days);
-			$ids_placeholder = implode(',', $day_ids);
+
+			// SEC-03: Użyj $wpdb->prepare() z dynamicznymi placeholderami %d
+			// zamiast ręcznej interpolacji listy ID.
+			$placeholders = implode( ',', array_fill( 0, count( $day_ids ), '%d' ) );
 
 			$diet_lines = $wpdb->get_results(
-				"SELECT * FROM " . Schema::table('camp_declaration_diet_lines') . " WHERE day_id IN ({$ids_placeholder})" // phpcs:ignore
+				$wpdb->prepare(
+					"SELECT * FROM `" . Schema::table('camp_declaration_diet_lines') . "` WHERE day_id IN ({$placeholders})",
+					...$day_ids
+				)
 			) ?: [];
 			foreach ( $diet_lines as $dl ) {
 				$decl_diet_lines_by_day_id[$dl->day_id][$dl->diet_id] = (int) $dl->count;
 			}
 
 			$accom_lines = $wpdb->get_results(
-				"SELECT * FROM " . Schema::table('camp_declaration_accommodation_lines') . " WHERE day_id IN ({$ids_placeholder})" // phpcs:ignore
+				$wpdb->prepare(
+					"SELECT * FROM `" . Schema::table('camp_declaration_accommodation_lines') . "` WHERE day_id IN ({$placeholders})",
+					...$day_ids
+				)
 			) ?: [];
 			foreach ( $accom_lines as $al ) {
 				$decl_accom_lines_by_day_id[$al->day_id][$al->accommodation_type_id] = (int) $al->count;

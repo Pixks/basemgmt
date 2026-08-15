@@ -59,7 +59,8 @@ final class FrontendAuth {
 		return array_map(
 			static fn($r) => [
 				'id'           => (int) $r->id,
-				'display_name' => esc_html($r->first_name . ' ' . $r->last_name),
+				// SEC-004: imię + pierwsza litera nazwiska – nie ujawniamy pełnych danych osobowych publicznie.
+				'display_name' => esc_html( $r->first_name . ' ' . mb_substr( $r->last_name, 0, 1 ) . '.' ),
 			],
 			$rows ?: []
 		);

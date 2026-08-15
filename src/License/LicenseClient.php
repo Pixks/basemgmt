@@ -169,8 +169,21 @@ final class LicenseClient {
 			];
 		}
 
-		$response = wp_remote_post(
-			$api_base . $path,
+		$url = $api_base . $path;
+
+		// SEC-01: Blokuj adresy lokalne/prywatne (SSRF prevention).
+		if ( ! wp_http_validate_url( $url ) ) {
+			return [
+				'success' => false,
+				'error'   => [
+					'code'    => 'invalid_url',
+					'message' => __('Nieprawidłowy URL serwera licencji.', 'basemgmt'),
+				],
+			];
+		}
+
+		$response = wp_safe_remote_post(
+			$url,
 			[
 				'timeout' => 15,
 				'headers' => [

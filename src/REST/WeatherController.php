@@ -64,7 +64,9 @@ final class WeatherController extends BaseController {
 	}
 
 	public function force_refresh(WP_REST_Request $request): WP_REST_Response {
-		check_ajax_referer('wp_rest');
+		// SEC-05: check_ajax_referer() było błędne w kontekście REST API –
+		// nonce REST trafia w nagłówku X-WP-Nonce, nie w $_REQUEST.
+		// permission_callback (manage_basemgmt) już zapewnia wymaganą kontrolę dostępu.
 
 		$service = new WeatherService();
 		$service->refresh();

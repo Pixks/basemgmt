@@ -183,7 +183,7 @@ final class ShortcodeHandler {
 			'authenticated' => (bool) $session,
 			'campId'        => $camp_id,
 			'staffId'       => $staff_id,
-			'displayName'   => esc_html($display_name),
+			'displayName'   => $display_name,
 			'sessionExpires'=> $session ? $session->expires_at : null,
 			// Inject camp list server-side so the login dropdown works without
 			// requiring an authenticated REST request from the browser.

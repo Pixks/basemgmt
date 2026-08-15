@@ -106,10 +106,11 @@ final class AdminMenu {
 
 	public function register_menus(): void {
 		$pending = AnnouncementRepository::count_pending();
-		$badge   = $pending ? " <span class='awaiting-mod'>$pending</span>" : '';
+		// SEC-09: jawne rzutowanie int zapobiega XSS jeśli count_pending() zwróci nieoczekiwaną wartość.
+		$badge   = $pending ? " <span class='awaiting-mod'>" . (int) $pending . "</span>" : '';
 
 		$unread_comm  = ConversationRepository::count_unread_admin();
-		$comm_badge   = $unread_comm ? " <span class='awaiting-mod'>$unread_comm</span>" : '';
+		$comm_badge   = $unread_comm ? " <span class='awaiting-mod'>" . (int) $unread_comm . "</span>" : '';
 
 		add_menu_page(
 			__('CampLink', 'basemgmt'),

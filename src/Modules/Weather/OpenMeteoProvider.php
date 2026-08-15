@@ -55,7 +55,7 @@ final class OpenMeteoProvider implements WeatherProviderInterface {
 			self::API_URL
 		);
 
-		$response = wp_remote_get($url, ['timeout' => 10, 'sslverify' => true]);
+		$response = wp_safe_remote_get($url, ['timeout' => 10, 'sslverify' => true]);
 
 		if ( is_wp_error($response) ) {
 			return null;

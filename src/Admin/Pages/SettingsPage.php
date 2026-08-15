@@ -177,10 +177,25 @@ final class SettingsPage {
 			'tables'     => [],
 		];
 
+		// SEC-009: Kolumny wrażliwe zawsze wykluczone z eksportu.
+		$sensitive_columns = [
+			'staff' => [ 'security_code_hash', 'failed_attempts', 'locked_until', 'permanent_lock', 'last_login' ],
+		];
+
 		foreach ( $tables as $key => $table ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$rows = $wpdb->get_results( "SELECT * FROM `$table`", ARRAY_A );
-			$backup['tables'][ $key ] = $rows ?: [];
+			$rows = $rows ?: [];
+
+			if ( ! empty( $sensitive_columns[ $key ] ) ) {
+				$drop = $sensitive_columns[ $key ];
+				$rows = array_map(
+					static fn( array $row ) => array_diff_key( $row, array_flip( $drop ) ),
+					$rows
+				);
+			}
+
+			$backup['tables'][ $key ] = $rows;
 		}
 
 		$filename = 'camplink-backup-' . gmdate('Y-m-d-His') . '.json';
@@ -221,15 +236,43 @@ final class SettingsPage {
 		$tables  = \BaseMgmt\Database\Schema::table_names();
 		$count   = 0;
 
+		// SEC-003: Kolumny wrażliwe tabeli bm_staff są zawsze wykluczone z importu,
+		// niezależnie od zawartości pliku backup. Zapobiega to nadpisaniu hashy PIN-ów,
+		// flag blokad i liczników przez spreparowany plik backup.
+		$import_excluded = [
+			'staff' => [ 'security_code_hash', 'failed_attempts', 'locked_until', 'permanent_lock', 'last_login' ],
+		];
+
 		foreach ( $data['tables'] as $key => $rows ) {
-			if ( empty( $tables[ $key ] ) ) {
+			if ( empty( $tables[ $key ] ) || ! is_array( $rows ) ) {
 				continue;
 			}
 			$table = $tables[ $key ];
+
+			// Pobierz dozwolone kolumny z rzeczywistego schematu tabeli.
+			// Kolumna 'id' jest celowo wyłączona – AUTO_INCREMENT baz danych.
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->query( "TRUNCATE TABLE `$table`" );
+			$describe = $wpdb->get_results( "DESCRIBE `{$table}`", ARRAY_A );
+			if ( ! $describe ) {
+				continue;
+			}
+			$allowed_columns = array_column( $describe, 'Field' );
+			$excluded        = array_merge( [ 'id' ], $import_excluded[ $key ] ?? [] );
+			$allowed_columns = array_diff( $allowed_columns, $excluded );
+
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "TRUNCATE TABLE `{$table}`" );
+
 			foreach ( $rows as $row ) {
-				$wpdb->insert( $table, $row ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				// Filtruj wiersz – tylko kolumny istniejące w tabeli, bez 'id'.
+				$filtered = array_intersect_key( $row, array_flip( $allowed_columns ) );
+				if ( empty( $filtered ) ) {
+					continue;
+				}
+				$wpdb->insert( $table, $filtered ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$count++;
 			}
 		}

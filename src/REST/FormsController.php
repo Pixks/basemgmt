@@ -279,9 +279,14 @@ final class FormsController extends BaseController {
 			return new WP_REST_Response( ['error' => __( 'Niedozwolona lokalizacja pliku.', 'basemgmt' )], 403 );
 		}
 
+		// SEC-06: Whitelist MIME type – blokuje header injection przez dane z DB.
+		$safe_mime = in_array( $att->mime_type, SubmissionRepository::ALLOWED_MIME_TYPES, true )
+			? $att->mime_type
+			: 'application/octet-stream';
+
 		// Stream file and exit; headers are set directly.
 		nocache_headers();
-		header('Content-Type: ' . $att->mime_type);
+		header('Content-Type: ' . $safe_mime);
 		header('Content-Disposition: attachment; filename="' . rawurlencode($att->original_name) . '"');
 		header('Content-Length: ' . (int) $att->file_size);
 		readfile($att->file_path);

@@ -1,0 +1,14 @@
+# Demo / development data – nie należy do paczki dystrybucyjnej
+camplink-demo-backup.json
+*-demo-backup.json
+
+# Backupy wygenerowane przez panel administracyjny
+camplink-backup-*.json
+
+# Zależności (jeśli zostaną dodane w przyszłości)
+/vendor/
+/node_modules/
+
+# System
+.DS_Store
+Thumbs.db

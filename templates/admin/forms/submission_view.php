@@ -57,7 +57,7 @@ $snapshot_flds= $form_snapshot['fields'] ?? [];
 						$dl_url = add_query_arg([
 							'action'  => 'bm_download_attachment',
 							'att_id'  => $att->id,
-							'_wpnonce'=> wp_create_nonce('bm_download_attachment'),
+							'_wpnonce'=> wp_create_nonce( 'bm_download_att_' . $att->id ),
 						], admin_url('admin-post.php'));
 					?>
 						<li>

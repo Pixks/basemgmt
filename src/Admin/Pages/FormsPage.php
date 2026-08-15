@@ -295,11 +295,15 @@ final class FormsPage {
 			wp_die( __( 'Niedozwolona lokalizacja pliku.', 'basemgmt' ), 403 );
 		}
 
+		$safe_mime = in_array( $att->mime_type, \BaseMgmt\Modules\Forms\SubmissionRepository::ALLOWED_MIME_TYPES, true )
+			? $att->mime_type
+			: 'application/octet-stream';
+
 		nocache_headers();
-		header('Content-Type: ' . $att->mime_type);
-		header('Content-Disposition: attachment; filename="' . esc_attr($att->original_name) . '"');
-		header('Content-Length: ' . filesize($att->file_path));
-		readfile($att->file_path);
+		header( 'Content-Type: ' . $safe_mime );
+		header( 'Content-Disposition: attachment; filename="' . rawurlencode( $att->original_name ) . '"' );
+		header( 'Content-Length: ' . filesize( $att->file_path ) );
+		readfile( $att->file_path );
 		exit;
 	}
 

@@ -82,6 +82,13 @@ final class AuthController extends BaseController {
 	}
 
 	public function logout(WP_REST_Request $request): mixed {
+		// SEC-04: Weryfikuj nonce dla spójnej ochrony CSRF.
+		// X-WP-Nonce (REST) lub parametr 'nonce' (formularz) są akceptowane.
+		$nonce = (string) ($request->get_header('X-WP-Nonce') ?? $request->get_param('nonce') ?? '');
+		if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+			return $this->error('bm_invalid_nonce', __('Nieprawidłowy token bezpieczeństwa. Odśwież stronę.', 'basemgmt'), 403);
+		}
+
 		SessionManager::destroy();
 		return $this->ok(['success' => true]);
 	}
