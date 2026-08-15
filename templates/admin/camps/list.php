@@ -115,9 +115,13 @@
 						<span class="bm-badge bm-badge--<?php echo esc_attr($camp->process_stage ?? 'default'); ?>">
 							<?php echo esc_html($stage_label); ?>
 						</span>
+						<?php
+						$status_label = $statuses[$camp->status ?? ''] ?? ($camp->status ?? '');
+						if ( $status_label ) : ?>
 						<br><span class="bm-muted" style="font-size:11px;margin-top:2px;display:inline-block;">
-							<?php echo esc_html($camp->status ?? ''); ?>
+							<?php echo esc_html($status_label); ?>
 						</span>
+						<?php endif; ?>
 					</td>
 
 					<!-- Termin -->
