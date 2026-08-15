@@ -68,8 +68,11 @@ Alpine.data('bmHelp',          window.bmHelp);
 Alpine.data('bmForms',         window.bmForms);
 Alpine.data('bmSubmissions',   window.bmSubmissions);
 Alpine.data('bmFolderDocs',    window.bmFolderDocs);
+Alpine.data('bmCampDocuments', window.bmCampDocuments);
+Alpine.data('bmDeclDocs',      window.bmDeclDocs);
 Alpine.data('bmDamages',       window.bmDamages);
 Alpine.data('bmDeclaration',   window.bmDeclaration);
+Alpine.data('bmEquipment',     window.bmEquipment);
 }
 }
 

@@ -7,12 +7,11 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
 
 **Zmiany v2.0.0-beta:**
 - **Architektura JS**: `bm-api.js` zastąpiony przez 4 moduły — `bm-store.js` (Alpine store + bootstrap), `bm-components-auth.js` (logowanie, sesja, wylogowanie, hero obozu), `bm-components-content.js` (meldunek, pogoda, plan dnia, rezerwacje), `bm-components-social.js` (jadłospis, komunikacja, pomoc, formularze, teczka)
-- **Deklaracja obozu**: dodane pole `declared_diets` (zadeklarowana liczba diet) i `notes` (uwagi organizatora) w nagłówku deklaracji pobytu
-- **Teczka – dokumenty**: sekcja korzysta z biblioteki org (`/panel/folder/documents`); dokumenty przypisane bezpośrednio do obozu oraz deklaracje organizacyjne są dostępne w panelu admina
-- **Teczka – sprzęt**: moduł sprzętu (`bm_camp_equipment`) dostępny wyłącznie w panelu admina — brak endpointu REST dla kadry w v2.0.0-beta
-- CSS: dodane brakujące aliasy `.zhp-alert-error` i `.zhp-alert-success`
-- Bezpieczeństwo REST: wzmocniona walidacja danych wejściowych i uprawnień w `AuthController`, `FormsController`, `WeatherController`
-- Poprzednie: `ReportsController` (tryby roboczy/wysłany), blokady techniczne rezerwacji, zakładka 📁 Teczka (dokumenty, szkody, deklaracja dzienna)
+- **Teczka — 6 sekcji**: Biblioteka dokumentów, Dokumenty obozu (`GET /panel/folder/camp-documents`), Deklaracje organizacji (`GET/POST /panel/folder/decl-docs`), Szkody, Sprzęt (`GET/POST /panel/folder/equipment`, `POST /{id}/return`), Deklaracja pobytu
+- **Deklaracja obozu**: pola `declared_diets` i `notes` w nagłówku
+- CSS: aliasy `.zhp-alert-error` i `.zhp-alert-success`
+- Bezpieczeństwo REST: wzmocniona walidacja w `AuthController`, `FormsController`, `WeatherController`
+- Poprzednie: `ReportsController`, blokady techniczne rezerwacji, zakładka 📁 Teczka
 
 ---
 
@@ -1310,13 +1309,12 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
       <div class="zhp-card" x-data="bmFolderDocs()" x-init="init()">
         <div class="zhp-card-header">
           <span>📄</span>
-          <h3>Dokumenty obozu</h3>
+          <h3>Biblioteka dokumentów</h3>
         </div>
         <div class="zhp-card-body">
           <div class="zhp-loader" x-show="loading"><div class="zhp-spinner"></div> Ładowanie…</div>
           <div class="zhp-alert zhp-alert-error" x-show="error" x-text="error"></div>
 
-          <!-- Brak dokumentów -->
           <template x-if="!loading && !error && documents.length === 0">
             <div style="text-align:center;padding:24px 0;color:var(--zhp-text-muted);">
               <div style="font-size:2rem;margin-bottom:8px;">📂</div>
@@ -1324,7 +1322,6 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
             </div>
           </template>
 
-          <!-- Lista dokumentów -->
           <template x-if="!loading && documents.length > 0">
             <div>
               <template x-for="doc in documents" :key="doc.id">
@@ -1336,10 +1333,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
                       <div x-show="doc.file_name" style="font-size:.73rem;color:var(--zhp-text-muted);" x-text="doc.file_name"></div>
                     </div>
                   </div>
-                  <a x-show="doc.file_url"
-                    :href="doc.file_url"
-                    target="_blank"
-                    class="zhp-btn zhp-btn-ghost zhp-btn-sm">
+                  <a x-show="doc.file_url" :href="doc.file_url" target="_blank" class="zhp-btn zhp-btn-ghost zhp-btn-sm">
                     ⬇ Pobierz
                   </a>
                 </div>
@@ -1349,23 +1343,105 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
         </div>
       </div>
 
-      <!-- ── 2. Szkody ───────────────────────────────────── -->
+      <!-- ── 2. Dokumenty obozu ─────────────────────────── -->
+      <div class="zhp-card" x-data="bmCampDocuments()" x-init="init()">
+        <div class="zhp-card-header"><span>📋</span><h3>Dokumenty obozu</h3></div>
+        <div class="zhp-card-body">
+          <div class="zhp-loader" x-show="loading"><div class="zhp-spinner"></div> Ładowanie…</div>
+          <div class="zhp-alert zhp-alert-error" x-show="error" x-text="error"></div>
+
+          <template x-if="!loading && !error && documents.length === 0">
+            <div style="text-align:center;padding:20px 0;color:var(--zhp-text-muted);">
+              <div style="font-size:2rem;margin-bottom:6px;">📂</div>
+              <div>Brak dokumentów przypisanych do obozu.</div>
+            </div>
+          </template>
+
+          <template x-if="!loading && documents.length > 0">
+            <div>
+              <template x-for="doc in documents" :key="doc.id">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--zhp-bg);border-radius:var(--zhp-radius-sm);margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                    <span style="font-size:1.3rem;flex-shrink:0;" x-text="docIcon(doc.document_type)"></span>
+                    <div style="min-width:0;">
+                      <div style="font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="doc.title"></div>
+                      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px;">
+                        <span class="zhp-badge" :class="statusClass(doc.status)" x-text="statusLabel(doc.status)"></span>
+                        <span x-show="doc.signed_at" class="zhp-badge zhp-badge-green" style="font-size:.63rem;">✓ Podpisany</span>
+                        <span x-show="doc.locked" class="zhp-badge zhp-badge-gray" style="font-size:.63rem;">🔒</span>
+                      </div>
+                    </div>
+                  </div>
+                  <a x-show="doc.file_url" :href="doc.file_url" target="_blank" class="zhp-btn zhp-btn-ghost zhp-btn-sm">
+                    ⬇ Pobierz
+                  </a>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ── 3. Deklaracje organizacji ──────────────────── -->
+      <div class="zhp-card" x-data="bmDeclDocs()" x-init="init()">
+        <div class="zhp-card-header"><span>📑</span><h3>Deklaracje organizacji</h3></div>
+        <div class="zhp-card-body">
+          <div class="zhp-loader" x-show="loading"><div class="zhp-spinner"></div> Ładowanie…</div>
+          <div class="zhp-alert zhp-alert-error"   x-show="error"   x-text="error"   x-transition></div>
+          <div class="zhp-alert zhp-alert-success" x-show="success" x-text="success" x-transition></div>
+
+          <template x-if="!loading && !error && docs.length === 0">
+            <div style="text-align:center;padding:20px 0;color:var(--zhp-text-muted);">
+              <div style="font-size:2rem;margin-bottom:6px;">📭</div>
+              <div>Brak deklaracji przesłanych do obozu.</div>
+            </div>
+          </template>
+
+          <template x-if="!loading && docs.length > 0">
+            <div>
+              <template x-for="doc in docs" :key="doc.id">
+                <div style="padding:12px 14px;background:var(--zhp-bg);border-radius:var(--zhp-radius-sm);margin-bottom:8px;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-weight:600;font-size:.92rem;margin-bottom:4px;" x-text="doc.title"></div>
+                      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                        <span class="zhp-badge" :class="statusClass(doc)" x-text="statusLabel(doc)"></span>
+                        <span x-show="doc.camp_approved_at" style="font-size:.7rem;color:var(--zhp-green);">
+                          ✓ <span x-text="'Zatwierdzone: ' + doc.camp_approved_at?.slice(0,10)"></span>
+                        </span>
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;">
+                      <a x-show="doc.file_url" :href="doc.file_url" target="_blank"
+                         class="zhp-btn zhp-btn-ghost zhp-btn-sm">⬇ Pobierz</a>
+                      <button x-show="!doc.camp_approved_at"
+                        class="zhp-btn zhp-btn-primary zhp-btn-sm"
+                        :disabled="approving === doc.id"
+                        @click="approve(doc.id)">
+                        <span x-show="approving !== doc.id">✓ Zatwierdź</span>
+                        <span x-show="approving === doc.id"><div class="zhp-spinner" style="width:12px;height:12px;border-width:2px;"></div></span>
+                      </button>
+                    </div>
+                  </div>
+                  <div style="font-size:.7rem;color:var(--zhp-text-muted);margin-top:5px;" x-text="'Przesłano: ' + doc.created_at?.slice(0,10)"></div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ── 4. Szkody i usterki ────────────────────────── -->
       <div class="zhp-card" x-data="bmDamages()" x-init="init()">
         <div class="zhp-card-header" style="justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span>🔧</span>
-            <h3>Szkody i usterki</h3>
-          </div>
-          <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="openForm()" x-show="!showForm">
-            + Zgłoś szkodę
-          </button>
+          <div style="display:flex;align-items:center;gap:10px;"><span>🔧</span><h3>Szkody i usterki</h3></div>
+          <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="openForm()" x-show="!showForm">+ Zgłoś szkodę</button>
         </div>
         <div class="zhp-card-body">
           <div class="zhp-loader" x-show="loading"><div class="zhp-spinner"></div> Ładowanie…</div>
-          <div class="zhp-alert zhp-alert-error" x-show="error && !showForm" x-text="error"></div>
+          <div class="zhp-alert zhp-alert-error"   x-show="error && !showForm" x-text="error"></div>
           <div class="zhp-alert zhp-alert-success" x-show="success" x-text="success"></div>
 
-          <!-- Formularz zgłoszenia -->
           <template x-if="showForm">
             <div style="background:var(--zhp-green-light);border:1px solid var(--zhp-green-border);border-radius:var(--zhp-radius);padding:16px;margin-bottom:16px;">
               <div style="font-weight:700;margin-bottom:12px;color:var(--zhp-green);">Nowe zgłoszenie szkody</div>
@@ -1392,7 +1468,6 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
             </div>
           </template>
 
-          <!-- Brak szkód -->
           <template x-if="!loading && !showForm && damages.length === 0">
             <div style="text-align:center;padding:20px 0;color:var(--zhp-text-muted);">
               <div style="font-size:2rem;margin-bottom:8px;">✅</div>
@@ -1400,7 +1475,6 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
             </div>
           </template>
 
-          <!-- Lista szkód -->
           <template x-if="!loading && damages.length > 0">
             <div>
               <template x-for="d in damages" :key="d.id">
@@ -1427,12 +1501,110 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
         </div>
       </div>
 
-      <!-- ── 3. Deklaracja ────────────────────────────────── -->
-      <div class="zhp-card" x-data="bmDeclaration()" x-init="init()">
-        <div class="zhp-card-header">
-          <span>📋</span>
-          <h3>Deklaracja pobytu</h3>
+      <!-- ── 5. Sprzęt ──────────────────────────────────── -->
+      <div class="zhp-card" x-data="bmEquipment()" x-init="init()">
+        <div class="zhp-card-header" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span>📦</span>
+            <h3>Sprzęt obozu</h3>
+            <span x-show="!loading && totalOutstanding > 0"
+              class="zhp-badge zhp-badge-gold"
+              x-text="totalOutstanding + ' szt. do zwrotu'"></span>
+          </div>
+          <button class="zhp-btn zhp-btn-white zhp-btn-sm" @click="openForm()" x-show="!showForm">+ Wydaj sprzęt</button>
         </div>
+        <div class="zhp-card-body">
+          <div class="zhp-loader" x-show="loading"><div class="zhp-spinner"></div> Ładowanie…</div>
+          <div class="zhp-alert zhp-alert-error"   x-show="error"   x-text="error"   x-transition></div>
+          <div class="zhp-alert zhp-alert-success" x-show="success" x-text="success" x-transition></div>
+
+          <template x-if="showForm">
+            <div style="background:var(--zhp-green-light);border:1px solid var(--zhp-green-border);border-radius:var(--zhp-radius);padding:16px;margin-bottom:16px;">
+              <div style="font-weight:700;margin-bottom:12px;color:var(--zhp-green);">Nowa pozycja sprzętu</div>
+              <div class="zhp-alert zhp-alert-error" x-show="error" x-text="error" style="margin-bottom:10px;"></div>
+              <div class="bm-grid-2" style="gap:12px;">
+                <div class="zhp-field">
+                  <label class="zhp-label">Nazwa *</label>
+                  <input class="zhp-input" x-model="form.name" placeholder="np. Namiot 6-os." />
+                </div>
+                <div class="zhp-field">
+                  <label class="zhp-label">Typ / kategoria</label>
+                  <input class="zhp-input" x-model="form.equipment_type" placeholder="np. camping" />
+                </div>
+                <div class="zhp-field">
+                  <label class="zhp-label">Ilość wydana *</label>
+                  <input class="zhp-input" type="number" min="1" x-model.number="form.issued_qty" />
+                </div>
+                <div class="zhp-field">
+                  <label class="zhp-label">Uwagi</label>
+                  <input class="zhp-input" x-model="form.notes" placeholder="opcjonalnie" />
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <button class="zhp-btn zhp-btn-primary" @click="submit()" :disabled="saving">
+                  <span x-show="!saving">Zapisz</span>
+                  <span x-show="saving"><div class="zhp-spinner" style="width:14px;height:14px;border-width:2px;"></div></span>
+                </button>
+                <button class="zhp-btn zhp-btn-ghost" @click="showForm=false; error=''">Anuluj</button>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="!loading && !showForm && items.length === 0">
+            <div style="text-align:center;padding:20px 0;color:var(--zhp-text-muted);">
+              <div style="font-size:2rem;margin-bottom:6px;">📦</div>
+              <div>Brak zapisanego sprzętu.</div>
+            </div>
+          </template>
+
+          <template x-if="!loading && items.length > 0">
+            <div style="overflow-x:auto;">
+              <table class="zhp-table">
+                <thead>
+                  <tr>
+                    <th>Nazwa</th>
+                    <th>Typ</th>
+                    <th style="text-align:center;">Wydano</th>
+                    <th style="text-align:center;">Zwrócono</th>
+                    <th style="text-align:center;">Do zwrotu</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="item in items" :key="item.id">
+                    <tr>
+                      <td>
+                        <div style="font-weight:600;" x-text="item.name"></div>
+                        <div x-show="item.notes" style="font-size:.72rem;color:var(--zhp-text-muted);" x-text="item.notes"></div>
+                      </td>
+                      <td>
+                        <span class="zhp-badge zhp-badge-gray" style="font-size:.65rem;" x-text="item.equipment_type || '—'"></span>
+                      </td>
+                      <td style="text-align:center;font-weight:600;" x-text="item.issued_qty"></td>
+                      <td style="text-align:center;" x-text="item.returned_qty"></td>
+                      <td style="text-align:center;">
+                        <span :class="item.outstanding > 0 ? 'zhp-badge zhp-badge-gold' : 'zhp-badge zhp-badge-green'"
+                          x-text="item.outstanding"></span>
+                      </td>
+                      <td>
+                        <button x-show="item.outstanding > 0"
+                          class="zhp-btn zhp-btn-ghost zhp-btn-sm"
+                          @click="registerReturn(item.id)">
+                          ↩ Zwrot
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ── 6. Deklaracja pobytu ───────────────────────── -->
+      <div class="zhp-card" x-data="bmDeclaration()" x-init="init()">
+        <div class="zhp-card-header"><span>📋</span><h3>Deklaracja pobytu</h3></div>
         <div class="zhp-card-body">
           <div class="zhp-loader" x-show="loading"><div class="zhp-spinner"></div> Ładowanie…</div>
           <div class="zhp-alert zhp-alert-error" x-show="error && !editing" x-text="error"></div>
@@ -1480,9 +1652,7 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
           <!-- Nagłówek sekcji dni -->
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-weight:700;font-size:.9rem;color:var(--zhp-text-mid);">Deklaracja dzienna</div>
-            <button class="zhp-btn zhp-btn-ghost zhp-btn-sm" @click="newDay()" x-show="!editing">
-              + Dodaj dzień
-            </button>
+            <button class="zhp-btn zhp-btn-ghost zhp-btn-sm" @click="newDay()" x-show="!editing">+ Dodaj dzień</button>
           </div>
 
           <!-- Formularz edycji/dodawania dnia -->
@@ -1520,14 +1690,12 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
             </div>
           </template>
 
-          <!-- Brak dni -->
           <template x-if="!loading && !editing && days.length === 0">
             <div style="text-align:center;padding:16px 0;color:var(--zhp-text-muted);font-size:.87rem;">
               Brak wpisów dziennych. Użyj przycisku „+ Dodaj dzień" aby dodać pierwszy.
             </div>
           </template>
 
-          <!-- Tabela dni -->
           <template x-if="!loading && days.length > 0">
             <div style="overflow-x:auto;">
               <table style="width:100%;border-collapse:collapse;font-size:.86rem;">
@@ -1557,19 +1725,6 @@ Plugin automatycznie ładuje Alpine.js, `bmConfig` i wszystkie komponenty – ni
             </div>
           </template>
 
-        </div>
-      </div>
-
-      <!-- ── Informacja: funkcje dostępne tylko w panelu admina ── -->
-      <div class="zhp-alert zhp-alert-info" style="margin-top:4px;font-size:.83rem;">
-        <div>
-          <strong>ℹ Funkcje dostępne tylko w panelu admina:</strong>
-          <ul style="margin:6px 0 0 16px;padding:0;line-height:1.7;">
-            <li>📦 <strong>Sprzęt</strong> – wydawanie i rejestrowanie zwrotów sprzętu obozu (<code>bm_camp_equipment</code>)</li>
-            <li>📑 <strong>Deklaracje organizacji</strong> – dokumenty deklaracyjne przesyłane przez organizatora do obozu (<code>bm_camp_decl_docs</code>)</li>
-            <li>📋 <strong>Dokumenty obozowe</strong> – dokumenty przypisane bezpośrednio do obozu z biblioteki lub z szablonu (<code>bm_camp_documents</code>)</li>
-          </ul>
-          <p style="margin:6px 0 0;">Powyższe moduły będą udostępnione przez REST API (/panel/folder/*) w kolejnej wersji.</p>
         </div>
       </div>
 

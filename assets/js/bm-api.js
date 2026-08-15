@@ -100,11 +100,17 @@ window.bmApi = (function () {
 		getAttachmentUrl:   (subId, attId) => bmConfig.restUrl + `panel/submissions/${subId}/attachment/${attId}`,
 
 		// Camp Folder (Teczka obozu)
-		getFolderDocuments:  ()        => request('panel/folder/documents', 'GET'),
-		getFolderDamages:    ()        => request('panel/folder/damages', 'GET'),
-		reportDamage:        (payload) => request('panel/folder/damages', 'POST', payload),
-		getFolderDeclaration:()        => request('panel/folder/declaration', 'GET'),
-		saveDeclarationDay:  (payload) => request('panel/folder/declaration/day', 'POST', payload),
+		getFolderDocuments:   ()        => request('panel/folder/documents', 'GET'),
+		getCampDocuments:     ()        => request('panel/folder/camp-documents', 'GET'),
+		getFolderDamages:     ()        => request('panel/folder/damages', 'GET'),
+		reportDamage:         (payload) => request('panel/folder/damages', 'POST', payload),
+		getFolderDeclaration: ()        => request('panel/folder/declaration', 'GET'),
+		saveDeclarationDay:   (payload) => request('panel/folder/declaration/day', 'POST', payload),
+		getDeclDocs:          ()        => request('panel/folder/decl-docs', 'GET'),
+		approveDeclDoc:       (id, nonce) => request(`panel/folder/decl-docs/${id}/approve`, 'POST', { nonce }),
+		getEquipment:         ()        => request('panel/folder/equipment', 'GET'),
+		issueEquipment:       (payload) => request('panel/folder/equipment', 'POST', payload),
+		returnEquipment:      (id, qty, nonce) => request(`panel/folder/equipment/${id}/return`, 'POST', { return_qty: qty, nonce }),
 	};
 })();
 

@@ -555,3 +555,172 @@ window.bmDeclaration = function () {
 		},
 	};
 };
+
+
+// ── bmCampDocuments – dokumenty przypisane do obozu ───────────────────────────
+
+window.bmCampDocuments = function () {
+	return {
+		loading:   false,
+		documents: [],
+		error:     '',
+
+		async init() {
+			this.loading = true;
+			const r = await bmApi.getCampDocuments();
+			this.loading = false;
+			if (r.ok) {
+				this.documents = r.data.camp_documents || [];
+			} else {
+				this.error = r.data.message || 'Błąd ładowania dokumentów.';
+			}
+		},
+
+		statusLabel(s) {
+			return { draft: 'Roboczy', active: 'Aktywny', sent: 'Wysłany', signed: 'Podpisany', archived: 'Archiwum' }[s] || s;
+		},
+
+		statusClass(s) {
+			return { draft: 'zhp-badge-gray', active: 'zhp-badge-green', sent: 'zhp-badge-blue', signed: 'zhp-badge-green', archived: 'zhp-badge-gray' }[s] || 'zhp-badge-gray';
+		},
+
+		docIcon(type) {
+			const map = { contract: '📄', regulation: '📜', info: 'ℹ️', form: '📝', document: '📄' };
+			return map[type] || '📄';
+		},
+	};
+};
+
+
+// ── bmDeclDocs – deklaracje organizacji przesłane do obozu ───────────────────
+
+window.bmDeclDocs = function () {
+	return {
+		loading:  false,
+		docs:     [],
+		error:    '',
+		success:  '',
+		approving: 0,
+
+		async init() {
+			await this.load();
+		},
+
+		async load() {
+			this.loading = true;
+			const r = await bmApi.getDeclDocs();
+			this.loading = false;
+			if (r.ok) {
+				this.docs = r.data.decl_docs || [];
+			} else {
+				this.error = r.data.message || 'Błąd ładowania deklaracji.';
+			}
+		},
+
+		async approve(id) {
+			if (!confirm('Zatwierdzić deklarację? Działanie jest nieodwracalne.')) return;
+			this.approving = id;
+			this.error   = '';
+			this.success = '';
+			const r = await bmApi.approveDeclDoc(id, bmConfig.panelNonce);
+			this.approving = 0;
+			if (r.ok) {
+				this.success = 'Deklaracja zatwierdzona.';
+				await this.load();
+			} else {
+				this.error = r.data.message || 'Błąd zatwierdzenia.';
+			}
+		},
+
+		statusLabel(d) {
+			if (d.camp_approved_at) return 'Zatwierdzona przez obóz';
+			if (d.approved_at)      return 'Zatwierdzona przez org.';
+			if (d.signed_at)        return 'Podpisana';
+			return 'Oczekuje';
+		},
+
+		statusClass(d) {
+			if (d.camp_approved_at) return 'zhp-badge-green';
+			if (d.approved_at)      return 'zhp-badge-blue';
+			if (d.signed_at)        return 'zhp-badge-gold';
+			return 'zhp-badge-gray';
+		},
+	};
+};
+
+
+// ── bmEquipment – sprzęt obozu ────────────────────────────────────────────────
+
+window.bmEquipment = function () {
+	return {
+		loading:  false,
+		items:    [],
+		error:    '',
+		success:  '',
+		showForm: false,
+		saving:   false,
+		form: { equipment_type: '', name: '', issued_qty: 1, notes: '' },
+
+		async init() {
+			await this.load();
+		},
+
+		async load() {
+			this.loading = true;
+			const r = await bmApi.getEquipment();
+			this.loading = false;
+			if (r.ok) {
+				this.items = r.data.equipment || [];
+			} else {
+				this.error = r.data.message || 'Błąd ładowania sprzętu.';
+			}
+		},
+
+		openForm() {
+			this.form     = { equipment_type: '', name: '', issued_qty: 1, notes: '' };
+			this.error    = '';
+			this.success  = '';
+			this.showForm = true;
+		},
+
+		async submit() {
+			if (!this.form.name.trim()) { this.error = 'Podaj nazwę sprzętu.'; return; }
+			if (this.form.issued_qty < 1) { this.error = 'Ilość musi być ≥ 1.'; return; }
+			this.saving = true;
+			this.error  = '';
+			const r = await bmApi.issueEquipment({
+				name:           this.form.name.trim(),
+				equipment_type: this.form.equipment_type.trim(),
+				issued_qty:     parseInt(this.form.issued_qty) || 1,
+				notes:          this.form.notes.trim(),
+				nonce:          bmConfig.panelNonce,
+			});
+			this.saving = false;
+			if (r.ok) {
+				this.showForm = false;
+				this.success  = 'Sprzęt zapisany.';
+				await this.load();
+			} else {
+				this.error = r.data.message || 'Błąd zapisu.';
+			}
+		},
+
+		async registerReturn(id) {
+			const qty = parseInt(prompt('Ile sztuk zwrócono?', '1'));
+			if (!qty || qty < 1) return;
+			this.error   = '';
+			this.success = '';
+			const r = await bmApi.returnEquipment(id, qty, bmConfig.panelNonce);
+			if (r.ok) {
+				this.success = `Zarejestrowano zwrot: ${r.data.returned_qty} / ${this.items.find(i => i.id === id)?.issued_qty ?? '?'} szt.`;
+				await this.load();
+			} else {
+				this.error = r.data.message || 'Błąd rejestracji zwrotu.';
+			}
+		},
+
+		get totalOutstanding() {
+			return this.items.reduce((s, i) => s + i.outstanding, 0);
+		},
+	};
+};
