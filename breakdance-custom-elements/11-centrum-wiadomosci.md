@@ -514,6 +514,7 @@ Zintegrowany element komunikacji: lista wątków, tworzenie nowego zgłoszenia i
 - REST / helper: `bmApi.getThreads()`, `bmApi.createThread(payload)`, `bmApi.getThread(id)`, `bmApi.replyThread(id, payload)` w `assets/js/bm-api.js`.
 - Store: komponent aktualizuje `Alpine.store('bm').unreadCount` na podstawie liczby nieprzeczytanych wiadomości.
 - PHP / konfiguracja: wątki i odpowiedzi działają bez dodatkowego PHP w elemencie; backend zwraca gotowe pola `thread`, `messages` i `unread_camp`.
+- Bezpieczeństwo: pola renderowane przez `x-html`, szczególnie `message.content`, muszą być oczyszczone po stronie WordPressa przed zwróceniem przez API.
 
 ## 6. Instrukcja wdrożenia
 
@@ -529,5 +530,6 @@ Zintegrowany element komunikacji: lista wątków, tworzenie nowego zgłoszenia i
 - Element wymaga `assets/js/bm-store.js`, `assets/js/bm-api.js` oraz `assets/js/bm-components-social.js`.
 - `bmConfig` musi być dostępny globalnie z prawidłowym `restUrl`, `wpNonce` i odpowiednim nonce panelowym / logowania.
 - Element jest niezależny: nie zakłada istnienia wrappera z `docs/15-panel-full-breakdance.md`, ale może współdzielić store `bm` z innymi elementami strony.
+- Nie podawaj surowego HTML z danych użytkowników; jeśli treść wiadomości ma pochodzić od kadry lub administracji, backend powinien ją przepuścić przez bezpieczny sanitizer.
 - To minimalny kompletny zestaw dla komunikacji: trzy widoki (`list`, `new`, `thread`) pozostają w jednym komponencie, zgodnie z logiką źródłową.
 - Jeśli potrzebujesz tylko badge nieprzeczytanych, korzystaj bezpośrednio ze store `bm.unreadCount`, a nie z dodatkowego requestu.

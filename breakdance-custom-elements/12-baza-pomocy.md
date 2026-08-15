@@ -486,6 +486,7 @@ Element wiedzy z wyszukiwaniem, filtrowaniem kategorii i przejściem do widoku p
 - Alpine: `window.bmHelp()` z `assets/js/bm-components-social.js`.
 - REST / helper: `bmApi.getHelp(params)`, `bmApi.getHelpArticle(id)` w `assets/js/bm-api.js`.
 - PHP / konfiguracja: wyszukiwanie i filtry są budowane przez query string po stronie helpera `bmApi`; element nie wymaga dodatkowych hooków PHP.
+- Bezpieczeństwo: `current.content` renderowane przez `x-html` musi być oczyszczone po stronie serwera przed zwróceniem do przeglądarki.
 
 ## 6. Instrukcja wdrożenia
 
@@ -501,5 +502,6 @@ Element wiedzy z wyszukiwaniem, filtrowaniem kategorii i przejściem do widoku p
 - Element wymaga `assets/js/bm-store.js`, `assets/js/bm-api.js` oraz `assets/js/bm-components-social.js`.
 - `bmConfig` musi być dostępny globalnie z prawidłowym `restUrl`, `wpNonce` i odpowiednim nonce panelowym / logowania.
 - Element jest niezależny: nie zakłada istnienia wrappera z `docs/15-panel-full-breakdance.md`, ale może współdzielić store `bm` z innymi elementami strony.
+- Jeżeli treść artykułów pochodzi z edytora HTML lub zewnętrznych integracji, stosuj whitelistę tagów i atrybutów.
 - `applyFilters()` odpala się przy debounced input i zmianie filtrów — zachowaj tę strukturę, jeśli chcesz ograniczyć liczbę requestów.
 - Widok listy i artykułu pozostają w jednym komponencie przez `current`; to odpowiada pełnemu panelowi i jest minimalną niezależną wersją.

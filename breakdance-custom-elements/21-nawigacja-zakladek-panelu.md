@@ -32,7 +32,7 @@ Sugerowana kategoria:
   { label: '💬 Wiadomości', key: 'komunikacja', url: '#komunikacja', badge: '3' }
 ]) %}
 
-<div class="bm-el">
+<div class="bm-el" x-data="{}" x-cloak x-show="$store.bm.authenticated">
   <nav class="bm-nav" aria-label="Główna nawigacja panelu">
     <div class="bm-nav__inner">
       {% for tab in tabs %}

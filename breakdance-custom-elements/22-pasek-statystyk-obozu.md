@@ -29,7 +29,7 @@ Sugerowana kategoria:
   { label: 'Łącznie', value: '145', dynamic_key: 'total' }
 ]) %}
 
-<div class="bm-el" {% if content.use_alpine|default(true) %}x-data="bmCamp()" x-init="init()"{% endif %}>
+<div class="bm-el" {% if content.use_alpine|default(true) %}x-data="bmCamp()" x-init="init()"{% else %}x-data="{}"{% endif %} x-cloak x-show="$store.bm.authenticated">
   <div class="bm-status-bar">
     {% for stat in stats %}
       <div class="bm-stat">
@@ -62,7 +62,7 @@ Sugerowana kategoria:
 
 ## 5. JavaScript / Alpine.js / PHP / integracje
 
-- Wariant dynamiczny korzysta z `bmCamp()` z `/home/runner/work/basemgmt/basemgmt/assets/js/bm-components-auth.js`.
+- Wariant dynamiczny korzysta z `bmCamp()` z `assets/js/bm-components-auth.js`.
 - Dane pochodzą z `GET panel/camp`, z pola `latest_count`.
 - Przykład:
 
