@@ -59,7 +59,6 @@ final class Bootstrap {
 		$this->register_cron();
 		$this->register_notifications();
 		$this->register_ajax();
-		$this->register_breakdance();
 
 		$this->loader->run();
 	}
@@ -160,12 +159,7 @@ final class Bootstrap {
 		add_action('wp_ajax_bm_calendar_events', [$this, 'ajax_calendar_events']);
 	}
 
-	private function register_breakdance(): void {
-		$integration = new BreakdanceIntegration();
-		$integration->register();
-	}
 
-	// ── AJAX handlers ─────────────────────────────────────────────────────────
 
 	public function ajax_reorder_plan_items(): void {
 		check_ajax_referer('bm_reorder_items', 'nonce');

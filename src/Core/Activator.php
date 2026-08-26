@@ -21,7 +21,6 @@ final class Activator {
 		Schema::create_tables();
 		Capabilities::add_to_admin_role();
 		Scheduler::register_schedules();
-		BreakdanceIntegration::create_directories();
 		MoCompiler::compile_all();
 
 		update_option('basemgmt_db_version', BASEMGMT_VERSION);
