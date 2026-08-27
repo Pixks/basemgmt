@@ -6,27 +6,53 @@ Panel frontendowy jest głównym interfejsem dla kadry obozów. Nie jest to klas
 
 ---
 
-## Ładowanie assetów – bez shortcode
+## Ładowanie assetów i shortcode
 
-Assetów (`bm-api.js`, Alpine.js, `bmConfig`) **nie trzeba już ładować przez shortcode**. Plugin ładuje je globalnie na każdej stronie frontendowej WordPress (`wp_enqueue_scripts`).
-
-Dzięki temu **Breakdance Custom Elements i Code Blocks** mogą korzystać z komponentów Alpine.js na dowolnej stronie bez konieczności umieszczania shortcode.
+Assety (`bm-api.js`, Alpine.js, `bmConfig`) są ładowane automatycznie na froncie WordPress.  
+Od teraz każdy główny element interfejsu kadry jest też dostępny jako shortcode.
 
 ---
 
-## Shortcode (zachowany dla kompatybilności wstecznej)
+## Shortcode panelu kadry
+
+Podstawowe shortcody:
 
 ```
-[bm_init]
+[bm_panel_login]
+[bm_panel_camp_header]
+[bm_panel_logout]
+[bm_panel_announcements]
+[bm_panel_announcement_form]
+[bm_panel_reports]
+[bm_panel_weather]
+[bm_panel_schedule]
+[bm_panel_reservations]
+[bm_panel_menu_day]
+[bm_panel_menu_week]
+[bm_panel_conversations]
+[bm_panel_conversation_new]
+[bm_panel_conversation_thread]
+[bm_panel_help_list]
+[bm_panel_help_article]
+[bm_panel_forms_list]
+[bm_panel_form]
+[bm_panel_submissions_list]
+[bm_panel_submission]
+[bm_panel_unread_counter]
+[bm_panel_session_guard]...[/bm_panel_session_guard]
 ```
 
-lub starsze wersje:
+Wersja generyczna:
 
 ```
-[camp_panel]   [camp_access]   [camp_overview]
+[bm_panel_element type="login"]
 ```
 
-Wszystkie shortcody wywołują `enqueue_assets()` (idempotent – bezpieczne wielokrotne wywołanie). Na nowych stronach shortcode nie jest wymagany.
+Legacy:
+
+```
+[bm_init] [camp_panel] [camp_access] [camp_overview]
+```
 
 ---
 
