@@ -1,7 +1,7 @@
 ﻿# 13 – Breakdance Custom Elements – gotowe bloki kodu
 
 Każdy blok to gotowy HTML który wklejasz w **Breakdance Studio → Custom Element** lub **Code Block**.
-`bmConfig` i Alpine.js są globalnie dostępne – shortcode nie jest wymagany.
+Alternatywnie te sekcje są dostępne jako shortcode `bm_panel_*` (patrz `docs/09-frontend-panel.md`).
 
 > **Zasada widoczności**: większość elementów panelu powinna być widoczna tylko gdy użytkownik jest zalogowany.  
 > Użyj warunku `Alpine.store('bm').authenticated === true` na wrapperze lub chroń widoczność przez `x-show`.

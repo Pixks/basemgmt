@@ -3,9 +3,12 @@ defined('ABSPATH') || exit;
 use BaseMgmt\Core\EmailService;
 use BaseMgmt\Core\EmailTemplateRepository;
 use BaseMgmt\Core\PdfSettings;
+use BaseMgmt\Frontend\PanelStyleSettings;
 $s        = EmailService::get_settings();
 $pdf      = PdfSettings::get_settings();
 $registry = EmailTemplateRepository::get_registry();
+$ui_style = PanelStyleSettings::get_settings();
+$ui_presets = PanelStyleSettings::presets();
 
 // Enqueue CodeMirror for the HTML fields.
 $cm_settings = wp_enqueue_code_editor(['type' => 'text/html', 'codemirror' => ['lineNumbers' => false, 'lineWrapping' => true]]);
@@ -157,6 +160,61 @@ wp_enqueue_style('wp-codemirror');
                 </tr>
             </table>
             <?php submit_button(__('Zapisz wygląd wydruków', 'basemgmt')); ?>
+        </form>
+    </div>
+
+    <!-- Frontend camp UI style settings -->
+    <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 10px;">🎨 <?php esc_html_e('Wygląd shortcode panelu kadry', 'basemgmt'); ?></h2>
+        <p class="description" style="margin:0 0 14px;">
+            <?php esc_html_e('Wybierz gotowy styl globalny i dopasuj kolory elementów shortcode dla panelu kadry obozu.', 'basemgmt'); ?>
+        </p>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <?php wp_nonce_field('bm_save_settings'); ?>
+            <input type="hidden" name="action" value="bm_save_settings">
+            <table class="form-table" style="margin:0;">
+                <tr>
+                    <th><label for="bm-ui-style-preset"><?php esc_html_e('Styl globalny', 'basemgmt'); ?></label></th>
+                    <td>
+                        <select id="bm-ui-style-preset" name="bm_ui_style_preset">
+                            <?php foreach ($ui_presets as $preset_key => $preset): ?>
+                                <option value="<?php echo esc_attr($preset_key); ?>" <?php selected($ui_style['preset'], $preset_key); ?>>
+                                    <?php echo esc_html($preset['label']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-ui-primary-color"><?php esc_html_e('Kolor główny', 'basemgmt'); ?></label></th>
+                    <td><input type="color" id="bm-ui-primary-color" name="bm_ui_primary_color" value="<?php echo esc_attr($ui_style['primary_color']); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="bm-ui-primary-hover-color"><?php esc_html_e('Kolor hover', 'basemgmt'); ?></label></th>
+                    <td><input type="color" id="bm-ui-primary-hover-color" name="bm_ui_primary_hover_color" value="<?php echo esc_attr($ui_style['primary_hover']); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="bm-ui-surface-color"><?php esc_html_e('Tło kart', 'basemgmt'); ?></label></th>
+                    <td><input type="color" id="bm-ui-surface-color" name="bm_ui_surface_color" value="<?php echo esc_attr($ui_style['surface_color']); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="bm-ui-border-color"><?php esc_html_e('Kolor obramowań', 'basemgmt'); ?></label></th>
+                    <td><input type="color" id="bm-ui-border-color" name="bm_ui_border_color" value="<?php echo esc_attr($ui_style['border_color']); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="bm-ui-background-color"><?php esc_html_e('Kolor tła sekcji', 'basemgmt'); ?></label></th>
+                    <td><input type="color" id="bm-ui-background-color" name="bm_ui_background_color" value="<?php echo esc_attr($ui_style['background']); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="bm-ui-text-color"><?php esc_html_e('Kolor tekstu', 'basemgmt'); ?></label></th>
+                    <td><input type="color" id="bm-ui-text-color" name="bm_ui_text_color" value="<?php echo esc_attr($ui_style['text_color']); ?>"></td>
+                </tr>
+                <tr>
+                    <th><label for="bm-ui-radius"><?php esc_html_e('Zaokrąglenie (px)', 'basemgmt'); ?></label></th>
+                    <td><input type="number" id="bm-ui-radius" name="bm_ui_radius" min="0" max="24" value="<?php echo esc_attr($ui_style['radius']); ?>" style="width:90px;"></td>
+                </tr>
+            </table>
+            <?php submit_button(__('Zapisz wygląd shortcode', 'basemgmt')); ?>
         </form>
     </div>
 

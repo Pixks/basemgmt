@@ -9,6 +9,7 @@ use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Core\EmailService;
 use BaseMgmt\Core\EmailTemplateRepository;
 use BaseMgmt\Core\PdfSettings;
+use BaseMgmt\Frontend\PanelStyleSettings;
 
 defined('ABSPATH') || exit;
 
@@ -53,6 +54,7 @@ final class SettingsPage {
 		update_option('bm_notify_doc_sent',   ! empty($_POST['bm_notify_doc_sent'])   ? '1' : '0');
 		update_option('bm_notify_task_email', sanitize_email($_POST['bm_notify_task_email'] ?? ''));
 		update_option('bm_notify_doc_email',  sanitize_email($_POST['bm_notify_doc_email'] ?? ''));
+		PanelStyleSettings::save_settings(wp_unslash($_POST));
 
 		// Reschedule periodic report if config changed.
 		\BaseMgmt\Cron\Scheduler::reschedule_staff_report();
