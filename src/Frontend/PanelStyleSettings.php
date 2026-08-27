@@ -205,6 +205,9 @@ final class PanelStyleSettings {
 				'--bm-badge-text:%10$s;' .
 				'--bm-link:%11$s;' .
 				'--bm-radius:%12$spx;' .
+				// %13$s, %14$s, %15$s come from hardcoded internal constants
+				// (self::SHADOWS / FONT_FAMILIES arrays) — never user input, no escaping needed.
+				// %14$s may contain CSS double-quotes (e.g. "Open Sans") which esc_attr would break.
 				'--bm-shadow:%13$s;' .
 				'--bm-font:%14$s;' .
 				'--bm-header-bg:%15$s;' .

@@ -667,7 +667,7 @@ $font_labels = [
             };
             for (var id in map) {
                 var el = document.getElementById(id);
-                if (el && d[map[id]]) {
+                if (el && map[id] in d && d[map[id]] !== undefined) {
                     el.value = d[map[id]];
                     el.dispatchEvent(new Event('input'));
                 }
