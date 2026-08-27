@@ -1,13 +1,35 @@
+/* ================================================================
+   BaseMgmt – Shortcode UI component library
+   CSS custom-properties are injected via PanelStyleSettings::build_inline_css()
+   ================================================================ */
+
 .bm-ui {
-	--bm-primary: #1B5E33;
-	--bm-primary-hover: #2A7A4B;
-	--bm-surface: #ffffff;
-	--bm-border: #D0D8DC;
-	--bm-bg: #F6F8FA;
-	--bm-text: #1A2530;
-	--bm-radius: 8px;
-	font-family: Lato, "Open Sans", system-ui, sans-serif;
+	/* Colour tokens */
+	--bm-primary:       #6EA82E;
+	--bm-primary-hover: #5A8D24;
+	--bm-surface:       #ffffff;
+	--bm-border:        #E0E6E0;
+	--bm-bg:            #F4F7F0;
+	--bm-text:          #333333;
+	--bm-heading:       #1A1A1A;
+	--bm-btn-text:      #ffffff;
+	--bm-badge-bg:      #6EA82E;
+	--bm-badge-text:    #ffffff;
+	--bm-link:          #5A8D24;
+	/* Shape / spacing tokens */
+	--bm-radius:        10px;
+	--bm-shadow:        0 2px 12px rgba(0,0,0,.10);
+	/* Typography token */
+	--bm-font:          "Open Sans", Lato, system-ui, sans-serif;
+	/* Header background – can be gradient or solid */
+	--bm-header-bg:     var(--bm-primary);
+	/* Internal computed tokens */
+	--bm-radius-sm:     calc(var(--bm-radius) - 2px);
+	--bm-radius-pill:   999px;
+
+	font-family: var(--bm-font);
 	color: var(--bm-text);
+	background: var(--bm-bg);
 }
 
 .bm-ui[x-cloak],
@@ -15,17 +37,22 @@
 	display: none !important;
 }
 
+/* ── Card ─────────────────────────────────────────────────────── */
+
 .bm-ui--card {
-	background: var(--bm-bg);
+	background: var(--bm-surface);
 	border: 1px solid var(--bm-border);
 	border-radius: var(--bm-radius);
+	box-shadow: var(--bm-shadow);
 	overflow: hidden;
 	margin-bottom: 16px;
 }
 
+/* ── Card header ─────────────────────────────────────────────── */
+
 .bm-ui__header {
-	background: linear-gradient(135deg, var(--bm-primary), var(--bm-primary-hover));
-	color: #fff;
+	background: var(--bm-header-bg);
+	color: var(--bm-btn-text);
 	padding: 12px 16px;
 	display: flex;
 	align-items: center;
@@ -37,12 +64,34 @@
 	margin: 0;
 	color: inherit;
 	font-size: 1rem;
+	font-weight: 700;
 }
 
+/* ── Card body ───────────────────────────────────────────────── */
+
 .bm-ui__body {
-	padding: 14px 16px;
+	padding: 16px;
 	background: var(--bm-surface);
 }
+
+/* ── Typography ──────────────────────────────────────────────── */
+
+.bm-ui h2,
+.bm-ui h3,
+.bm-ui h4 {
+	color: var(--bm-heading);
+	font-family: var(--bm-font);
+}
+
+.bm-ui a {
+	color: var(--bm-link);
+}
+
+.bm-ui a:hover {
+	color: var(--bm-primary-hover);
+}
+
+/* ── Form elements ───────────────────────────────────────────── */
 
 .bm-ui__label {
 	display: block;
@@ -51,17 +100,26 @@
 	margin: 10px 0 4px;
 	text-transform: uppercase;
 	letter-spacing: .04em;
+	color: var(--bm-heading);
 }
 
 .bm-ui__input {
 	width: 100%;
 	box-sizing: border-box;
 	margin: 0 0 10px;
-	padding: 9px 11px;
+	padding: 9px 12px;
 	border: 1px solid var(--bm-border);
-	border-radius: calc(var(--bm-radius) - 2px);
-	background: #fff;
+	border-radius: var(--bm-radius-sm);
+	background: var(--bm-surface);
 	color: var(--bm-text);
+	font-family: var(--bm-font);
+	font-size: .95rem;
+	transition: border-color .15s;
+}
+
+.bm-ui__input:focus {
+	outline: none;
+	border-color: var(--bm-primary);
 }
 
 .bm-ui__input--small {
@@ -69,81 +127,123 @@
 	margin: 0;
 }
 
+/* ── Buttons ─────────────────────────────────────────────────── */
+
 .bm-ui__btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 	border: none;
 	background: var(--bm-primary);
-	color: #fff;
-	padding: 8px 14px;
-	border-radius: 999px;
+	color: var(--bm-btn-text);
+	padding: 9px 18px;
+	border-radius: var(--bm-radius-pill);
 	cursor: pointer;
-	font-weight: 600;
+	font-weight: 700;
+	font-family: var(--bm-font);
+	font-size: .9rem;
+	letter-spacing: .02em;
+	transition: background .15s, transform .1s;
+	text-decoration: none;
 }
 
 .bm-ui__btn:hover {
 	background: var(--bm-primary-hover);
+	color: var(--bm-btn-text);
+	transform: translateY(-1px);
+}
+
+.bm-ui__btn:active {
+	transform: translateY(0);
 }
 
 .bm-ui__btn:disabled {
 	opacity: .55;
 	cursor: not-allowed;
+	transform: none;
 }
 
 .bm-ui__btn--ghost {
 	background: transparent;
 	color: var(--bm-primary);
-	border: 1px solid var(--bm-primary);
+	border: 2px solid var(--bm-primary);
+}
+
+.bm-ui__btn--ghost:hover {
+	background: var(--bm-primary);
+	color: var(--bm-btn-text);
 }
 
 .bm-ui__btn--light {
-	background: rgba(255, 255, 255, .18);
-	border: 1px solid rgba(255, 255, 255, .35);
+	background: rgba(255, 255, 255, .22);
+	border: 1px solid rgba(255, 255, 255, .4);
+	color: var(--bm-btn-text);
+}
+
+.bm-ui__btn--light:hover {
+	background: rgba(255, 255, 255, .35);
+	color: var(--bm-btn-text);
 }
 
 .bm-ui__btn--small {
 	font-size: .78rem;
-	padding: 6px 10px;
+	padding: 5px 12px;
 }
 
-.bm-ui__error { color: #C0392B; }
-.bm-ui__success { color: #1B5E33; }
-.bm-ui__warn { color: #B45309; }
-.bm-ui__muted { color: #6b7280; }
+/* ── Status text ─────────────────────────────────────────────── */
+
+.bm-ui__error   { color: #C0392B; }
+.bm-ui__success { color: var(--bm-primary); }
+.bm-ui__warn    { color: #B45309; }
+.bm-ui__muted   { color: #6b7280; font-size: .88rem; }
+
+/* ── List items ──────────────────────────────────────────────── */
 
 .bm-ui__item {
 	border: 1px solid var(--bm-border);
-	border-radius: calc(var(--bm-radius) - 2px);
-	padding: 10px 12px;
+	border-radius: var(--bm-radius-sm);
+	padding: 10px 14px;
 	margin-bottom: 8px;
-	background: #fff;
+	background: var(--bm-surface);
+	box-shadow: var(--bm-shadow);
 }
 
 .bm-ui__item--button {
 	width: 100%;
 	text-align: left;
-	background: #fff;
+	background: var(--bm-surface);
 	cursor: pointer;
+	transition: background .12s;
+}
+
+.bm-ui__item--button:hover {
+	background: var(--bm-bg);
 }
 
 .bm-ui__item--urgent {
 	border-left: 4px solid #C0392B;
 }
 
+/* ── Data rows ───────────────────────────────────────────────── */
+
 .bm-ui__line {
 	display: flex;
 	justify-content: space-between;
 	gap: 8px;
-	padding: 6px 0;
-	border-bottom: 1px solid #eef2f4;
+	padding: 7px 0;
+	border-bottom: 1px solid var(--bm-border);
 }
 
 .bm-ui__line:last-child {
 	border-bottom: 0;
 }
 
+/* ── Grid / Flex helpers ─────────────────────────────────────── */
+
 .bm-ui__grid {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 8px;
+	gap: 10px;
 }
 
 .bm-ui__actions {
@@ -169,6 +269,8 @@
 	gap: 10px;
 }
 
+/* ── Badge / tag ─────────────────────────────────────────────── */
+
 .bm-ui--badge {
 	display: inline-flex;
 	min-width: 22px;
@@ -177,20 +279,67 @@
 	justify-content: center;
 	background: #C0392B;
 	color: #fff;
-	border-radius: 999px;
+	border-radius: var(--bm-radius-pill);
 	font-size: .78rem;
 	font-weight: 700;
-	padding: 0 6px;
+	padding: 0 7px;
 }
+
+.bm-ui__tag {
+	display: inline-block;
+	background: var(--bm-badge-bg);
+	color: var(--bm-badge-text);
+	font-size: .75rem;
+	font-weight: 700;
+	border-radius: var(--bm-radius-pill);
+	padding: 3px 10px;
+	letter-spacing: .03em;
+	white-space: nowrap;
+}
+
+/* ── Code / JSON viewer ──────────────────────────────────────── */
 
 .bm-ui__json {
 	overflow: auto;
 	max-height: 280px;
 	background: #f8fafc;
 	border: 1px solid var(--bm-border);
-	border-radius: calc(var(--bm-radius) - 2px);
+	border-radius: var(--bm-radius-sm);
 	padding: 10px;
+	font-size: .82rem;
 }
+
+/* ── Read-more link ──────────────────────────────────────────── */
+
+.bm-ui__read-more {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	color: var(--bm-link);
+	font-weight: 700;
+	font-size: .9rem;
+	text-decoration: none;
+	transition: gap .12s;
+}
+
+.bm-ui__read-more:hover {
+	color: var(--bm-primary-hover);
+	gap: 8px;
+}
+
+/* ── Section heading ─────────────────────────────────────────── */
+
+.bm-ui__section-title {
+	font-weight: 900;
+	font-size: 1.6rem;
+	color: var(--bm-heading);
+	letter-spacing: .02em;
+	text-transform: uppercase;
+	margin: 0 0 20px;
+	font-family: var(--bm-font);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
 
 @media (max-width: 767px) {
 	.bm-ui__grid {

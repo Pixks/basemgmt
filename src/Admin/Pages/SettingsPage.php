@@ -60,7 +60,9 @@ final class SettingsPage {
 		\BaseMgmt\Cron\Scheduler::reschedule_staff_report();
 
 		AdminMenu::set_notice(__('Ustawienia zapisane.', 'basemgmt'));
-		wp_safe_redirect(admin_url('admin.php?page=basemgmt-settings'));
+		$tab = sanitize_key($_POST['_bm_current_tab'] ?? '');
+		$tab = in_array($tab, ['email', 'pdf', 'wyglad', 'powiadomienia', 'dane', 'info'], true) ? $tab : 'email';
+		wp_safe_redirect(admin_url("admin.php?page=basemgmt-settings&tab=$tab"));
 		exit;
 	}
 
@@ -161,7 +163,7 @@ final class SettingsPage {
 				)
 			);
 		}
-		wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=translations' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&tab=dane' ) );
 		exit;
 	}
 
@@ -215,7 +217,7 @@ final class SettingsPage {
 
 		if ( empty( $_FILES['backup_file']['tmp_name'] ) ) {
 			AdminMenu::set_notice( __( 'Nie wybrano pliku.', 'basemgmt' ), 'error' );
-			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
+			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&tab=dane' ) );
 			exit;
 		}
 
@@ -223,14 +225,14 @@ final class SettingsPage {
 		$raw = file_get_contents( $_FILES['backup_file']['tmp_name'] );
 		if ( ! $raw ) {
 			AdminMenu::set_notice( __( 'Nie można odczytać pliku backupu.', 'basemgmt' ), 'error' );
-			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
+			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&tab=dane' ) );
 			exit;
 		}
 
 		$data = json_decode( $raw, true );
 		if ( ! $data || empty( $data['tables'] ) ) {
 			AdminMenu::set_notice( __( 'Nieprawidłowy format pliku backupu.', 'basemgmt' ), 'error' );
-			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
+			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&tab=dane' ) );
 			exit;
 		}
 
@@ -280,7 +282,7 @@ final class SettingsPage {
 		}
 
 		AdminMenu::set_notice( sprintf( __( 'Import zakończony – przywrócono %d rekordów.', 'basemgmt' ), $count ) );
-		wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&tab=dane' ) );
 		exit;
 	}
 
@@ -300,7 +302,7 @@ final class SettingsPage {
 		$wpdb->query( 'SET FOREIGN_KEY_CHECKS = 1' );
 
 		AdminMenu::set_notice( __( 'Wszystkie dane wtyczki zostały wyczyszczone.', 'basemgmt' ), 'success' );
-		wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&section=backup' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&tab=dane' ) );
 		exit;
 	}
 

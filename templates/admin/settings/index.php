@@ -4,26 +4,57 @@ use BaseMgmt\Core\EmailService;
 use BaseMgmt\Core\EmailTemplateRepository;
 use BaseMgmt\Core\PdfSettings;
 use BaseMgmt\Frontend\PanelStyleSettings;
-$s        = EmailService::get_settings();
-$pdf      = PdfSettings::get_settings();
-$registry = EmailTemplateRepository::get_registry();
-$ui_style = PanelStyleSettings::get_settings();
+
+$s          = EmailService::get_settings();
+$pdf        = PdfSettings::get_settings();
+$registry   = EmailTemplateRepository::get_registry();
+$ui_style   = PanelStyleSettings::get_settings();
 $ui_presets = PanelStyleSettings::presets();
 
 // Enqueue CodeMirror for the HTML fields.
 $cm_settings = wp_enqueue_code_editor(['type' => 'text/html', 'codemirror' => ['lineNumbers' => false, 'lineWrapping' => true]]);
 wp_enqueue_script('wp-theme-plugin-editor');
 wp_enqueue_style('wp-codemirror');
+
+$current_tab = sanitize_key($_GET['tab'] ?? 'email');
+$valid_tabs  = ['email', 'pdf', 'wyglad', 'powiadomienia', 'dane', 'info'];
+if ( ! in_array($current_tab, $valid_tabs, true) ) {
+	$current_tab = 'email';
+}
+
+$tab_url = fn(string $t) => esc_url(admin_url("admin.php?page=basemgmt-settings&tab=$t"));
+
+$tabs = [
+	'email'         => '📧 ' . __('Email', 'basemgmt'),
+	'pdf'           => '🖨 ' . __('Wydruk / PDF', 'basemgmt'),
+	'wyglad'        => '🎨 ' . __('Wygląd', 'basemgmt'),
+	'powiadomienia' => '🔔 ' . __('Powiadomienia', 'basemgmt'),
+	'dane'          => '🗄 ' . __('Dane', 'basemgmt'),
+	'info'          => 'ℹ️ ' . __('O pluginie', 'basemgmt'),
+];
 ?>
 <div class="wrap bm-wrap">
     <h1><?php esc_html_e('Ustawienia – Baza Obozowa', 'basemgmt'); ?></h1>
 
-    <!-- Email settings -->
+    <!-- Tab navigation -->
+    <nav class="nav-tab-wrapper wp-clearfix" style="margin-bottom:24px;">
+        <?php foreach ($tabs as $slug => $label): ?>
+        <a href="<?php echo $tab_url($slug); ?>"
+           class="nav-tab<?php echo $current_tab === $slug ? ' nav-tab-active' : ''; ?>">
+            <?php echo esc_html($label); ?>
+        </a>
+        <?php endforeach; ?>
+    </nav>
+
+<?php /* ═══════════════════════════════════════════════════════ EMAIL TAB ══ */ ?>
+<?php if ($current_tab === 'email'): ?>
+
     <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
         <h2 class="hndle" style="padding:0 0 10px;">📧 <?php esc_html_e('Ustawienia powiadomień email', 'basemgmt'); ?></h2>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
             <?php wp_nonce_field('bm_save_settings'); ?>
             <input type="hidden" name="action" value="bm_save_settings">
+            <input type="hidden" name="_bm_current_tab" value="<?php echo esc_attr($current_tab); ?>">
             <table class="form-table" style="margin:0;">
                 <tr>
                     <th><label for="bm-from-name"><?php esc_html_e('Nazwa nadawcy', 'basemgmt'); ?></label></th>
@@ -82,7 +113,6 @@ wp_enqueue_style('wp-codemirror');
         </form>
     </div>
 
-    <!-- Email templates -->
     <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
         <h2 class="hndle" style="padding:0 0 10px;">✏️ <?php esc_html_e('Szablony emaili', 'basemgmt'); ?></h2>
         <p class="description" style="margin:0 0 14px;">
@@ -100,9 +130,7 @@ wp_enqueue_style('wp-codemirror');
                 <?php foreach ($registry as $tpl_slug => $def): ?>
                 <?php $is_custom = EmailTemplateRepository::get_saved($tpl_slug) !== null; ?>
                 <tr>
-                    <td>
-                        <strong><?php echo esc_html($def['label']); ?></strong>
-                    </td>
+                    <td><strong><?php echo esc_html($def['label']); ?></strong></td>
                     <td>
                         <?php if ($is_custom): ?>
                             <span style="color:#2271b1;font-weight:600;">● <?php esc_html_e('Własny', 'basemgmt'); ?></span>
@@ -120,7 +148,20 @@ wp_enqueue_style('wp-codemirror');
         </table>
     </div>
 
-    <!-- PDF settings -->
+    <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 10px;"><?php esc_html_e('Test emaila', 'basemgmt'); ?></h2>
+        <p class="description"><?php esc_html_e('Wyślij testowy email aby sprawdzić wygląd szablonu (reservation_created) i konfigurację serwera pocztowego.', 'basemgmt'); ?></p>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:flex;gap:8px;align-items:center;">
+            <?php wp_nonce_field('bm_send_test_email'); ?>
+            <input type="hidden" name="action" value="bm_send_test_email">
+            <input type="email" name="test_email" value="<?php echo esc_attr(get_option('admin_email')); ?>" class="regular-text" placeholder="test@example.com">
+            <button type="submit" class="button button-secondary"><?php esc_html_e('Wyślij testowy email', 'basemgmt'); ?></button>
+        </form>
+    </div>
+
+<?php /* ═══════════════════════════════════════════════════════ PDF TAB ══ */ ?>
+<?php elseif ($current_tab === 'pdf'): ?>
+
     <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
         <h2 class="hndle" style="padding:0 0 10px;">🖨 <?php esc_html_e('Wygląd widoków do druku', 'basemgmt'); ?></h2>
         <p class="description" style="margin:0 0 14px;">
@@ -129,6 +170,7 @@ wp_enqueue_style('wp-codemirror');
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
             <?php wp_nonce_field('bm_save_settings'); ?>
             <input type="hidden" name="action" value="bm_save_settings">
+            <input type="hidden" name="_bm_current_tab" value="<?php echo esc_attr($current_tab); ?>">
             <table class="form-table" style="margin:0;">
                 <tr>
                     <th><label for="bm-pdf-title"><?php esc_html_e('Tytuł nagłówka', 'basemgmt'); ?></label></th>
@@ -163,74 +205,534 @@ wp_enqueue_style('wp-codemirror');
         </form>
     </div>
 
-    <!-- Frontend camp UI style settings -->
-    <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
+<?php /* ═══════════════════════════════════════════════════ WYGLĄD TAB ══ */ ?>
+<?php elseif ($current_tab === 'wyglad'): ?>
+
+<?php
+$shadow_labels = [
+	'none' => __('Brak', 'basemgmt'),
+	'sm'   => __('Delikatny', 'basemgmt'),
+	'md'   => __('Średni', 'basemgmt'),
+	'lg'   => __('Wyraźny', 'basemgmt'),
+];
+$font_labels = [
+	'lato'      => 'Lato',
+	'open-sans' => 'Open Sans',
+	'roboto'    => 'Roboto',
+	'nunito'    => 'Nunito',
+	'system'    => __('Systemowy', 'basemgmt'),
+];
+?>
+<style>
+/* Preview area styling */
+#bm-style-preview {
+    background: var(--bmp-bg, #F4F7F0);
+    padding: 28px;
+    border-radius: 12px;
+    border: 1px solid #dde;
+    font-family: var(--bmp-font, "Open Sans", sans-serif);
+    color: var(--bmp-text, #333);
+    transition: all .2s;
+}
+#bm-style-preview .prev-section-title {
+    font-weight: 900;
+    font-size: 1.4rem;
+    color: var(--bmp-heading, #1A1A1A);
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    margin: 0 0 16px;
+}
+#bm-style-preview .prev-card {
+    background: var(--bmp-surface, #fff);
+    border: 1px solid var(--bmp-border, #E0E6E0);
+    border-radius: var(--bmp-radius, 10px);
+    box-shadow: var(--bmp-shadow, 0 2px 12px rgba(0,0,0,.10));
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+#bm-style-preview .prev-card-header {
+    background: var(--bmp-header-bg, #6EA82E);
+    color: var(--bmp-btn-text, #fff);
+    padding: 11px 16px;
+    font-weight: 700;
+    font-size: .95rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+#bm-style-preview .prev-card-body {
+    padding: 14px 16px;
+}
+#bm-style-preview .prev-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bmp-primary, #6EA82E);
+    color: var(--bmp-btn-text, #fff);
+    border: none;
+    border-radius: 999px;
+    padding: 9px 20px;
+    font-weight: 700;
+    font-size: .88rem;
+    cursor: default;
+    transition: background .15s;
+    font-family: var(--bmp-font, "Open Sans", sans-serif);
+}
+#bm-style-preview .prev-btn-ghost {
+    background: transparent;
+    color: var(--bmp-primary, #6EA82E);
+    border: 2px solid var(--bmp-primary, #6EA82E);
+}
+#bm-style-preview .prev-tag {
+    display: inline-block;
+    background: var(--bmp-badge-bg, #6EA82E);
+    color: var(--bmp-badge-text, #fff);
+    font-size: .72rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 3px 10px;
+    letter-spacing: .03em;
+}
+#bm-style-preview .prev-read-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--bmp-link, #5A8D24);
+    font-weight: 700;
+    font-size: .88rem;
+    text-decoration: none;
+}
+#bm-style-preview .prev-items-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+#bm-style-preview .prev-item {
+    flex: 1 1 180px;
+    background: var(--bmp-surface, #fff);
+    border: 1px solid var(--bmp-border, #E0E6E0);
+    border-radius: var(--bmp-radius, 10px);
+    box-shadow: var(--bmp-shadow, 0 2px 12px rgba(0,0,0,.10));
+    padding: 10px 12px;
+    font-size: .88rem;
+}
+#bm-style-preview .prev-item-title {
+    font-weight: 700;
+    color: var(--bmp-heading, #1A1A1A);
+    margin: 6px 0 4px;
+}
+#bm-style-preview .prev-item-meta {
+    font-size: .78rem;
+    color: #888;
+}
+#bm-style-preview .prev-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+.bm-style-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 32px;
+}
+.bm-style-form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: .9rem;
+}
+.bm-style-form-group input[type=color] {
+    width: 50px;
+    height: 32px;
+    padding: 2px 3px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+.bm-style-form-group .color-hex {
+    font-size: .8rem;
+    color: #555;
+    margin-left: 6px;
+    font-family: monospace;
+    vertical-align: middle;
+}
+.bm-style-section-title {
+    font-weight: 700;
+    font-size: .82rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #666;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin: 24px 0 16px;
+}
+</style>
+
+<div style="display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:start;max-width:1180px;">
+
+    <!-- Left: form -->
+    <div class="postbox" style="padding:20px 24px;">
         <h2 class="hndle" style="padding:0 0 10px;">🎨 <?php esc_html_e('Wygląd shortcode panelu kadry', 'basemgmt'); ?></h2>
-        <p class="description" style="margin:0 0 14px;">
-            <?php esc_html_e('Wybierz gotowy styl globalny i dopasuj kolory elementów shortcode dla panelu kadry obozu.', 'basemgmt'); ?>
+        <p class="description" style="margin:0 0 16px;">
+            <?php esc_html_e('Wybierz gotowy preset i dopasuj każdy szczegół wyglądu elementów wyświetlanych przez shortcode panelu kadry.', 'basemgmt'); ?>
         </p>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="bm-style-form">
             <?php wp_nonce_field('bm_save_settings'); ?>
             <input type="hidden" name="action" value="bm_save_settings">
+            <input type="hidden" name="_bm_current_tab" value="<?php echo esc_attr($current_tab); ?>">
+
+            <!-- Preset selector -->
+            <div class="bm-style-section-title"><?php esc_html_e('Szybki start – presety', 'basemgmt'); ?></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <?php foreach ($ui_presets as $pk => $pv): ?>
+                <button type="button" class="button<?php echo $ui_style['preset'] === $pk ? ' button-primary' : ''; ?>"
+                        data-bm-preset="<?php echo esc_attr(wp_json_encode($pv + ['key' => $pk])); ?>">
+                    <?php echo esc_html($pv['label']); ?>
+                </button>
+                <?php endforeach; ?>
+            </div>
+            <input type="hidden" name="bm_ui_style_preset" id="bm-ui-style-preset" value="<?php echo esc_attr($ui_style['preset']); ?>">
+
+            <!-- Colours: primary -->
+            <div class="bm-style-section-title"><?php esc_html_e('Kolory główne', 'basemgmt'); ?></div>
+            <div class="bm-style-form-grid">
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-primary-color"><?php esc_html_e('Kolor główny (przyciski, akcenty)', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-primary-color" name="bm_ui_primary_color" value="<?php echo esc_attr($ui_style['primary_color']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['primary_color']); ?></span>
+                </div>
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-primary-hover-color"><?php esc_html_e('Kolor hover', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-primary-hover-color" name="bm_ui_primary_hover_color" value="<?php echo esc_attr($ui_style['primary_hover']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['primary_hover']); ?></span>
+                </div>
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-badge-color"><?php esc_html_e('Kolor badge / tagu', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-badge-color" name="bm_ui_badge_color" value="<?php echo esc_attr($ui_style['badge_color']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['badge_color']); ?></span>
+                </div>
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-badge-text-color"><?php esc_html_e('Tekst badge / tagu', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-badge-text-color" name="bm_ui_badge_text_color" value="<?php echo esc_attr($ui_style['badge_text_color']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['badge_text_color']); ?></span>
+                </div>
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-btn-text-color"><?php esc_html_e('Tekst przycisków', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-btn-text-color" name="bm_ui_btn_text_color" value="<?php echo esc_attr($ui_style['btn_text_color']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['btn_text_color']); ?></span>
+                </div>
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-link-color"><?php esc_html_e('Kolor linków', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-link-color" name="bm_ui_link_color" value="<?php echo esc_attr($ui_style['link_color']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['link_color']); ?></span>
+                </div>
+            </div>
+
+            <!-- Colours: text & surfaces -->
+            <div class="bm-style-section-title"><?php esc_html_e('Kolory tekstu i tła', 'basemgmt'); ?></div>
+            <div class="bm-style-form-grid">
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-text-color"><?php esc_html_e('Kolor tekstu podstawowego', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-text-color" name="bm_ui_text_color" value="<?php echo esc_attr($ui_style['text_color']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['text_color']); ?></span>
+                </div>
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-heading-color"><?php esc_html_e('Kolor nagłówków', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-heading-color" name="bm_ui_heading_color" value="<?php echo esc_attr($ui_style['heading_color']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['heading_color']); ?></span>
+                </div>
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-surface-color"><?php esc_html_e('Tło kart (surface)', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-surface-color" name="bm_ui_surface_color" value="<?php echo esc_attr($ui_style['surface_color']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['surface_color']); ?></span>
+                </div>
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-background-color"><?php esc_html_e('Kolor tła sekcji', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-background-color" name="bm_ui_background_color" value="<?php echo esc_attr($ui_style['background']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['background']); ?></span>
+                </div>
+                <div class="bm-style-form-group">
+                    <label for="bm-ui-border-color"><?php esc_html_e('Kolor obramowań', 'basemgmt'); ?></label>
+                    <input type="color" id="bm-ui-border-color" name="bm_ui_border_color" value="<?php echo esc_attr($ui_style['border_color']); ?>">
+                    <span class="color-hex"><?php echo esc_html($ui_style['border_color']); ?></span>
+                </div>
+            </div>
+
+            <!-- Shape & typography -->
+            <div class="bm-style-section-title"><?php esc_html_e('Kształt, typografia i efekty', 'basemgmt'); ?></div>
             <table class="form-table" style="margin:0;">
                 <tr>
-                    <th><label for="bm-ui-style-preset"><?php esc_html_e('Styl globalny', 'basemgmt'); ?></label></th>
+                    <th style="width:220px;"><label for="bm-ui-radius"><?php esc_html_e('Zaokrąglenie rogów (px)', 'basemgmt'); ?></label></th>
                     <td>
-                        <select id="bm-ui-style-preset" name="bm_ui_style_preset">
-                            <?php foreach ($ui_presets as $preset_key => $preset): ?>
-                                <option value="<?php echo esc_attr($preset_key); ?>" <?php selected($ui_style['preset'], $preset_key); ?>>
-                                    <?php echo esc_html($preset['label']); ?>
-                                </option>
+                        <input type="range" id="bm-ui-radius" name="bm_ui_radius" min="0" max="32" step="1"
+                               value="<?php echo esc_attr($ui_style['radius']); ?>"
+                               oninput="document.getElementById('bm-radius-val').textContent=this.value"
+                               style="width:160px;vertical-align:middle;">
+                        <strong id="bm-radius-val" style="margin-left:6px;font-family:monospace;"><?php echo esc_html($ui_style['radius']); ?></strong> px
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="bm-ui-shadow"><?php esc_html_e('Cień kart', 'basemgmt'); ?></label></th>
+                    <td>
+                        <select id="bm-ui-shadow" name="bm_ui_shadow">
+                            <?php foreach ($shadow_labels as $sv => $sl): ?>
+                            <option value="<?php echo esc_attr($sv); ?>" <?php selected($ui_style['shadow'], $sv); ?>>
+                                <?php echo esc_html($sl); ?>
+                            </option>
                             <?php endforeach; ?>
                         </select>
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="bm-ui-primary-color"><?php esc_html_e('Kolor główny', 'basemgmt'); ?></label></th>
-                    <td><input type="color" id="bm-ui-primary-color" name="bm_ui_primary_color" value="<?php echo esc_attr($ui_style['primary_color']); ?>"></td>
+                    <th><label for="bm-ui-font-family"><?php esc_html_e('Czcionka', 'basemgmt'); ?></label></th>
+                    <td>
+                        <select id="bm-ui-font-family" name="bm_ui_font_family">
+                            <?php foreach ($font_labels as $fv => $fl): ?>
+                            <option value="<?php echo esc_attr($fv); ?>" <?php selected($ui_style['font_family'], $fv); ?>>
+                                <?php echo esc_html($fl); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
                 </tr>
                 <tr>
-                    <th><label for="bm-ui-primary-hover-color"><?php esc_html_e('Kolor hover', 'basemgmt'); ?></label></th>
-                    <td><input type="color" id="bm-ui-primary-hover-color" name="bm_ui_primary_hover_color" value="<?php echo esc_attr($ui_style['primary_hover']); ?>"></td>
-                </tr>
-                <tr>
-                    <th><label for="bm-ui-surface-color"><?php esc_html_e('Tło kart', 'basemgmt'); ?></label></th>
-                    <td><input type="color" id="bm-ui-surface-color" name="bm_ui_surface_color" value="<?php echo esc_attr($ui_style['surface_color']); ?>"></td>
-                </tr>
-                <tr>
-                    <th><label for="bm-ui-border-color"><?php esc_html_e('Kolor obramowań', 'basemgmt'); ?></label></th>
-                    <td><input type="color" id="bm-ui-border-color" name="bm_ui_border_color" value="<?php echo esc_attr($ui_style['border_color']); ?>"></td>
-                </tr>
-                <tr>
-                    <th><label for="bm-ui-background-color"><?php esc_html_e('Kolor tła sekcji', 'basemgmt'); ?></label></th>
-                    <td><input type="color" id="bm-ui-background-color" name="bm_ui_background_color" value="<?php echo esc_attr($ui_style['background']); ?>"></td>
-                </tr>
-                <tr>
-                    <th><label for="bm-ui-text-color"><?php esc_html_e('Kolor tekstu', 'basemgmt'); ?></label></th>
-                    <td><input type="color" id="bm-ui-text-color" name="bm_ui_text_color" value="<?php echo esc_attr($ui_style['text_color']); ?>"></td>
-                </tr>
-                <tr>
-                    <th><label for="bm-ui-radius"><?php esc_html_e('Zaokrąglenie (px)', 'basemgmt'); ?></label></th>
-                    <td><input type="number" id="bm-ui-radius" name="bm_ui_radius" min="0" max="24" value="<?php echo esc_attr($ui_style['radius']); ?>" style="width:90px;"></td>
+                    <th><?php esc_html_e('Nagłówek kart – gradient', 'basemgmt'); ?></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="bm_ui_header_gradient" value="1" <?php checked($ui_style['header_gradient'], '1'); ?>>
+                            <?php esc_html_e('Włącz gradient w nagłówkach kart (primary → hover)', 'basemgmt'); ?>
+                        </label>
+                    </td>
                 </tr>
             </table>
+
             <?php submit_button(__('Zapisz wygląd shortcode', 'basemgmt')); ?>
         </form>
     </div>
 
-    <!-- Test email -->
-    <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
-        <h2 class="hndle" style="padding:0 0 10px;"><?php esc_html_e('Test emaila', 'basemgmt'); ?></h2>
-        <p class="description"><?php esc_html_e('Wyślij testowy email aby sprawdzić wygląd szablonu (reservation_created) i konfigurację serwera pocztowego.', 'basemgmt'); ?></p>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:flex;gap:8px;align-items:center;">
-            <?php wp_nonce_field('bm_send_test_email'); ?>
-            <input type="hidden" name="action" value="bm_send_test_email">
-            <input type="email" name="test_email" value="<?php echo esc_attr(get_option('admin_email')); ?>" class="regular-text" placeholder="test@example.com">
-            <button type="submit" class="button button-secondary"><?php esc_html_e('Wyślij testowy email', 'basemgmt'); ?></button>
-        </form>
-    </div>
+    <!-- Right: live preview -->
+    <div style="position:sticky;top:40px;">
+        <div class="postbox" style="padding:16px 18px;">
+            <h2 class="hndle" style="padding:0 0 10px;font-size:.95rem;">
+                👁 <?php esc_html_e('Podgląd na żywo', 'basemgmt'); ?>
+            </h2>
+            <p class="description" style="margin:0 0 14px;font-size:.8rem;">
+                <?php esc_html_e('Zmiany widoczne są natychmiast – kliknij "Zapisz" aby zastosować.', 'basemgmt'); ?>
+            </p>
+            <div id="bm-style-preview">
+                <div class="prev-section-title">AKTUALNOŚCI</div>
 
-    <!-- Notification settings -->
+                <div class="prev-card">
+                    <div class="prev-card-header">
+                        <span>📋 <?php esc_html_e('Informacje o obozie', 'basemgmt'); ?></span>
+                        <span style="font-size:.78rem;opacity:.85;"><?php esc_html_e('Kadra', 'basemgmt'); ?></span>
+                    </div>
+                    <div class="prev-card-body">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                            <span class="prev-tag"><?php esc_html_e('Aktualności', 'basemgmt'); ?></span>
+                            <span class="prev-tag"><?php esc_html_e('Obóz', 'basemgmt'); ?></span>
+                            <span style="margin-left:auto;font-size:.78rem;color:#888;">19.08.26</span>
+                        </div>
+                        <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">
+                            <?php esc_html_e('Meldunek dzienny – wszystko w porządku', 'basemgmt'); ?>
+                        </div>
+                        <div style="font-size:.84rem;margin-bottom:10px;">
+                            <?php esc_html_e('Liczba uczestników: 48/50, stan sanitarny: dobry, brak incydentów.', 'basemgmt'); ?>
+                        </div>
+                        <a href="#" class="prev-read-more" onclick="return false;">
+                            <?php esc_html_e('Przeczytaj więcej', 'basemgmt'); ?> →
+                        </a>
+                    </div>
+                </div>
+
+                <div class="prev-items-row">
+                    <div class="prev-item">
+                        <span class="prev-tag"><?php esc_html_e('Pogoda', 'basemgmt'); ?></span>
+                        <div class="prev-item-title"><?php esc_html_e('Prognoza na dziś', 'basemgmt'); ?></div>
+                        <div class="prev-item-meta">☀ 24°C, brak opadów</div>
+                    </div>
+                    <div class="prev-item">
+                        <span class="prev-tag"><?php esc_html_e('Plan', 'basemgmt'); ?></span>
+                        <div class="prev-item-title"><?php esc_html_e('Zajęcia 10:00', 'basemgmt'); ?></div>
+                        <div class="prev-item-meta"><?php esc_html_e('Gra terenowa', 'basemgmt'); ?></div>
+                    </div>
+                </div>
+
+                <div class="prev-actions" style="margin-top:16px;">
+                    <button class="prev-btn" type="button"><?php esc_html_e('Wyślij meldunek', 'basemgmt'); ?> →</button>
+                    <button class="prev-btn prev-btn-ghost" type="button"><?php esc_html_e('Historia', 'basemgmt'); ?></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div><!-- /grid -->
+
+<script>
+(function () {
+    var shadows = <?php echo wp_json_encode(PanelStyleSettings::SHADOWS); ?>;
+    var fonts   = <?php echo wp_json_encode(PanelStyleSettings::FONT_FAMILIES); ?>;
+    var p       = document.getElementById('bm-style-preview');
+    if (!p) return;
+
+    function css(prop, val) {
+        p.style.setProperty(prop, val);
+    }
+
+    // Update hex labels next to color pickers
+    function bindColor(id, cssProp) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', function () {
+            css(cssProp, el.value);
+            var hex = el.closest('.bm-style-form-group')?.querySelector('.color-hex');
+            if (hex) hex.textContent = el.value;
+            updateHeader();
+        });
+    }
+
+    function updateHeader() {
+        var grad    = document.querySelector('[name=bm_ui_header_gradient]');
+        var primary = document.getElementById('bm-ui-primary-color');
+        var hover   = document.getElementById('bm-ui-primary-hover-color');
+        if (!grad || !primary || !hover) return;
+        var bg = grad.checked
+            ? 'linear-gradient(135deg,' + primary.value + ',' + hover.value + ')'
+            : primary.value;
+        css('--bmp-header-bg', bg);
+    }
+
+    bindColor('bm-ui-primary-color',     '--bmp-primary');
+    bindColor('bm-ui-primary-hover-color','--bmp-hover');
+    bindColor('bm-ui-badge-color',       '--bmp-badge-bg');
+    bindColor('bm-ui-badge-text-color',  '--bmp-badge-text');
+    bindColor('bm-ui-btn-text-color',    '--bmp-btn-text');
+    bindColor('bm-ui-link-color',        '--bmp-link');
+    bindColor('bm-ui-text-color',        '--bmp-text');
+    bindColor('bm-ui-heading-color',     '--bmp-heading');
+    bindColor('bm-ui-surface-color',     '--bmp-surface');
+    bindColor('bm-ui-background-color',  '--bmp-bg');
+    bindColor('bm-ui-border-color',      '--bmp-border');
+
+    // Radius slider
+    var rng = document.getElementById('bm-ui-radius');
+    if (rng) {
+        rng.addEventListener('input', function () {
+            css('--bmp-radius', rng.value + 'px');
+        });
+    }
+
+    // Shadow select
+    var shd = document.getElementById('bm-ui-shadow');
+    if (shd) {
+        shd.addEventListener('change', function () {
+            css('--bmp-shadow', shadows[shd.value] || 'none');
+        });
+    }
+
+    // Font select
+    var fnt = document.getElementById('bm-ui-font-family');
+    if (fnt) {
+        fnt.addEventListener('change', function () {
+            css('--bmp-font', fonts[fnt.value] || 'sans-serif');
+        });
+    }
+
+    // Gradient checkbox
+    var grd = document.querySelector('[name=bm_ui_header_gradient]');
+    if (grd) {
+        grd.addEventListener('change', updateHeader);
+    }
+
+    // Preset buttons
+    document.querySelectorAll('[data-bm-preset]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var d = JSON.parse(btn.dataset.bmPreset || '{}');
+
+            // Update form fields
+            var map = {
+                'bm-ui-primary-color':       'primary_color',
+                'bm-ui-primary-hover-color': 'primary_hover',
+                'bm-ui-badge-color':         'badge_color',
+                'bm-ui-badge-text-color':    'badge_text_color',
+                'bm-ui-btn-text-color':      'btn_text_color',
+                'bm-ui-link-color':          'link_color',
+                'bm-ui-text-color':          'text_color',
+                'bm-ui-heading-color':       'heading_color',
+                'bm-ui-surface-color':       'surface_color',
+                'bm-ui-background-color':    'background',
+                'bm-ui-border-color':        'border_color',
+            };
+            for (var id in map) {
+                var el = document.getElementById(id);
+                if (el && map[id] in d && d[map[id]] !== undefined) {
+                    el.value = d[map[id]];
+                    el.dispatchEvent(new Event('input'));
+                }
+            }
+
+            // Radius
+            var rv = document.getElementById('bm-ui-radius');
+            if (rv && d.radius) {
+                rv.value = d.radius;
+                document.getElementById('bm-radius-val').textContent = d.radius;
+                rv.dispatchEvent(new Event('input'));
+            }
+
+            // Shadow
+            if (shd && d.shadow) { shd.value = d.shadow; shd.dispatchEvent(new Event('change')); }
+
+            // Font
+            if (fnt && d.font_family) { fnt.value = d.font_family; fnt.dispatchEvent(new Event('change')); }
+
+            // Gradient
+            if (grd) { grd.checked = (d.header_gradient === '1'); grd.dispatchEvent(new Event('change')); }
+
+            // Preset key
+            var pk = document.getElementById('bm-ui-style-preset');
+            if (pk && d.key) pk.value = d.key;
+
+            // Highlight active preset button
+            document.querySelectorAll('[data-bm-preset]').forEach(function (b) {
+                b.classList.remove('button-primary');
+                b.classList.add('button');
+            });
+            btn.classList.add('button-primary');
+        });
+    });
+
+    // Init preview vars from current values on page load
+    (function initPreview() {
+        var colorMap = {
+            'bm-ui-primary-color':       '--bmp-primary',
+            'bm-ui-primary-hover-color': '--bmp-hover',
+            'bm-ui-badge-color':         '--bmp-badge-bg',
+            'bm-ui-badge-text-color':    '--bmp-badge-text',
+            'bm-ui-btn-text-color':      '--bmp-btn-text',
+            'bm-ui-link-color':          '--bmp-link',
+            'bm-ui-text-color':          '--bmp-text',
+            'bm-ui-heading-color':       '--bmp-heading',
+            'bm-ui-surface-color':       '--bmp-surface',
+            'bm-ui-background-color':    '--bmp-bg',
+            'bm-ui-border-color':        '--bmp-border',
+        };
+        for (var id in colorMap) {
+            var el = document.getElementById(id);
+            if (el) css(colorMap[id], el.value);
+        }
+        if (rng) css('--bmp-radius', rng.value + 'px');
+        if (shd) css('--bmp-shadow', shadows[shd.value] || 'none');
+        if (fnt) css('--bmp-font',   fonts[fnt.value]   || 'sans-serif');
+        updateHeader();
+    })();
+})();
+</script>
+
+<?php /* ══════════════════════════════════════════ POWIADOMIENIA TAB ══ */ ?>
+<?php elseif ($current_tab === 'powiadomienia'): ?>
+
     <div class="postbox" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
         <h2 class="hndle" style="padding:0 0 10px;">🔔 <?php esc_html_e('Konfiguracja powiadomień', 'basemgmt'); ?></h2>
         <p class="description" style="margin:0 0 14px;">
@@ -239,6 +741,7 @@ wp_enqueue_style('wp-codemirror');
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
             <?php wp_nonce_field('bm_save_settings'); ?>
             <input type="hidden" name="action" value="bm_save_settings">
+            <input type="hidden" name="_bm_current_tab" value="<?php echo esc_attr($current_tab); ?>">
             <!-- Pass email settings fields as hidden so existing values are preserved -->
             <input type="hidden" name="from_name"          value="<?php echo esc_attr($s['from_name']); ?>">
             <input type="hidden" name="from_email"         value="<?php echo esc_attr($s['from_email']); ?>">
@@ -302,6 +805,9 @@ wp_enqueue_style('wp-codemirror');
         </form>
     </div>
 
+<?php /* ═══════════════════════════════════════════════════════ DANE TAB ══ */ ?>
+<?php elseif ($current_tab === 'dane'): ?>
+
     <!-- Translations -->
     <div class="postbox" id="translations" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
         <h2 class="hndle" style="padding:0 0 10px;">🌐 <?php esc_html_e('Tłumaczenia', 'basemgmt'); ?></h2>
@@ -358,7 +864,6 @@ wp_enqueue_style('wp-codemirror');
         </p>
     </div>
 
-
     <!-- Backup / Import / Clear -->
     <div class="postbox" id="backup" style="max-width:700px;padding:16px 20px;margin-bottom:24px;">
         <h2 class="hndle" style="padding:0 0 10px;">🗄 <?php esc_html_e('Zarządzanie danymi wtyczki', 'basemgmt'); ?></h2>
@@ -366,7 +871,6 @@ wp_enqueue_style('wp-codemirror');
             <?php esc_html_e('Wykonaj pełny backup danych wtyczki, przywróć dane z pliku backupu lub wyczyść wszystkie dane.', 'basemgmt'); ?>
         </p>
 
-        <!-- Backup download -->
         <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #dcdcde;">
             <h3 style="margin:0 0 6px;"><?php esc_html_e('Pobierz backup', 'basemgmt'); ?></h3>
             <p class="description"><?php esc_html_e('Eksportuje wszystkie tabele wtyczki do pliku JSON.', 'basemgmt'); ?></p>
@@ -379,7 +883,6 @@ wp_enqueue_style('wp-codemirror');
             </form>
         </div>
 
-        <!-- Import -->
         <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #dcdcde;">
             <h3 style="margin:0 0 6px;"><?php esc_html_e('Importuj z backupu', 'basemgmt'); ?></h3>
             <p class="description" style="color:#d63638;font-weight:600;">
@@ -396,7 +899,6 @@ wp_enqueue_style('wp-codemirror');
             </form>
         </div>
 
-        <!-- Clear all data -->
         <div>
             <h3 style="margin:0 0 6px;"><?php esc_html_e('Wyczyść wszystkie dane', 'basemgmt'); ?></h3>
             <p class="description" style="color:#d63638;font-weight:600;">
@@ -413,7 +915,9 @@ wp_enqueue_style('wp-codemirror');
         </div>
     </div>
 
-    <!-- Plugin info -->
+<?php /* ═══════════════════════════════════════════════════════ INFO TAB ══ */ ?>
+<?php elseif ($current_tab === 'info'): ?>
+
     <div class="postbox" style="max-width:700px;padding:16px 20px;">
         <h2 class="hndle" style="padding:0 0 10px;"><?php esc_html_e('O pluginie', 'basemgmt'); ?></h2>
         <p><?php printf(esc_html__('Baza Obozowa v%s', 'basemgmt'), esc_html(BASEMGMT_VERSION)); ?></p>
@@ -428,7 +932,9 @@ wp_enqueue_style('wp-codemirror');
             </a>
         </p>
     </div>
-</div>
+
+<?php endif; ?>
+</div><!-- /.wrap -->
 
 <script>
 (function() {
