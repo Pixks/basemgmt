@@ -90,6 +90,11 @@ final class ShortcodeHandler {
 		);
 		wp_add_inline_style('basemgmt-shortcodes', PanelStyleSettings::build_inline_css());
 
+		$custom_font_url = PanelStyleSettings::get_custom_font_url();
+		if ( $custom_font_url !== '' ) {
+			wp_enqueue_style('basemgmt-custom-font', $custom_font_url, [], null);
+		}
+
 		wp_enqueue_script(
 			'basemgmt-api',
 			BASEMGMT_URL . 'assets/js/bm-api.js',
