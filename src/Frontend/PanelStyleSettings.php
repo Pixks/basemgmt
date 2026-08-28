@@ -15,6 +15,7 @@ final class PanelStyleSettings {
 		'roboto'     => 'Roboto, "Open Sans", system-ui, sans-serif',
 		'nunito'     => 'Nunito, "Open Sans", system-ui, sans-serif',
 		'system'     => 'system-ui, -apple-system, sans-serif',
+		'custom'     => 'sans-serif',  // overridden at runtime by custom_font_name
 	];
 
 	/** Allowed shadow values (index = stored value, value = CSS box-shadow). */
@@ -42,6 +43,7 @@ final class PanelStyleSettings {
 				'badge_text_color'=> '#FFFFFF',
 				'link_color'      => '#5A8D24',
 				'radius'          => '10',
+				'btn_radius'      => '999',
 				'shadow'          => 'md',
 				'font_family'     => 'open-sans',
 				'header_gradient' => '0',
@@ -60,6 +62,7 @@ final class PanelStyleSettings {
 				'badge_text_color'=> '#FFFFFF',
 				'link_color'      => '#1B5E33',
 				'radius'          => '8',
+				'btn_radius'      => '999',
 				'shadow'          => 'sm',
 				'font_family'     => 'lato',
 				'header_gradient' => '1',
@@ -78,6 +81,7 @@ final class PanelStyleSettings {
 				'badge_text_color'=> '#FFFFFF',
 				'link_color'      => '#1D4ED8',
 				'radius'          => '8',
+				'btn_radius'      => '999',
 				'shadow'          => 'sm',
 				'font_family'     => 'roboto',
 				'header_gradient' => '1',
@@ -96,6 +100,7 @@ final class PanelStyleSettings {
 				'badge_text_color'=> '#FFFFFF',
 				'link_color'      => '#92400E',
 				'radius'          => '10',
+				'btn_radius'      => '999',
 				'shadow'          => 'md',
 				'font_family'     => 'nunito',
 				'header_gradient' => '0',
@@ -127,9 +132,12 @@ final class PanelStyleSettings {
 			'badge_text_color' => self::get_color_option('bm_ui_badge_text_color',      $base['badge_text_color']),
 			'link_color'       => self::get_color_option('bm_ui_link_color',            $base['link_color']),
 			'radius'           => (string) self::get_radius_option('bm_ui_radius', (int) $base['radius']),
+			'btn_radius'       => (string) self::get_btn_radius_option('bm_ui_btn_radius', (int) ($base['btn_radius'] ?? 999)),
 			'shadow'           => self::get_shadow_option('bm_ui_shadow', $base['shadow']),
 			'font_family'      => self::get_font_option('bm_ui_font_family', $base['font_family']),
 			'header_gradient'  => ((string) get_option('bm_ui_header_gradient', $base['header_gradient'])) === '1' ? '1' : '0',
+			'custom_font_url'  => esc_url_raw((string) get_option('bm_ui_custom_font_url', '')),
+			'custom_font_name' => sanitize_text_field((string) get_option('bm_ui_custom_font_name', '')),
 		];
 	}
 
@@ -155,6 +163,10 @@ final class PanelStyleSettings {
 			? max(0, min(32, (int) $input['bm_ui_radius']))
 			: (int) $current['radius'];
 
+		$btn_radius = array_key_exists('bm_ui_btn_radius', $input)
+			? max(0, min(999, (int) $input['bm_ui_btn_radius']))
+			: (int) $current['btn_radius'];
+
 		$shadow = array_key_exists('bm_ui_shadow', $input)
 			? (array_key_exists($input['bm_ui_shadow'], self::SHADOWS) ? (string) $input['bm_ui_shadow'] : $current['shadow'])
 			: $current['shadow'];
@@ -164,6 +176,9 @@ final class PanelStyleSettings {
 			: $current['font_family'];
 
 		$gradient = ! empty($input['bm_ui_header_gradient']) ? '1' : '0';
+
+		$custom_font_url  = esc_url_raw((string) ($input['bm_ui_custom_font_url'] ?? $current['custom_font_url']));
+		$custom_font_name = sanitize_text_field((string) ($input['bm_ui_custom_font_name'] ?? $current['custom_font_name']));
 
 		update_option('bm_ui_style_preset',        $preset);
 		update_option('bm_ui_primary_color',        $set_color('bm_ui_primary_color',       $current['primary_color']));
@@ -178,15 +193,26 @@ final class PanelStyleSettings {
 		update_option('bm_ui_badge_text_color',     $set_color('bm_ui_badge_text_color',     $current['badge_text_color']));
 		update_option('bm_ui_link_color',           $set_color('bm_ui_link_color',           $current['link_color']));
 		update_option('bm_ui_radius',               $radius);
+		update_option('bm_ui_btn_radius',           $btn_radius);
 		update_option('bm_ui_shadow',               $shadow);
 		update_option('bm_ui_font_family',          $font);
 		update_option('bm_ui_header_gradient',      $gradient);
+		update_option('bm_ui_custom_font_url',      $custom_font_url);
+		update_option('bm_ui_custom_font_name',     $custom_font_name);
 	}
 
 	public static function build_inline_css(): string {
 		$settings   = self::get_settings();
 		$shadow_css = self::SHADOWS[$settings['shadow']] ?? self::SHADOWS['sm'];
-		$font_css   = self::FONT_FAMILIES[$settings['font_family']] ?? self::FONT_FAMILIES['lato'];
+		$font_key   = $settings['font_family'];
+		$font_css   = self::FONT_FAMILIES[$font_key] ?? self::FONT_FAMILIES['lato'];
+
+		// For custom font, build the CSS stack from the saved font name.
+		if ( $font_key === 'custom' && $settings['custom_font_name'] !== '' ) {
+			$name     = $settings['custom_font_name'];
+			$font_css = '"' . addslashes($name) . '", sans-serif';
+		}
+
 		$gradient   = $settings['header_gradient'] === '1'
 			? 'linear-gradient(135deg,var(--bm-primary),var(--bm-primary-hover))'
 			: 'var(--bm-primary)';
@@ -205,6 +231,7 @@ final class PanelStyleSettings {
 				'--bm-badge-text:%10$s;' .
 				'--bm-link:%11$s;' .
 				'--bm-radius:%12$spx;' .
+				'--bm-radius-pill:%16$spx;' .
 				// %13$s, %14$s, %15$s come from hardcoded internal constants
 				// (self::SHADOWS / FONT_FAMILIES arrays) — never user input, no escaping needed.
 				// %14$s may contain CSS double-quotes (e.g. "Open Sans") which esc_attr would break.
@@ -226,7 +253,8 @@ final class PanelStyleSettings {
 			esc_attr($settings['radius']),
 			$shadow_css,
 			$font_css,
-			$gradient
+			$gradient,
+			esc_attr($settings['btn_radius'])
 		);
 	}
 
@@ -238,6 +266,16 @@ final class PanelStyleSettings {
 	private static function get_radius_option(string $key, int $fallback): int {
 		$val = (int) get_option($key, $fallback);
 		return max(0, min(32, $val));
+	}
+
+	private static function get_btn_radius_option(string $key, int $fallback): int {
+		$val = (int) get_option($key, $fallback);
+		return max(0, min(999, $val));
+	}
+
+	/** Returns the stored custom font URL, or empty string if none set. */
+	public static function get_custom_font_url(): string {
+		return esc_url_raw((string) get_option('bm_ui_custom_font_url', ''));
 	}
 
 	private static function get_shadow_option(string $key, string $fallback): string {

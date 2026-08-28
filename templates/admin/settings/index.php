@@ -221,6 +221,7 @@ $font_labels = [
 	'roboto'    => 'Roboto',
 	'nunito'    => 'Nunito',
 	'system'    => __('Systemowy', 'basemgmt'),
+	'custom'    => __('Własna czcionka', 'basemgmt'),
 ];
 ?>
 <style>
@@ -270,7 +271,7 @@ $font_labels = [
     background: var(--bmp-primary, #6EA82E);
     color: var(--bmp-btn-text, #fff);
     border: none;
-    border-radius: 999px;
+    border-radius: var(--bmp-radius-pill, 999px);
     padding: 9px 20px;
     font-weight: 700;
     font-size: .88rem;
@@ -289,7 +290,7 @@ $font_labels = [
     color: var(--bmp-badge-text, #fff);
     font-size: .72rem;
     font-weight: 700;
-    border-radius: 999px;
+    border-radius: var(--bmp-radius-pill, 999px);
     padding: 3px 10px;
     letter-spacing: .03em;
 }
@@ -369,6 +370,29 @@ $font_labels = [
     padding-bottom: 6px;
     margin: 24px 0 16px;
 }
+.bm-prev-tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+.bm-prev-tab {
+    padding: 5px 12px;
+    font-size: .78rem;
+    font-weight: 600;
+    border: 1px solid #c9d0d8;
+    border-radius: 4px;
+    background: #f6f7f9;
+    color: #444;
+    cursor: pointer;
+}
+.bm-prev-tab.active {
+    background: #2271b1;
+    color: #fff;
+    border-color: #2271b1;
+}
+.bm-prev-pane { display: none; }
+.bm-prev-pane.active { display: block; }
 </style>
 
 <div style="display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:start;max-width:1180px;">
@@ -475,6 +499,23 @@ $font_labels = [
                     </td>
                 </tr>
                 <tr>
+                    <th style="width:220px;"><label for="bm-ui-btn-radius"><?php esc_html_e('Zaokrąglenie przycisków / etykiet (px)', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="range" id="bm-ui-btn-radius" min="0" max="32" step="1"
+                               value="<?php echo esc_attr(min(32, (int)$ui_style['btn_radius'])); ?>"
+                               style="width:160px;vertical-align:middle;">
+                        <input type="hidden" id="bm-ui-btn-radius-actual" name="bm_ui_btn_radius"
+                               value="<?php echo esc_attr($ui_style['btn_radius']); ?>">
+                        <strong id="bm-btn-radius-val" style="margin-left:6px;font-family:monospace;">
+                            <?php
+                            $bv = (int)$ui_style['btn_radius'];
+                            echo $bv >= 32 ? esc_html__('Pill', 'basemgmt') : esc_html((string)$bv);
+                            ?>
+                        </strong> px
+                        <span class="description" style="display:block;margin-top:3px;"><?php esc_html_e('Przesuń na max = styl pill (999px). Dotyczy przycisków, badge i tagów.', 'basemgmt'); ?></span>
+                    </td>
+                </tr>
+                <tr>
                     <th><label for="bm-ui-shadow"><?php esc_html_e('Cień kart', 'basemgmt'); ?></label></th>
                     <td>
                         <select id="bm-ui-shadow" name="bm_ui_shadow">
@@ -498,6 +539,24 @@ $font_labels = [
                         </select>
                     </td>
                 </tr>
+                <tr id="bm-row-custom-font-url">
+                    <th><label for="bm-ui-custom-font-url"><?php esc_html_e('URL własnej czcionki', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="url" id="bm-ui-custom-font-url" name="bm_ui_custom_font_url" class="large-text"
+                               value="<?php echo esc_attr($ui_style['custom_font_url']); ?>"
+                               placeholder="https://fonts.googleapis.com/css2?family=...">
+                        <p class="description"><?php esc_html_e('URL do pliku CSS z czcionką (np. Google Fonts). Wklej link z atrybutu href tagu <link>.', 'basemgmt'); ?></p>
+                    </td>
+                </tr>
+                <tr id="bm-row-custom-font-name">
+                    <th><label for="bm-ui-custom-font-name"><?php esc_html_e('Nazwa własnej czcionki', 'basemgmt'); ?></label></th>
+                    <td>
+                        <input type="text" id="bm-ui-custom-font-name" name="bm_ui_custom_font_name" class="regular-text"
+                               value="<?php echo esc_attr($ui_style['custom_font_name']); ?>"
+                               placeholder="<?php esc_attr_e('np. Montserrat', 'basemgmt'); ?>">
+                        <p class="description"><?php esc_html_e('Dokładna nazwa font-family, np. "Montserrat". Wymagana gdy wybrana czcionka to "Własna".', 'basemgmt'); ?></p>
+                    </td>
+                </tr>
                 <tr>
                     <th><?php esc_html_e('Nagłówek kart – gradient', 'basemgmt'); ?></th>
                     <td>
@@ -519,53 +578,149 @@ $font_labels = [
             <h2 class="hndle" style="padding:0 0 10px;font-size:.95rem;">
                 👁 <?php esc_html_e('Podgląd na żywo', 'basemgmt'); ?>
             </h2>
-            <p class="description" style="margin:0 0 14px;font-size:.8rem;">
+            <p class="description" style="margin:0 0 10px;font-size:.8rem;">
                 <?php esc_html_e('Zmiany widoczne są natychmiast – kliknij "Zapisz" aby zastosować.', 'basemgmt'); ?>
             </p>
-            <div id="bm-style-preview">
-                <div class="prev-section-title">AKTUALNOŚCI</div>
-
-                <div class="prev-card">
-                    <div class="prev-card-header">
-                        <span>📋 <?php esc_html_e('Informacje o obozie', 'basemgmt'); ?></span>
-                        <span style="font-size:.78rem;opacity:.85;"><?php esc_html_e('Kadra', 'basemgmt'); ?></span>
-                    </div>
-                    <div class="prev-card-body">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                            <span class="prev-tag"><?php esc_html_e('Aktualności', 'basemgmt'); ?></span>
-                            <span class="prev-tag"><?php esc_html_e('Obóz', 'basemgmt'); ?></span>
-                            <span style="margin-left:auto;font-size:.78rem;color:#888;">19.08.26</span>
-                        </div>
-                        <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">
-                            <?php esc_html_e('Meldunek dzienny – wszystko w porządku', 'basemgmt'); ?>
-                        </div>
-                        <div style="font-size:.84rem;margin-bottom:10px;">
-                            <?php esc_html_e('Liczba uczestników: 48/50, stan sanitarny: dobry, brak incydentów.', 'basemgmt'); ?>
-                        </div>
-                        <a href="#" class="prev-read-more" onclick="return false;">
-                            <?php esc_html_e('Przeczytaj więcej', 'basemgmt'); ?> →
-                        </a>
-                    </div>
-                </div>
-
-                <div class="prev-items-row">
-                    <div class="prev-item">
-                        <span class="prev-tag"><?php esc_html_e('Pogoda', 'basemgmt'); ?></span>
-                        <div class="prev-item-title"><?php esc_html_e('Prognoza na dziś', 'basemgmt'); ?></div>
-                        <div class="prev-item-meta">☀ 24°C, brak opadów</div>
-                    </div>
-                    <div class="prev-item">
-                        <span class="prev-tag"><?php esc_html_e('Plan', 'basemgmt'); ?></span>
-                        <div class="prev-item-title"><?php esc_html_e('Zajęcia 10:00', 'basemgmt'); ?></div>
-                        <div class="prev-item-meta"><?php esc_html_e('Gra terenowa', 'basemgmt'); ?></div>
-                    </div>
-                </div>
-
-                <div class="prev-actions" style="margin-top:16px;">
-                    <button class="prev-btn" type="button"><?php esc_html_e('Wyślij meldunek', 'basemgmt'); ?> →</button>
-                    <button class="prev-btn prev-btn-ghost" type="button"><?php esc_html_e('Historia', 'basemgmt'); ?></button>
-                </div>
+            <div class="bm-prev-tabs">
+                <button type="button" class="bm-prev-tab active" data-pane="prev-announcements"><?php esc_html_e('Aktualności', 'basemgmt'); ?></button>
+                <button type="button" class="bm-prev-tab" data-pane="prev-login"><?php esc_html_e('Logowanie', 'basemgmt'); ?></button>
+                <button type="button" class="bm-prev-tab" data-pane="prev-schedule"><?php esc_html_e('Plan dnia', 'basemgmt'); ?></button>
+                <button type="button" class="bm-prev-tab" data-pane="prev-reservations"><?php esc_html_e('Rezerwacje', 'basemgmt'); ?></button>
             </div>
+            <div id="bm-style-preview">
+
+                <!-- Pane: Aktualności -->
+                <div id="prev-announcements" class="bm-prev-pane active">
+                    <div class="prev-section-title">AKTUALNOŚCI</div>
+
+                    <div class="prev-card">
+                        <div class="prev-card-header">
+                            <span>📋 <?php esc_html_e('Informacje o obozie', 'basemgmt'); ?></span>
+                            <span style="font-size:.78rem;opacity:.85;"><?php esc_html_e('Kadra', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="prev-card-body">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                <span class="prev-tag"><?php esc_html_e('Aktualności', 'basemgmt'); ?></span>
+                                <span class="prev-tag"><?php esc_html_e('Obóz', 'basemgmt'); ?></span>
+                                <span style="margin-left:auto;font-size:.78rem;color:#888;">19.08.26</span>
+                            </div>
+                            <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">
+                                <?php esc_html_e('Meldunek dzienny – wszystko w porządku', 'basemgmt'); ?>
+                            </div>
+                            <div style="font-size:.84rem;margin-bottom:10px;">
+                                <?php esc_html_e('Liczba uczestników: 48/50, stan sanitarny: dobry, brak incydentów.', 'basemgmt'); ?>
+                            </div>
+                            <a href="#" class="prev-read-more" onclick="return false;">
+                                <?php esc_html_e('Przeczytaj więcej', 'basemgmt'); ?> →
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="prev-items-row">
+                        <div class="prev-item">
+                            <span class="prev-tag"><?php esc_html_e('Pogoda', 'basemgmt'); ?></span>
+                            <div class="prev-item-title"><?php esc_html_e('Prognoza na dziś', 'basemgmt'); ?></div>
+                            <div class="prev-item-meta">☀ 24°C, brak opadów</div>
+                        </div>
+                        <div class="prev-item">
+                            <span class="prev-tag"><?php esc_html_e('Plan', 'basemgmt'); ?></span>
+                            <div class="prev-item-title"><?php esc_html_e('Zajęcia 10:00', 'basemgmt'); ?></div>
+                            <div class="prev-item-meta"><?php esc_html_e('Gra terenowa', 'basemgmt'); ?></div>
+                        </div>
+                    </div>
+
+                    <div class="prev-actions" style="margin-top:16px;">
+                        <button class="prev-btn" type="button"><?php esc_html_e('Wyślij meldunek', 'basemgmt'); ?> →</button>
+                        <button class="prev-btn prev-btn-ghost" type="button"><?php esc_html_e('Historia', 'basemgmt'); ?></button>
+                    </div>
+                </div><!-- /prev-announcements -->
+
+                <!-- Pane: Logowanie -->
+                <div id="prev-login" class="bm-prev-pane">
+                    <div class="prev-section-title"><?php esc_html_e('PANEL KADRY', 'basemgmt'); ?></div>
+                    <div class="prev-card">
+                        <div class="prev-card-header">
+                            <span>🔐 <?php esc_html_e('Logowanie', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="prev-card-body">
+                            <div style="margin-bottom:10px;">
+                                <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:4px;"><?php esc_html_e('Adres e-mail', 'basemgmt'); ?></label>
+                                <input type="text" readonly value="kadra@oboz.pl" style="width:100%;padding:7px 10px;border:1px solid var(--bmp-border,#E0E6E0);border-radius:6px;font-size:.88rem;background:var(--bmp-surface,#fff);">
+                            </div>
+                            <div style="margin-bottom:14px;">
+                                <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:4px;"><?php esc_html_e('Hasło', 'basemgmt'); ?></label>
+                                <input type="text" readonly value="••••••••" style="width:100%;padding:7px 10px;border:1px solid var(--bmp-border,#E0E6E0);border-radius:6px;font-size:.88rem;background:var(--bmp-surface,#fff);">
+                            </div>
+                            <div class="prev-actions">
+                                <button class="prev-btn" type="button"><?php esc_html_e('Zaloguj się', 'basemgmt'); ?></button>
+                            </div>
+                            <div style="margin-top:10px;font-size:.8rem;">
+                                <a href="#" class="prev-read-more" onclick="return false;"><?php esc_html_e('Nie pamiętam hasła', 'basemgmt'); ?></a>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /prev-login -->
+
+                <!-- Pane: Plan dnia -->
+                <div id="prev-schedule" class="bm-prev-pane">
+                    <div class="prev-section-title"><?php esc_html_e('PLAN DNIA', 'basemgmt'); ?></div>
+                    <?php
+                    $sched = [
+                        ['07:30', __('Pobudka i poranna zbiórka', 'basemgmt'),      __('Obowiązkowa', 'basemgmt')],
+                        ['09:00', __('Śniadanie', 'basemgmt'),                      __('Stołówka', 'basemgmt')],
+                        ['10:30', __('Gra terenowa – Las Północny', 'basemgmt'),    __('Aktywność', 'basemgmt')],
+                        ['13:00', __('Obiad', 'basemgmt'),                          __('Stołówka', 'basemgmt')],
+                        ['15:00', __('Czas wolny / warsztaty', 'basemgmt'),         __('Opcjonalne', 'basemgmt')],
+                        ['19:00', __('Kolacja i wieczorny apel', 'basemgmt'),       __('Obowiązkowa', 'basemgmt')],
+                    ];
+                    ?>
+                    <div class="prev-card">
+                        <div class="prev-card-header">
+                            <span>📅 <?php esc_html_e('Czwartek, 28 sierpnia', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="prev-card-body" style="padding:8px 16px;">
+                            <?php foreach ($sched as [$time, $title, $cat]): ?>
+                            <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bmp-border,#E0E6E0);">
+                                <span style="font-size:.78rem;font-weight:700;color:var(--bmp-primary,#6EA82E);min-width:36px;"><?php echo esc_html($time); ?></span>
+                                <span style="flex:1;font-size:.88rem;"><?php echo esc_html($title); ?></span>
+                                <span class="prev-tag"><?php echo esc_html($cat); ?></span>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div><!-- /prev-schedule -->
+
+                <!-- Pane: Rezerwacje -->
+                <div id="prev-reservations" class="bm-prev-pane">
+                    <div class="prev-section-title"><?php esc_html_e('REZERWACJE', 'basemgmt'); ?></div>
+                    <div class="prev-card">
+                        <div class="prev-card-header">
+                            <span>🏕 <?php esc_html_e('Lista rezerwacji', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="prev-card-body" style="padding:8px 16px;">
+                            <?php
+                            $resv = [
+                                [__('Kowalski Jan', 'basemgmt'),     __('Uczestnik', 'basemgmt'),   __('Opłacona', 'basemgmt')],
+                                [__('Nowak Anna', 'basemgmt'),       __('Uczestnik', 'basemgmt'),   __('Oczekuje', 'basemgmt')],
+                                [__('Wiśniewska Ola', 'basemgmt'),  __('Kadra', 'basemgmt'),       __('Opłacona', 'basemgmt')],
+                            ];
+                            ?>
+                            <?php foreach ($resv as [$name, $role, $status]): ?>
+                            <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bmp-border,#E0E6E0);">
+                                <span style="flex:1;font-size:.88rem;font-weight:600;"><?php echo esc_html($name); ?></span>
+                                <span class="prev-tag"><?php echo esc_html($role); ?></span>
+                                <span class="prev-tag" style="background:var(--bmp-surface,#fff);color:var(--bmp-text,#333);border:1px solid var(--bmp-border,#E0E6E0);"><?php echo esc_html($status); ?></span>
+                            </div>
+                            <?php endforeach; ?>
+                            <div class="prev-actions" style="margin-top:12px;">
+                                <button class="prev-btn" type="button"><?php esc_html_e('Nowa rezerwacja', 'basemgmt'); ?> +</button>
+                                <button class="prev-btn prev-btn-ghost" type="button"><?php esc_html_e('Eksportuj', 'basemgmt'); ?></button>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /prev-reservations -->
+
+            </div><!-- /bm-style-preview -->
         </div>
     </div>
 </div><!-- /grid -->
@@ -616,12 +771,27 @@ $font_labels = [
     bindColor('bm-ui-background-color',  '--bmp-bg');
     bindColor('bm-ui-border-color',      '--bmp-border');
 
-    // Radius slider
+    // Card radius slider
     var rng = document.getElementById('bm-ui-radius');
     if (rng) {
         rng.addEventListener('input', function () {
             css('--bmp-radius', rng.value + 'px');
         });
+    }
+
+    // Button / badge radius slider
+    var btnRng    = document.getElementById('bm-ui-btn-radius');
+    var btnActual = document.getElementById('bm-ui-btn-radius-actual');
+    var btnLabel  = document.getElementById('bm-btn-radius-val');
+    function updateBtnRadius() {
+        var v = parseInt(btnRng.value, 10);
+        var actual = (v >= 32) ? 999 : v;
+        if (btnActual) btnActual.value = actual;
+        if (btnLabel)  btnLabel.textContent = (v >= 32) ? '<?php echo esc_js(__('Pill', 'basemgmt')); ?>' : v;
+        css('--bmp-radius-pill', actual + 'px');
+    }
+    if (btnRng) {
+        btnRng.addEventListener('input', updateBtnRadius);
     }
 
     // Shadow select
@@ -632,12 +802,27 @@ $font_labels = [
         });
     }
 
-    // Font select
-    var fnt = document.getElementById('bm-ui-font-family');
-    if (fnt) {
-        fnt.addEventListener('change', function () {
+    // Font select + custom font rows visibility
+    var fnt         = document.getElementById('bm-ui-font-family');
+    var rowFontUrl  = document.getElementById('bm-row-custom-font-url');
+    var rowFontName = document.getElementById('bm-row-custom-font-name');
+    var fontName    = document.getElementById('bm-ui-custom-font-name');
+    function updateFontPreview() {
+        if (!fnt) return;
+        var isCustom = fnt.value === 'custom';
+        if (rowFontUrl)  rowFontUrl.style.display  = isCustom ? '' : 'none';
+        if (rowFontName) rowFontName.style.display  = isCustom ? '' : 'none';
+        if (isCustom && fontName && fontName.value) {
+            css('--bmp-font', '"' + fontName.value + '", sans-serif');
+        } else {
             css('--bmp-font', fonts[fnt.value] || 'sans-serif');
-        });
+        }
+    }
+    if (fnt) {
+        fnt.addEventListener('change', updateFontPreview);
+    }
+    if (fontName) {
+        fontName.addEventListener('input', updateFontPreview);
     }
 
     // Gradient checkbox
@@ -673,12 +858,19 @@ $font_labels = [
                 }
             }
 
-            // Radius
+            // Card radius
             var rv = document.getElementById('bm-ui-radius');
             if (rv && d.radius) {
                 rv.value = d.radius;
                 document.getElementById('bm-radius-val').textContent = d.radius;
                 rv.dispatchEvent(new Event('input'));
+            }
+
+            // Button radius
+            if (btnRng && d.btn_radius !== undefined) {
+                var bv = Math.min(32, parseInt(d.btn_radius, 10));
+                btnRng.value = bv;
+                updateBtnRadius();
             }
 
             // Shadow
@@ -703,6 +895,17 @@ $font_labels = [
         });
     });
 
+    // Preview tab switching
+    document.querySelectorAll('.bm-prev-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.bm-prev-tab').forEach(function (t) { t.classList.remove('active'); });
+            document.querySelectorAll('.bm-prev-pane').forEach(function (pane) { pane.classList.remove('active'); });
+            tab.classList.add('active');
+            var target = document.getElementById(tab.dataset.pane);
+            if (target) target.classList.add('active');
+        });
+    });
+
     // Init preview vars from current values on page load
     (function initPreview() {
         var colorMap = {
@@ -722,9 +925,10 @@ $font_labels = [
             var el = document.getElementById(id);
             if (el) css(colorMap[id], el.value);
         }
-        if (rng) css('--bmp-radius', rng.value + 'px');
-        if (shd) css('--bmp-shadow', shadows[shd.value] || 'none');
-        if (fnt) css('--bmp-font',   fonts[fnt.value]   || 'sans-serif');
+        if (rng)    css('--bmp-radius', rng.value + 'px');
+        if (btnRng) updateBtnRadius();
+        if (shd)    css('--bmp-shadow', shadows[shd.value] || 'none');
+        updateFontPreview();
         updateHeader();
     })();
 })();
