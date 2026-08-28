@@ -176,14 +176,26 @@ final class ShortcodeHandler {
 	public function render_panel_session_guard($atts = [], string $content = ''): string {
 		$this->render_init();
 		$atts = shortcode_atts([
-			'logged' => '1',
+			'logged'   => '1',
+			'redirect' => '',
 		], is_array($atts) ? $atts : []);
 
 		$show_if_logged = ! in_array((string) $atts['logged'], ['0', 'false', 'no'], true);
 		$condition = $show_if_logged ? '$store.bm.authenticated' : '!$store.bm.authenticated';
 
+		$redirect_snippet = '';
+		if ( ! empty( $atts['redirect'] ) ) {
+			$redirect_url    = esc_url( (string) $atts['redirect'] );
+			$redirect_snippet = sprintf(
+				' x-init="$watch(\'$store.bm.authenticated\', v => { if (%s) { window.location.href = %s; } })"',
+				$show_if_logged ? 'v' : '!v',
+				wp_json_encode( $redirect_url )
+			);
+		}
+
 		return sprintf(
-			'<div class="bm-ui bm-ui--session-guard" x-cloak x-show="%s">%s</div>',
+			'<div class="bm-ui bm-ui--session-guard"%s x-cloak x-show="%s">%s</div>',
+			$redirect_snippet,
 			esc_attr($condition),
 			do_shortcode($content)
 		);
@@ -197,7 +209,7 @@ final class ShortcodeHandler {
 
 		switch ($type) {
 			case 'login':
-				return $this->panel_login();
+				return $this->panel_login($atts);
 			case 'camp_header':
 				return $this->panel_camp_header();
 			case 'logout':
@@ -246,8 +258,10 @@ final class ShortcodeHandler {
 		}
 	}
 
-	private function panel_login(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmLogin()" x-init="init()" x-cloak x-show="!$store.bm.authenticated">'
+	private function panel_login( array $atts = [] ): string {
+		$redirect_url = isset( $atts['redirect_url'] ) ? esc_url( (string) $atts['redirect_url'] ) : '';
+		$redirect_attr = $redirect_url ? ' data-bm-redirect="' . $redirect_url . '"' : '';
+		return '<div class="bm-ui bm-ui--card" x-data="bmLogin()" x-init="init()" x-cloak x-show="!$store.bm.authenticated"' . $redirect_attr . '>'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Panel kadry obozowej', 'basemgmt') . '</h3></div>'
 			. '<div class="bm-ui__body">'
 			. '<label class="bm-ui__label">' . esc_html__('Obóz', 'basemgmt') . '</label>'

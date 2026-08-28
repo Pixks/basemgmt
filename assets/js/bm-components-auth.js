@@ -49,6 +49,11 @@ window.bmLogin = function () {
 				await Alpine.store('bm').loadAnnouncements();
 				// Trigger a custom event so Breakdance visibility conditions can react.
 				window.dispatchEvent(new CustomEvent('bm:login', { detail: data }));
+				// Redirect if the shortcode supplied a redirect_url attribute.
+				const redirectUrl = this.$el.dataset.bmRedirect;
+				if (redirectUrl) {
+					window.location.href = redirectUrl;
+				}
 			} else {
 				this.error = data.message || 'Nieprawidłowe dane logowania.';
 				this.code  = '';
