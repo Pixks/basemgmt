@@ -42,6 +42,60 @@ Podstawowe shortcody:
 [bm_panel_session_guard]...[/bm_panel_session_guard]
 ```
 
+### Atrybuty shortcode `[bm_panel_login]`
+
+| Atrybut | Wymagany | Opis |
+|---------|----------|------|
+| `redirect_url` | nie | URL, na który użytkownik zostanie przekierowany zaraz po pomyślnym zalogowaniu. Przydatne gdy formularz logowania jest na osobnej stronie niż panel. |
+
+Przykład:
+
+```
+[bm_panel_login redirect_url="/panel/"]
+```
+
+### Atrybuty shortcode `[bm_panel_session_guard]`
+
+| Atrybut | Wymagany | Wartość domyślna | Opis |
+|---------|----------|-----------------|------|
+| `logged` | nie | `1` | `1` – blok jest widoczny tylko dla zalogowanych; `0` – tylko dla niezalogowanych. |
+| `redirect` | nie | _(brak)_ | URL do przekierowania, gdy warunek `logged` zostaje spełniony. Sprawdzane zarówno przy załadowaniu strony, jak i przy zmianie stanu sesji. |
+
+Przykłady:
+
+```
+[bm_panel_session_guard logged="1" redirect="/panel/"][/bm_panel_session_guard]
+```
+> Zalogowany użytkownik trafia na `/panel/`. Typowe użycie na **stronie logowania** – zapobiega ponownemu wyświetleniu formularza.
+
+```
+[bm_panel_session_guard logged="0" redirect="/logowanie/"][/bm_panel_session_guard]
+```
+> Niezalogowany użytkownik trafia na `/logowanie/`. Typowe użycie na **stronie panelu** – chroni treść przed dostępem bez sesji.
+
+### Wzorcowy setup: osobna strona logowania i osobna strona panelu
+
+**Strona logowania** (np. `/logowanie/`):
+
+```
+[bm_panel_session_guard logged="1" redirect="/panel/"][/bm_panel_session_guard]
+[bm_panel_login redirect_url="/panel/"]
+```
+
+1. Jeśli użytkownik **jest już zalogowany** → od razu przekieruje na `/panel/`.
+2. Jeśli nie jest zalogowany → wyświetla formularz; po zalogowaniu przekieruje na `/panel/`.
+
+**Strona panelu** (np. `/panel/`):
+
+```
+[bm_panel_session_guard logged="0" redirect="/logowanie/"][/bm_panel_session_guard]
+[bm_panel_camp_header]
+[bm_panel_announcements]
+...
+```
+
+Niezalogowany użytkownik trafia z powrotem na stronę logowania.
+
 Wersja generyczna:
 
 ```

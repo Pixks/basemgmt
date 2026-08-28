@@ -493,6 +493,31 @@ Samodzielny ekran logowania do panelu obozowego. Element odwzorowuje pierwszy bl
 - Zdarzenia przeglądarki: `bm:login`.
 - PHP / konfiguracja: wymaga globalnego `bmConfig.activeCamps` lub aktywnych endpointów publicznych oraz `bmConfig.loginNonce` dla `POST auth/login`.
 
+## 5a. Przekierowanie po zalogowaniu (osobna strona logowania)
+
+Gdy formularz logowania jest na innej stronie niż panel, użyj shortcode'u zamiast elementu Breakdance i przekaż atrybut `redirect_url`:
+
+```
+[bm_panel_login redirect_url="/panel/"]
+```
+
+Po pomyślnym zalogowaniu użytkownik trafi automatycznie pod podany URL.
+
+Aby zalogowany użytkownik nie widział ponownie strony logowania, dodaj nad formularzem shortcode guard:
+
+```
+[bm_panel_session_guard logged="1" redirect="/panel/"][/bm_panel_session_guard]
+[bm_panel_login redirect_url="/panel/"]
+```
+
+Na stronie panelu możesz analogicznie chronić treść przed niezalogowanymi:
+
+```
+[bm_panel_session_guard logged="0" redirect="/logowanie/"][/bm_panel_session_guard]
+```
+
+Szczegóły obu atrybutów opisano w `docs/09-frontend-panel.md`.
+
 ## 6. Instrukcja wdrożenia
 
 1. Utwórz nowy **Custom Element** w Breakdance i nadaj mu nazwę z sekcji 1.
