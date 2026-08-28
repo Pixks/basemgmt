@@ -186,10 +186,12 @@ final class ShortcodeHandler {
 		$redirect_snippet = '';
 		if ( ! empty( $atts['redirect'] ) ) {
 			$redirect_url    = esc_url( (string) $atts['redirect'] );
+			$js_condition    = $show_if_logged ? 'v' : '!v';
+			$js_url          = wp_json_encode( $redirect_url );
 			$redirect_snippet = sprintf(
-				' x-init="$watch(\'$store.bm.authenticated\', v => { if (%s) { window.location.href = %s; } })"',
-				$show_if_logged ? 'v' : '!v',
-				wp_json_encode( $redirect_url )
+				' x-init="(function(){ var go = function(v){ if (%s){ window.location.href = %s; } }; go($store.bm.authenticated); $watch(\'$store.bm.authenticated\', go); })()"',
+				$js_condition,
+				$js_url
 			);
 		}
 
@@ -260,7 +262,7 @@ final class ShortcodeHandler {
 
 	private function panel_login( array $atts = [] ): string {
 		$redirect_url = isset( $atts['redirect_url'] ) ? esc_url( (string) $atts['redirect_url'] ) : '';
-		$redirect_attr = $redirect_url ? ' data-bm-redirect="' . $redirect_url . '"' : '';
+		$redirect_attr = $redirect_url ? ' data-bm-redirect="' . esc_attr( $redirect_url ) . '"' : '';
 		return '<div class="bm-ui bm-ui--card" x-data="bmLogin()" x-init="init()" x-cloak x-show="!$store.bm.authenticated"' . $redirect_attr . '>'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Panel kadry obozowej', 'basemgmt') . '</h3></div>'
 			. '<div class="bm-ui__body">'
