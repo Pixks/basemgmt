@@ -123,7 +123,6 @@
 
 .bm-ui .bm-ui__input {
 	width: 100%;
-	box-sizing: border-box;
 	margin: 0 0 10px;
 	padding: 9px 12px;
 	border: 1px solid var(--bm-border);
@@ -193,7 +192,8 @@
 }
 
 .bm-ui .bm-ui__btn:focus-visible {
-	outline: none;
+	outline: 3px solid var(--bm-primary);
+	outline-offset: 2px;
 	box-shadow: 0 0 0 3px var(--bm-primary);
 }
 
