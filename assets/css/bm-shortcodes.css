@@ -611,12 +611,14 @@
 	margin-bottom: 12px;
 }
 
-.bm-ui .bm-ui__toolbar > * {
-	flex: 0 0 auto;
+.bm-ui .bm-ui__toolbar .bm-ui__input {
+	flex: 1 1 auto;
+	min-width: min(240px, 100%);
+	margin-bottom: 0;
 }
 
-.bm-ui .bm-ui__toolbar .bm-ui__input {
-	margin-bottom: 0;
+.bm-ui .bm-ui__toolbar .bm-ui__btn {
+	flex: 0 0 auto;
 }
 
 .bm-ui .bm-ui__note {
