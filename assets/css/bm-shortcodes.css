@@ -195,7 +195,7 @@
 /* ── Card body ───────────────────────────────────────────────── */
 
 .bm-ui__body {
-	padding: 18px 18px;
+	padding: 18px;
 	background: var(--bm-surface);
 }
 

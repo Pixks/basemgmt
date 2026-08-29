@@ -469,7 +469,9 @@ final class ShortcodeHandler {
 		if ( $visibility !== '' ) {
 			$visibility = $this->sanitize_visibility_expression( $visibility );
 			if ( $visibility !== '' ) {
-				$attrs .= ' x-data="{}" x-show="' . $visibility . '"';
+				$attrs = ' x-data="{}" x-cloak x-show="' . $visibility . '"';
+			} else {
+				$attrs = '';
 			}
 		}
 
