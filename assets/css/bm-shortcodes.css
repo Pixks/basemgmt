@@ -182,7 +182,7 @@
 	margin: 0 auto 20px;
 }
 
-.bm-ui.bm-ui--panel-login {
+.bm-ui.bm-ui--panel.bm-ui--panel-login {
 	max-width: 860px;
 }
 

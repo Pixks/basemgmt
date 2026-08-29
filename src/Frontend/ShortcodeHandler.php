@@ -472,6 +472,10 @@ final class ShortcodeHandler {
 		return '<div class="bm-ui bm-ui--badge" x-data="{}" x-cloak x-show="($store.bm && $store.bm.authenticated)"><span x-text="$store.bm.unreadCount"></span></div>';
 	}
 
+	/**
+	 * Wraps shortcode content in the shared outer panel container.
+	 * Pass an empty section title to suppress the title row entirely.
+	 */
 	private function wrap_panel( string $section_title, string $content, string $extra_classes = '' ): string {
 		// Section titles are only rendered for authenticated-only panels.
 		$title_markup = $section_title !== ''
