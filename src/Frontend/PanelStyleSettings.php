@@ -209,8 +209,12 @@ final class PanelStyleSettings {
 
 		// For custom font, build the CSS stack from the saved font name.
 		if ( $font_key === 'custom' && $settings['custom_font_name'] !== '' ) {
-			$name     = $settings['custom_font_name'];
-			$font_css = '"' . addslashes($name) . '", sans-serif';
+			// SEC-04: Usuń znaki cudzysłowu i odwrotnego ukośnika, aby zapobiec CSS injection.
+			// sanitize_text_field() jest stosowany przy zapisie (get_settings()), jednak
+			// dodatkowe oczyszczenie tutaj gwarantuje bezpieczne umieszczenie w CSS string.
+			$name     = preg_replace( '/["\'\\\\]/', '', $settings['custom_font_name'] );
+			$name     = substr( $name, 0, 100 );
+			$font_css = '"' . $name . '", sans-serif';
 		}
 
 		$gradient   = $settings['header_gradient'] === '1'

@@ -473,7 +473,7 @@ final class ShortcodeHandler {
 			'campId'        => $camp_id,
 			'staffId'       => $staff_id,
 			'displayName'   => $display_name,
-			'sessionExpires'=> $session ? $session->expires_at : null,
+			'sessionExpires'=> $session ? max( 0, strtotime( $session->expires_at ) - time() ) : null,
 			'activeCamps'   => FrontendAuth::get_active_camps(),
 		];
 	}
