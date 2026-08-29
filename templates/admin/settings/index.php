@@ -1131,58 +1131,141 @@ $font_labels = [
             <?php esc_html_e('Poniżej znajdziesz wszystkie dostępne shortcode\'y wtyczki CampLink wraz z opisem. Możesz ich używać na dowolnych stronach lub postach WordPress.', 'basemgmt'); ?>
         </p>
         <?php
+        // Each entry: [ 'desc' => '...', 'params' => [ 'name' => 'opis' ] ]
         $shortcode_groups = [
             __('Inicjalizacja i stan sesji', 'basemgmt') => [
-                '[bm_init]'                   => __('Inicjalizuje frontend wtyczki (skrypty, style). Umieść na każdej stronie, która używa panelu.', 'basemgmt'),
-                '[bm_auth_state]'             => __('Renderuje blok warunkowy zależny od stanu zalogowania. Używany wewnętrznie przez inne shortcody.', 'basemgmt'),
-                '[bm_panel_session_guard]'    => __('Blokuje dostęp do zawartości shortcode\'a dla niezalogowanych użytkowników. Opakowuje inne shortcody.', 'basemgmt'),
-                '[bm_panel_element]'          => __('Renderuje dowolny element panelu po nazwie (atrybut "element"). Zaawansowane użycie.', 'basemgmt'),
+                '[bm_init]' => [
+                    'desc'   => __('Inicjalizuje frontend wtyczki (skrypty, style). Umieść na każdej stronie, która używa panelu.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_auth_state]' => [
+                    'desc'   => __('Renderuje blok warunkowy zależny od stanu zalogowania. Używany wewnętrznie przez inne shortcody.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_session_guard]' => [
+                    'desc'   => __('Blokuje lub pokazuje zawartość w zależności od stanu zalogowania. Opakowuje inne shortcody.', 'basemgmt'),
+                    'params' => [
+                        'logged'   => __('Domyślnie <code>1</code> – pokaż zalogowanym. Ustaw <code>0</code>, aby pokazać tylko niezalogowanym.', 'basemgmt'),
+                        'redirect' => __('URL przekierowania – zalogowani (lub niezalogowani, zależnie od <code>logged</code>) zostaną automatycznie przeniesieni pod wskazany adres.', 'basemgmt'),
+                    ],
+                ],
+                '[bm_panel_element]' => [
+                    'desc'   => __('Renderuje dowolny element panelu po nazwie. Zaawansowane użycie.', 'basemgmt'),
+                    'params' => [
+                        'type' => __('Nazwa elementu, np. <code>login</code>, <code>announcements</code>. Domyślnie: <code>login</code>.', 'basemgmt'),
+                    ],
+                ],
             ],
             __('Uwierzytelnianie', 'basemgmt') => [
-                '[bm_panel_login]'            => __('Formularz logowania kadry do panelu.', 'basemgmt'),
-                '[bm_panel_logout]'           => __('Przycisk / link wylogowania z panelu.', 'basemgmt'),
+                '[bm_panel_login]' => [
+                    'desc'   => __('Formularz logowania kadry do panelu.', 'basemgmt'),
+                    'params' => [
+                        'redirect_url' => __('URL przekierowania po pomyślnym zalogowaniu, np. <code>redirect_url="/panel"</code>.', 'basemgmt'),
+                    ],
+                ],
+                '[bm_panel_logout]' => [
+                    'desc'   => __('Przycisk / link wylogowania z panelu.', 'basemgmt'),
+                    'params' => [],
+                ],
             ],
             __('Obóz – informacje ogólne', 'basemgmt') => [
-                '[bm_panel_camp_header]'      => __('Nagłówek obozu: nazwa, lokalizacja, daty.', 'basemgmt'),
-                '[bm_panel_unread_counter]'   => __('Licznik nieprzeczytanych powiadomień i wiadomości.', 'basemgmt'),
+                '[bm_panel_camp_header]' => [
+                    'desc'   => __('Nagłówek obozu: nazwa, lokalizacja, daty.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_unread_counter]' => [
+                    'desc'   => __('Licznik nieprzeczytanych powiadomień i wiadomości.', 'basemgmt'),
+                    'params' => [],
+                ],
             ],
             __('Aktualności i meldunki', 'basemgmt') => [
-                '[bm_panel_announcements]'    => __('Lista aktualności / komunikatów dla kadry.', 'basemgmt'),
-                '[bm_panel_announcement_form]'=> __('Formularz dodawania nowej aktualności.', 'basemgmt'),
-                '[bm_panel_reports]'          => __('Lista meldunków dziennych i formularz ich składania.', 'basemgmt'),
+                '[bm_panel_announcements]' => [
+                    'desc'   => __('Lista aktualności / komunikatów dla kadry.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_announcement_form]' => [
+                    'desc'   => __('Formularz dodawania nowej aktualności.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_reports]' => [
+                    'desc'   => __('Lista meldunków dziennych i formularz ich składania.', 'basemgmt'),
+                    'params' => [],
+                ],
             ],
             __('Plan dnia i jadłospis', 'basemgmt') => [
-                '[bm_panel_schedule]'         => __('Plan dnia obozu (widok listy aktywności z godzinami).', 'basemgmt'),
-                '[bm_panel_menu_day]'         => __('Jadłospis na bieżący dzień.', 'basemgmt'),
-                '[bm_panel_menu_week]'        => __('Jadłospis tygodniowy.', 'basemgmt'),
+                '[bm_panel_schedule]' => [
+                    'desc'   => __('Plan dnia obozu (widok listy aktywności z godzinami).', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_menu_day]' => [
+                    'desc'   => __('Jadłospis na bieżący dzień.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_menu_week]' => [
+                    'desc'   => __('Jadłospis tygodniowy.', 'basemgmt'),
+                    'params' => [],
+                ],
             ],
             __('Rezerwacje', 'basemgmt') => [
-                '[bm_panel_reservations]'     => __('Lista rezerwacji zasobów i formularz nowej rezerwacji.', 'basemgmt'),
+                '[bm_panel_reservations]' => [
+                    'desc'   => __('Lista rezerwacji zasobów i formularz nowej rezerwacji.', 'basemgmt'),
+                    'params' => [],
+                ],
             ],
             __('Wiadomości / konwersacje', 'basemgmt') => [
-                '[bm_panel_conversations]'    => __('Lista wątków konwersacji kadry.', 'basemgmt'),
-                '[bm_panel_conversation_new]' => __('Formularz nowej wiadomości / wątku.', 'basemgmt'),
-                '[bm_panel_conversation_thread]' => __('Widok pojedynczego wątku konwersacji.', 'basemgmt'),
+                '[bm_panel_conversations]' => [
+                    'desc'   => __('Lista wątków konwersacji kadry.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_conversation_new]' => [
+                    'desc'   => __('Formularz nowej wiadomości / wątku.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_conversation_thread]' => [
+                    'desc'   => __('Widok pojedynczego wątku konwersacji.', 'basemgmt'),
+                    'params' => [],
+                ],
             ],
             __('Baza wiedzy', 'basemgmt') => [
-                '[bm_panel_help_list]'        => __('Lista artykułów bazy wiedzy.', 'basemgmt'),
-                '[bm_panel_help_article]'     => __('Widok pojedynczego artykułu bazy wiedzy.', 'basemgmt'),
+                '[bm_panel_help_list]' => [
+                    'desc'   => __('Lista artykułów bazy wiedzy.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_help_article]' => [
+                    'desc'   => __('Widok pojedynczego artykułu bazy wiedzy.', 'basemgmt'),
+                    'params' => [],
+                ],
             ],
             __('Formularze i zgłoszenia', 'basemgmt') => [
-                '[bm_panel_forms_list]'       => __('Lista dostępnych formularzy zgłoszeniowych.', 'basemgmt'),
-                '[bm_panel_form]'             => __('Widok i wypełnianie konkretnego formularza.', 'basemgmt'),
-                '[bm_panel_submissions_list]' => __('Lista złożonych zgłoszeń.', 'basemgmt'),
-                '[bm_panel_submission]'       => __('Szczegóły pojedynczego zgłoszenia.', 'basemgmt'),
+                '[bm_panel_forms_list]' => [
+                    'desc'   => __('Lista dostępnych formularzy zgłoszeniowych.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_form]' => [
+                    'desc'   => __('Widok i wypełnianie konkretnego formularza.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_submissions_list]' => [
+                    'desc'   => __('Lista złożonych zgłoszeń.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_submission]' => [
+                    'desc'   => __('Szczegóły pojedynczego zgłoszenia.', 'basemgmt'),
+                    'params' => [],
+                ],
             ],
             __('Pogoda', 'basemgmt') => [
-                '[bm_panel_weather]'          => __('Widżet pogody dla lokalizacji obozu.', 'basemgmt'),
+                '[bm_panel_weather]' => [
+                    'desc'   => __('Widżet pogody dla lokalizacji obozu.', 'basemgmt'),
+                    'params' => [],
+                ],
             ],
             __('Shortcody legacy (zachowane dla wstecznej zgodności)', 'basemgmt') => [
-                '[camp_panel]'         => __('Alias [bm_init] – inicjalizacja panelu.', 'basemgmt'),
-                '[camp_access]'        => __('Alias [bm_init].', 'basemgmt'),
-                '[camp_overview]'      => __('Alias [bm_init].', 'basemgmt'),
-                '[camp_announcements]' => __('Alias [bm_init].', 'basemgmt'),
-                '[camp_daily_count]'   => __('Alias [bm_init].', 'basemgmt'),
+                '[camp_panel]'         => [ 'desc' => __('Alias [bm_init] – inicjalizacja panelu.', 'basemgmt'), 'params' => [] ],
+                '[camp_access]'        => [ 'desc' => __('Alias [bm_init].', 'basemgmt'), 'params' => [] ],
+                '[camp_overview]'      => [ 'desc' => __('Alias [bm_init].', 'basemgmt'), 'params' => [] ],
+                '[camp_announcements]' => [ 'desc' => __('Alias [bm_init].', 'basemgmt'), 'params' => [] ],
+                '[camp_daily_count]'   => [ 'desc' => __('Alias [bm_init].', 'basemgmt'), 'params' => [] ],
             ],
         ];
         foreach ($shortcode_groups as $group_name => $items):
@@ -1191,13 +1274,32 @@ $font_labels = [
             <?php echo esc_html($group_name); ?>
         </h3>
         <table class="wp-list-table widefat fixed" style="border:0;margin-bottom:8px;">
-            <tbody>
-            <?php foreach ($items as $tag => $desc): ?>
+            <thead>
             <tr>
-                <td style="width:280px;padding:7px 12px;font-family:monospace;font-size:13px;white-space:nowrap;background:#f6f7f7;">
+                <th style="width:260px;padding:6px 12px;font-size:12px;font-weight:600;color:#646970;"><?php esc_html_e('Shortcode', 'basemgmt'); ?></th>
+                <th style="width:40%;padding:6px 12px;font-size:12px;font-weight:600;color:#646970;"><?php esc_html_e('Opis', 'basemgmt'); ?></th>
+                <th style="padding:6px 12px;font-size:12px;font-weight:600;color:#646970;"><?php esc_html_e('Parametry', 'basemgmt'); ?></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($items as $tag => $item): ?>
+            <tr>
+                <td style="padding:7px 12px;font-family:monospace;font-size:13px;white-space:nowrap;background:#f6f7f7;vertical-align:top;">
                     <?php echo esc_html($tag); ?>
                 </td>
-                <td style="padding:7px 12px;font-size:13px;color:#444;"><?php echo esc_html($desc); ?></td>
+                <td style="padding:7px 12px;font-size:13px;color:#444;vertical-align:top;"><?php echo esc_html($item['desc']); ?></td>
+                <td style="padding:7px 12px;font-size:12px;color:#444;vertical-align:top;">
+                    <?php if ( empty($item['params']) ): ?>
+                        <span style="color:#aaa;">—</span>
+                    <?php else: ?>
+                        <dl style="margin:0;padding:0;">
+                        <?php foreach ($item['params'] as $param => $param_desc): ?>
+                            <dt style="font-family:monospace;font-weight:600;margin:0 0 2px;"><?php echo esc_html($param); ?></dt>
+                            <dd style="margin:0 0 8px;padding-left:10px;color:#555;"><?php echo wp_kses($param_desc, ['code' => []]); ?></dd>
+                        <?php endforeach; ?>
+                        </dl>
+                    <?php endif; ?>
+                </td>
             </tr>
             <?php endforeach; ?>
             </tbody>
