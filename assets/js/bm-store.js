@@ -1,5 +1,15 @@
 /* global bmConfig, Alpine */
 
+window.bmPanelScope = function () {
+	return {
+		get authenticated() {
+			return typeof Alpine !== 'undefined' && Alpine.store('bm')
+				? Alpine.store('bm').authenticated
+				: false;
+		},
+	};
+};
+
 function bmRegisterAll() {
 if (typeof Alpine === 'undefined') return;
 
