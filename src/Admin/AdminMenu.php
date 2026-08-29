@@ -441,6 +441,22 @@ final class AdminMenu {
 			wp_script_add_data( 'sortablejs', 'crossorigin', 'anonymous' );
 		}
 
+		// Shortcode UI stylesheet + live-preview inline vars – only on the style settings page.
+		if ( $page === 'basemgmt-settings' && sanitize_key($_GET['tab'] ?? '') === 'wyglad'
+			&& current_user_can('manage_options') ) {
+			wp_enqueue_style(
+				'basemgmt-shortcodes',
+				BASEMGMT_URL . 'assets/css/bm-shortcodes.css',
+				[],
+				BASEMGMT_VERSION
+			);
+			wp_add_inline_style( 'basemgmt-shortcodes', \BaseMgmt\Frontend\PanelStyleSettings::build_inline_css() );
+			$custom_font_url = \BaseMgmt\Frontend\PanelStyleSettings::get_custom_font_url();
+			if ( $custom_font_url !== '' ) {
+				wp_enqueue_style( 'basemgmt-custom-font', $custom_font_url, [], null );
+			}
+		}
+
 		// FullCalendar – only on reservations page.
 		if ( $page === 'basemgmt-reservations' ) {
 			wp_enqueue_style(

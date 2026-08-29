@@ -228,113 +228,26 @@ $font_labels = [
 ];
 ?>
 <style>
-/* Preview area styling */
-#bm-style-preview {
-    background: var(--bmp-bg, #F4F7F0);
-    padding: 28px;
+/* Preview isolation wrapper – shields bm-ui elements from WP admin theme styles */
+#bm-style-preview-wrap {
+    contain: style;
     border-radius: 12px;
     border: 1px solid #dde;
-    font-family: var(--bmp-font, "Open Sans", sans-serif);
-    color: var(--bmp-text, #333);
-    transition: all .2s;
-}
-#bm-style-preview .prev-section-title {
-    font-weight: 900;
-    font-size: 1.4rem;
-    color: var(--bmp-heading, #1A1A1A);
-    letter-spacing: .02em;
-    text-transform: uppercase;
-    margin: 0 0 16px;
-}
-#bm-style-preview .prev-card {
-    background: var(--bmp-surface, #fff);
-    border: 1px solid var(--bmp-border, #E0E6E0);
-    border-radius: var(--bmp-radius, 10px);
-    box-shadow: var(--bmp-shadow, 0 2px 12px rgba(0,0,0,.10));
     overflow: hidden;
-    margin-bottom: 14px;
 }
-#bm-style-preview .prev-card-header {
-    background: var(--bmp-header-bg, #6EA82E);
-    color: var(--bmp-btn-text, #fff);
-    padding: 11px 16px;
-    font-weight: 700;
-    font-size: .95rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+#bm-style-preview {
+    padding: 20px;
+    transition: background .2s;
 }
-#bm-style-preview .prev-card-body {
-    padding: 14px 16px;
-}
-#bm-style-preview .prev-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--bmp-primary, #6EA82E);
-    color: var(--bmp-btn-text, #fff);
-    border: none;
-    border-radius: var(--bmp-radius-pill, 999px);
-    padding: 9px 20px;
-    font-weight: 700;
-    font-size: .88rem;
-    cursor: default;
-    transition: background .15s;
-    font-family: var(--bmp-font, "Open Sans", sans-serif);
-}
-#bm-style-preview .prev-btn-ghost {
-    background: transparent;
-    color: var(--bmp-primary, #6EA82E);
-    border: 2px solid var(--bmp-primary, #6EA82E);
-}
-#bm-style-preview .prev-tag {
-    display: inline-block;
-    background: var(--bmp-badge-bg, #6EA82E);
-    color: var(--bmp-badge-text, #fff);
-    font-size: .72rem;
-    font-weight: 700;
-    border-radius: var(--bmp-radius-pill, 999px);
-    padding: 3px 10px;
-    letter-spacing: .03em;
-}
-#bm-style-preview .prev-read-more {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--bmp-link, #5A8D24);
-    font-weight: 700;
-    font-size: .88rem;
-    text-decoration: none;
-}
-#bm-style-preview .prev-items-row {
+/* items-row flex layout (not in bm-shortcodes.css) */
+#bm-style-preview .bm-ui__items-row {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
     margin-top: 12px;
 }
-#bm-style-preview .prev-item {
+#bm-style-preview .bm-ui__items-row .bm-ui__item {
     flex: 1 1 180px;
-    background: var(--bmp-surface, #fff);
-    border: 1px solid var(--bmp-border, #E0E6E0);
-    border-radius: var(--bmp-radius, 10px);
-    box-shadow: var(--bmp-shadow, 0 2px 12px rgba(0,0,0,.10));
-    padding: 10px 12px;
-    font-size: .88rem;
-}
-#bm-style-preview .prev-item-title {
-    font-weight: 700;
-    color: var(--bmp-heading, #1A1A1A);
-    margin: 6px 0 4px;
-}
-#bm-style-preview .prev-item-meta {
-    font-size: .78rem;
-    color: #888;
-}
-#bm-style-preview .prev-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 10px;
 }
 .bm-style-form-grid {
     display: grid;
@@ -590,21 +503,22 @@ $font_labels = [
                 <button type="button" class="bm-prev-tab" data-pane="prev-schedule"><?php esc_html_e('Plan dnia', 'basemgmt'); ?></button>
                 <button type="button" class="bm-prev-tab" data-pane="prev-reservations"><?php esc_html_e('Rezerwacje', 'basemgmt'); ?></button>
             </div>
-            <div id="bm-style-preview">
+            <div id="bm-style-preview-wrap">
+            <div id="bm-style-preview" class="bm-ui" style="background:var(--bm-bg);padding:20px;">
 
                 <!-- Pane: Aktualności -->
                 <div id="prev-announcements" class="bm-prev-pane active">
-                    <div class="prev-section-title">AKTUALNOŚCI</div>
+                    <div class="bm-ui__section-title">AKTUALNOŚCI</div>
 
-                    <div class="prev-card">
-                        <div class="prev-card-header">
+                    <div class="bm-ui bm-ui--card">
+                        <div class="bm-ui__header">
                             <span>📋 <?php esc_html_e('Informacje o obozie', 'basemgmt'); ?></span>
                             <span style="font-size:.78rem;opacity:.85;"><?php esc_html_e('Kadra', 'basemgmt'); ?></span>
                         </div>
-                        <div class="prev-card-body">
+                        <div class="bm-ui__body">
                             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                                <span class="prev-tag"><?php esc_html_e('Aktualności', 'basemgmt'); ?></span>
-                                <span class="prev-tag"><?php esc_html_e('Obóz', 'basemgmt'); ?></span>
+                                <span class="bm-ui__tag"><?php esc_html_e('Aktualności', 'basemgmt'); ?></span>
+                                <span class="bm-ui__tag"><?php esc_html_e('Obóz', 'basemgmt'); ?></span>
                                 <span style="margin-left:auto;font-size:.78rem;color:#888;">19.08.26</span>
                             </div>
                             <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">
@@ -613,52 +527,52 @@ $font_labels = [
                             <div style="font-size:.84rem;margin-bottom:10px;">
                                 <?php esc_html_e('Liczba uczestników: 48/50, stan sanitarny: dobry, brak incydentów.', 'basemgmt'); ?>
                             </div>
-                            <a href="#" class="prev-read-more" onclick="return false;">
+                            <a href="#" class="bm-ui__read-more" onclick="return false;">
                                 <?php esc_html_e('Przeczytaj więcej', 'basemgmt'); ?> →
                             </a>
                         </div>
                     </div>
 
-                    <div class="prev-items-row">
-                        <div class="prev-item">
-                            <span class="prev-tag"><?php esc_html_e('Pogoda', 'basemgmt'); ?></span>
-                            <div class="prev-item-title"><?php esc_html_e('Prognoza na dziś', 'basemgmt'); ?></div>
-                            <div class="prev-item-meta">☀ 24°C, brak opadów</div>
+                    <div class="bm-ui__items-row">
+                        <div class="bm-ui__item">
+                            <span class="bm-ui__tag"><?php esc_html_e('Pogoda', 'basemgmt'); ?></span>
+                            <div style="font-weight:700;color:var(--bm-heading);margin:6px 0 4px;"><?php esc_html_e('Prognoza na dziś', 'basemgmt'); ?></div>
+                            <div style="font-size:.78rem;color:#888;">☀ 24°C, brak opadów</div>
                         </div>
-                        <div class="prev-item">
-                            <span class="prev-tag"><?php esc_html_e('Plan', 'basemgmt'); ?></span>
-                            <div class="prev-item-title"><?php esc_html_e('Zajęcia 10:00', 'basemgmt'); ?></div>
-                            <div class="prev-item-meta"><?php esc_html_e('Gra terenowa', 'basemgmt'); ?></div>
+                        <div class="bm-ui__item">
+                            <span class="bm-ui__tag"><?php esc_html_e('Plan', 'basemgmt'); ?></span>
+                            <div style="font-weight:700;color:var(--bm-heading);margin:6px 0 4px;"><?php esc_html_e('Zajęcia 10:00', 'basemgmt'); ?></div>
+                            <div style="font-size:.78rem;color:#888;"><?php esc_html_e('Gra terenowa', 'basemgmt'); ?></div>
                         </div>
                     </div>
 
-                    <div class="prev-actions" style="margin-top:16px;">
-                        <button class="prev-btn" type="button"><?php esc_html_e('Wyślij meldunek', 'basemgmt'); ?> →</button>
-                        <button class="prev-btn prev-btn-ghost" type="button"><?php esc_html_e('Historia', 'basemgmt'); ?></button>
+                    <div class="bm-ui__actions" style="margin-top:16px;">
+                        <button class="bm-ui__btn" type="button"><?php esc_html_e('Wyślij meldunek', 'basemgmt'); ?> →</button>
+                        <button class="bm-ui__btn bm-ui__btn--ghost" type="button"><?php esc_html_e('Historia', 'basemgmt'); ?></button>
                     </div>
                 </div><!-- /prev-announcements -->
 
                 <!-- Pane: Logowanie -->
                 <div id="prev-login" class="bm-prev-pane">
-                    <div class="prev-section-title"><?php esc_html_e('PANEL KADRY', 'basemgmt'); ?></div>
-                    <div class="prev-card">
-                        <div class="prev-card-header">
+                    <div class="bm-ui__section-title"><?php esc_html_e('PANEL KADRY', 'basemgmt'); ?></div>
+                    <div class="bm-ui bm-ui--card">
+                        <div class="bm-ui__header">
                             <span>🔐 <?php esc_html_e('Logowanie', 'basemgmt'); ?></span>
                         </div>
-                        <div class="prev-card-body">
+                        <div class="bm-ui__body">
                             <div style="margin-bottom:10px;">
-                                <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:4px;"><?php esc_html_e('Adres e-mail', 'basemgmt'); ?></label>
-                                <input type="text" readonly value="kadra@oboz.pl" style="width:100%;padding:7px 10px;border:1px solid var(--bmp-border,#E0E6E0);border-radius:6px;font-size:.88rem;background:var(--bmp-surface,#fff);">
+                                <label class="bm-ui__label"><?php esc_html_e('Adres e-mail', 'basemgmt'); ?></label>
+                                <input type="text" class="bm-ui__input" readonly value="kadra@oboz.pl">
                             </div>
                             <div style="margin-bottom:14px;">
-                                <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:4px;"><?php esc_html_e('Hasło', 'basemgmt'); ?></label>
-                                <input type="text" readonly value="••••••••" style="width:100%;padding:7px 10px;border:1px solid var(--bmp-border,#E0E6E0);border-radius:6px;font-size:.88rem;background:var(--bmp-surface,#fff);">
+                                <label class="bm-ui__label"><?php esc_html_e('Hasło', 'basemgmt'); ?></label>
+                                <input type="text" class="bm-ui__input" readonly value="••••••••">
                             </div>
-                            <div class="prev-actions">
-                                <button class="prev-btn" type="button"><?php esc_html_e('Zaloguj się', 'basemgmt'); ?></button>
+                            <div class="bm-ui__actions">
+                                <button class="bm-ui__btn" type="button"><?php esc_html_e('Zaloguj się', 'basemgmt'); ?></button>
                             </div>
                             <div style="margin-top:10px;font-size:.8rem;">
-                                <a href="#" class="prev-read-more" onclick="return false;"><?php esc_html_e('Nie pamiętam hasła', 'basemgmt'); ?></a>
+                                <a href="#" class="bm-ui__read-more" onclick="return false;"><?php esc_html_e('Nie pamiętam hasła', 'basemgmt'); ?></a>
                             </div>
                         </div>
                     </div>
@@ -666,7 +580,7 @@ $font_labels = [
 
                 <!-- Pane: Plan dnia -->
                 <div id="prev-schedule" class="bm-prev-pane">
-                    <div class="prev-section-title"><?php esc_html_e('PLAN DNIA', 'basemgmt'); ?></div>
+                    <div class="bm-ui__section-title"><?php esc_html_e('PLAN DNIA', 'basemgmt'); ?></div>
                     <?php
                     $sched = [
                         ['07:30', __('Pobudka i poranna zbiórka', 'basemgmt'),      __('Obowiązkowa', 'basemgmt')],
@@ -677,16 +591,16 @@ $font_labels = [
                         ['19:00', __('Kolacja i wieczorny apel', 'basemgmt'),       __('Obowiązkowa', 'basemgmt')],
                     ];
                     ?>
-                    <div class="prev-card">
-                        <div class="prev-card-header">
+                    <div class="bm-ui bm-ui--card">
+                        <div class="bm-ui__header">
                             <span>📅 <?php esc_html_e('Czwartek, 28 sierpnia', 'basemgmt'); ?></span>
                         </div>
-                        <div class="prev-card-body" style="padding:8px 16px;">
+                        <div class="bm-ui__body" style="padding:8px 16px;">
                             <?php foreach ($sched as [$time, $title, $cat]): ?>
-                            <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bmp-border,#E0E6E0);">
-                                <span style="font-size:.78rem;font-weight:700;color:var(--bmp-primary,#6EA82E);min-width:36px;"><?php echo esc_html($time); ?></span>
+                            <div class="bm-ui__line">
+                                <span style="font-size:.78rem;font-weight:700;color:var(--bm-primary);min-width:36px;"><?php echo esc_html($time); ?></span>
                                 <span style="flex:1;font-size:.88rem;"><?php echo esc_html($title); ?></span>
-                                <span class="prev-tag"><?php echo esc_html($cat); ?></span>
+                                <span class="bm-ui__tag"><?php echo esc_html($cat); ?></span>
                             </div>
                             <?php endforeach; ?>
                         </div>
@@ -695,12 +609,12 @@ $font_labels = [
 
                 <!-- Pane: Rezerwacje -->
                 <div id="prev-reservations" class="bm-prev-pane">
-                    <div class="prev-section-title"><?php esc_html_e('REZERWACJE', 'basemgmt'); ?></div>
-                    <div class="prev-card">
-                        <div class="prev-card-header">
+                    <div class="bm-ui__section-title"><?php esc_html_e('REZERWACJE', 'basemgmt'); ?></div>
+                    <div class="bm-ui bm-ui--card">
+                        <div class="bm-ui__header">
                             <span>🏕 <?php esc_html_e('Lista rezerwacji', 'basemgmt'); ?></span>
                         </div>
-                        <div class="prev-card-body" style="padding:8px 16px;">
+                        <div class="bm-ui__body" style="padding:8px 16px;">
                             <?php
                             $resv = [
                                 [__('Kowalski Jan', 'basemgmt'),     __('Uczestnik', 'basemgmt'),   __('Opłacona', 'basemgmt')],
@@ -709,21 +623,22 @@ $font_labels = [
                             ];
                             ?>
                             <?php foreach ($resv as [$name, $role, $status]): ?>
-                            <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bmp-border,#E0E6E0);">
+                            <div class="bm-ui__line">
                                 <span style="flex:1;font-size:.88rem;font-weight:600;"><?php echo esc_html($name); ?></span>
-                                <span class="prev-tag"><?php echo esc_html($role); ?></span>
-                                <span class="prev-tag" style="background:var(--bmp-surface,#fff);color:var(--bmp-text,#333);border:1px solid var(--bmp-border,#E0E6E0);"><?php echo esc_html($status); ?></span>
+                                <span class="bm-ui__tag"><?php echo esc_html($role); ?></span>
+                                <span class="bm-ui__tag" style="background:var(--bm-surface);color:var(--bm-text);border:1px solid var(--bm-border);"><?php echo esc_html($status); ?></span>
                             </div>
                             <?php endforeach; ?>
-                            <div class="prev-actions" style="margin-top:12px;">
-                                <button class="prev-btn" type="button"><?php esc_html_e('Nowa rezerwacja', 'basemgmt'); ?> +</button>
-                                <button class="prev-btn prev-btn-ghost" type="button"><?php esc_html_e('Eksportuj', 'basemgmt'); ?></button>
+                            <div class="bm-ui__actions" style="margin-top:12px;">
+                                <button class="bm-ui__btn" type="button"><?php esc_html_e('Nowa rezerwacja', 'basemgmt'); ?> +</button>
+                                <button class="bm-ui__btn bm-ui__btn--ghost" type="button"><?php esc_html_e('Eksportuj', 'basemgmt'); ?></button>
                             </div>
                         </div>
                     </div>
                 </div><!-- /prev-reservations -->
 
             </div><!-- /bm-style-preview -->
+            </div><!-- /bm-style-preview-wrap -->
         </div>
     </div>
 </div><!-- /grid -->
@@ -759,26 +674,27 @@ $font_labels = [
         var bg = grad.checked
             ? 'linear-gradient(135deg,' + primary.value + ',' + hover.value + ')'
             : primary.value;
-        css('--bmp-header-bg', bg);
+        css('--bm-header-bg', bg);
     }
 
-    bindColor('bm-ui-primary-color',     '--bmp-primary');
-    bindColor('bm-ui-primary-hover-color','--bmp-hover');
-    bindColor('bm-ui-badge-color',       '--bmp-badge-bg');
-    bindColor('bm-ui-badge-text-color',  '--bmp-badge-text');
-    bindColor('bm-ui-btn-text-color',    '--bmp-btn-text');
-    bindColor('bm-ui-link-color',        '--bmp-link');
-    bindColor('bm-ui-text-color',        '--bmp-text');
-    bindColor('bm-ui-heading-color',     '--bmp-heading');
-    bindColor('bm-ui-surface-color',     '--bmp-surface');
-    bindColor('bm-ui-background-color',  '--bmp-bg');
-    bindColor('bm-ui-border-color',      '--bmp-border');
+    bindColor('bm-ui-primary-color',     '--bm-primary');
+    bindColor('bm-ui-primary-hover-color','--bm-primary-hover');
+    bindColor('bm-ui-badge-color',       '--bm-badge-bg');
+    bindColor('bm-ui-badge-text-color',  '--bm-badge-text');
+    bindColor('bm-ui-btn-text-color',    '--bm-btn-text');
+    bindColor('bm-ui-link-color',        '--bm-link');
+    bindColor('bm-ui-text-color',        '--bm-text');
+    bindColor('bm-ui-heading-color',     '--bm-heading');
+    bindColor('bm-ui-surface-color',     '--bm-surface');
+    bindColor('bm-ui-background-color',  '--bm-bg');
+    bindColor('bm-ui-border-color',      '--bm-border');
 
     // Card radius slider
     var rng = document.getElementById('bm-ui-radius');
     if (rng) {
         rng.addEventListener('input', function () {
-            css('--bmp-radius', rng.value + 'px');
+            css('--bm-radius', rng.value + 'px');
+            css('--bm-radius-sm', Math.max(0, parseInt(rng.value, 10) - 2) + 'px');
         });
     }
 
@@ -791,7 +707,7 @@ $font_labels = [
         var actual = (v >= 32) ? 999 : v;
         if (btnActual) btnActual.value = actual;
         if (btnLabel)  btnLabel.textContent = (v >= 32) ? '<?php echo esc_js(__('Pill', 'basemgmt')); ?>' : v;
-        css('--bmp-radius-pill', actual + 'px');
+        css('--bm-radius-pill', actual + 'px');
     }
     if (btnRng) {
         btnRng.addEventListener('input', updateBtnRadius);
@@ -801,7 +717,7 @@ $font_labels = [
     var shd = document.getElementById('bm-ui-shadow');
     if (shd) {
         shd.addEventListener('change', function () {
-            css('--bmp-shadow', shadows[shd.value] || 'none');
+            css('--bm-shadow', shadows[shd.value] || 'none');
         });
     }
 
@@ -816,9 +732,9 @@ $font_labels = [
         if (rowFontUrl)  rowFontUrl.style.display  = isCustom ? '' : 'none';
         if (rowFontName) rowFontName.style.display  = isCustom ? '' : 'none';
         if (isCustom && fontName && fontName.value) {
-            css('--bmp-font', '"' + fontName.value + '", sans-serif');
+            css('--bm-font', '"' + fontName.value + '", sans-serif');
         } else {
-            css('--bmp-font', fonts[fnt.value] || 'sans-serif');
+            css('--bm-font', fonts[fnt.value] || 'sans-serif');
         }
     }
     if (fnt) {
@@ -912,25 +828,28 @@ $font_labels = [
     // Init preview vars from current values on page load
     (function initPreview() {
         var colorMap = {
-            'bm-ui-primary-color':       '--bmp-primary',
-            'bm-ui-primary-hover-color': '--bmp-hover',
-            'bm-ui-badge-color':         '--bmp-badge-bg',
-            'bm-ui-badge-text-color':    '--bmp-badge-text',
-            'bm-ui-btn-text-color':      '--bmp-btn-text',
-            'bm-ui-link-color':          '--bmp-link',
-            'bm-ui-text-color':          '--bmp-text',
-            'bm-ui-heading-color':       '--bmp-heading',
-            'bm-ui-surface-color':       '--bmp-surface',
-            'bm-ui-background-color':    '--bmp-bg',
-            'bm-ui-border-color':        '--bmp-border',
+            'bm-ui-primary-color':       '--bm-primary',
+            'bm-ui-primary-hover-color': '--bm-primary-hover',
+            'bm-ui-badge-color':         '--bm-badge-bg',
+            'bm-ui-badge-text-color':    '--bm-badge-text',
+            'bm-ui-btn-text-color':      '--bm-btn-text',
+            'bm-ui-link-color':          '--bm-link',
+            'bm-ui-text-color':          '--bm-text',
+            'bm-ui-heading-color':       '--bm-heading',
+            'bm-ui-surface-color':       '--bm-surface',
+            'bm-ui-background-color':    '--bm-bg',
+            'bm-ui-border-color':        '--bm-border',
         };
         for (var id in colorMap) {
             var el = document.getElementById(id);
             if (el) css(colorMap[id], el.value);
         }
-        if (rng)    css('--bmp-radius', rng.value + 'px');
+        if (rng) {
+            css('--bm-radius', rng.value + 'px');
+            css('--bm-radius-sm', Math.max(0, parseInt(rng.value, 10) - 2) + 'px');
+        }
         if (btnRng) updateBtnRadius();
-        if (shd)    css('--bmp-shadow', shadows[shd.value] || 'none');
+        if (shd)    css('--bm-shadow', shadows[shd.value] || 'none');
         updateFontPreview();
         updateHeader();
     })();
