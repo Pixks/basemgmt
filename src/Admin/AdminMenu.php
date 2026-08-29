@@ -442,7 +442,8 @@ final class AdminMenu {
 		}
 
 		// Shortcode UI stylesheet + live-preview inline vars – only on the style settings page.
-		if ( $page === 'basemgmt-settings' && sanitize_key($_GET['tab'] ?? '') === 'wyglad' ) {
+		if ( $page === 'basemgmt-settings' && sanitize_key($_GET['tab'] ?? '') === 'wyglad'
+			&& current_user_can('manage_options') ) {
 			wp_enqueue_style(
 				'basemgmt-shortcodes',
 				BASEMGMT_URL . 'assets/css/bm-shortcodes.css',

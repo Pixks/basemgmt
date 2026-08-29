@@ -103,7 +103,7 @@
 .bm-ui textarea:focus-visible {
 	outline: none;
 	border-color: var(--bm-primary) !important;
-	box-shadow: 0 0 0 2px rgba(34, 113, 177, .18) !important;
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--bm-primary) 20%, transparent) !important;
 }
 
 .bm-ui select {

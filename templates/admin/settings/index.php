@@ -674,26 +674,27 @@ $font_labels = [
         var bg = grad.checked
             ? 'linear-gradient(135deg,' + primary.value + ',' + hover.value + ')'
             : primary.value;
-        css('--bmp-header-bg', bg);
+        css('--bm-header-bg', bg);
     }
 
-    bindColor('bm-ui-primary-color',     '--bmp-primary');
-    bindColor('bm-ui-primary-hover-color','--bmp-hover');
-    bindColor('bm-ui-badge-color',       '--bmp-badge-bg');
-    bindColor('bm-ui-badge-text-color',  '--bmp-badge-text');
-    bindColor('bm-ui-btn-text-color',    '--bmp-btn-text');
-    bindColor('bm-ui-link-color',        '--bmp-link');
-    bindColor('bm-ui-text-color',        '--bmp-text');
-    bindColor('bm-ui-heading-color',     '--bmp-heading');
-    bindColor('bm-ui-surface-color',     '--bmp-surface');
-    bindColor('bm-ui-background-color',  '--bmp-bg');
-    bindColor('bm-ui-border-color',      '--bmp-border');
+    bindColor('bm-ui-primary-color',     '--bm-primary');
+    bindColor('bm-ui-primary-hover-color','--bm-primary-hover');
+    bindColor('bm-ui-badge-color',       '--bm-badge-bg');
+    bindColor('bm-ui-badge-text-color',  '--bm-badge-text');
+    bindColor('bm-ui-btn-text-color',    '--bm-btn-text');
+    bindColor('bm-ui-link-color',        '--bm-link');
+    bindColor('bm-ui-text-color',        '--bm-text');
+    bindColor('bm-ui-heading-color',     '--bm-heading');
+    bindColor('bm-ui-surface-color',     '--bm-surface');
+    bindColor('bm-ui-background-color',  '--bm-bg');
+    bindColor('bm-ui-border-color',      '--bm-border');
 
     // Card radius slider
     var rng = document.getElementById('bm-ui-radius');
     if (rng) {
         rng.addEventListener('input', function () {
-            css('--bmp-radius', rng.value + 'px');
+            css('--bm-radius', rng.value + 'px');
+            css('--bm-radius-sm', Math.max(0, parseInt(rng.value, 10) - 2) + 'px');
         });
     }
 
@@ -706,7 +707,7 @@ $font_labels = [
         var actual = (v >= 32) ? 999 : v;
         if (btnActual) btnActual.value = actual;
         if (btnLabel)  btnLabel.textContent = (v >= 32) ? '<?php echo esc_js(__('Pill', 'basemgmt')); ?>' : v;
-        css('--bmp-radius-pill', actual + 'px');
+        css('--bm-radius-pill', actual + 'px');
     }
     if (btnRng) {
         btnRng.addEventListener('input', updateBtnRadius);
@@ -716,7 +717,7 @@ $font_labels = [
     var shd = document.getElementById('bm-ui-shadow');
     if (shd) {
         shd.addEventListener('change', function () {
-            css('--bmp-shadow', shadows[shd.value] || 'none');
+            css('--bm-shadow', shadows[shd.value] || 'none');
         });
     }
 
@@ -731,9 +732,9 @@ $font_labels = [
         if (rowFontUrl)  rowFontUrl.style.display  = isCustom ? '' : 'none';
         if (rowFontName) rowFontName.style.display  = isCustom ? '' : 'none';
         if (isCustom && fontName && fontName.value) {
-            css('--bmp-font', '"' + fontName.value + '", sans-serif');
+            css('--bm-font', '"' + fontName.value + '", sans-serif');
         } else {
-            css('--bmp-font', fonts[fnt.value] || 'sans-serif');
+            css('--bm-font', fonts[fnt.value] || 'sans-serif');
         }
     }
     if (fnt) {
@@ -827,25 +828,28 @@ $font_labels = [
     // Init preview vars from current values on page load
     (function initPreview() {
         var colorMap = {
-            'bm-ui-primary-color':       '--bmp-primary',
-            'bm-ui-primary-hover-color': '--bmp-hover',
-            'bm-ui-badge-color':         '--bmp-badge-bg',
-            'bm-ui-badge-text-color':    '--bmp-badge-text',
-            'bm-ui-btn-text-color':      '--bmp-btn-text',
-            'bm-ui-link-color':          '--bmp-link',
-            'bm-ui-text-color':          '--bmp-text',
-            'bm-ui-heading-color':       '--bmp-heading',
-            'bm-ui-surface-color':       '--bmp-surface',
-            'bm-ui-background-color':    '--bmp-bg',
-            'bm-ui-border-color':        '--bmp-border',
+            'bm-ui-primary-color':       '--bm-primary',
+            'bm-ui-primary-hover-color': '--bm-primary-hover',
+            'bm-ui-badge-color':         '--bm-badge-bg',
+            'bm-ui-badge-text-color':    '--bm-badge-text',
+            'bm-ui-btn-text-color':      '--bm-btn-text',
+            'bm-ui-link-color':          '--bm-link',
+            'bm-ui-text-color':          '--bm-text',
+            'bm-ui-heading-color':       '--bm-heading',
+            'bm-ui-surface-color':       '--bm-surface',
+            'bm-ui-background-color':    '--bm-bg',
+            'bm-ui-border-color':        '--bm-border',
         };
         for (var id in colorMap) {
             var el = document.getElementById(id);
             if (el) css(colorMap[id], el.value);
         }
-        if (rng)    css('--bmp-radius', rng.value + 'px');
+        if (rng) {
+            css('--bm-radius', rng.value + 'px');
+            css('--bm-radius-sm', Math.max(0, parseInt(rng.value, 10) - 2) + 'px');
+        }
         if (btnRng) updateBtnRadius();
-        if (shd)    css('--bmp-shadow', shadows[shd.value] || 'none');
+        if (shd)    css('--bm-shadow', shadows[shd.value] || 'none');
         updateFontPreview();
         updateHeader();
     })();
