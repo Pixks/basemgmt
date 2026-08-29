@@ -16,6 +16,7 @@
 	--bm-badge-bg:      #6EA82E;
 	--bm-badge-text:    #ffffff;
 	--bm-link:          #5A8D24;
+	--bm-placeholder:   #8a9199;
 	/* Shape / spacing tokens */
 	--bm-radius:        10px;
 	--bm-shadow:        0 2px 12px rgba(0,0,0,.10);
@@ -149,7 +150,7 @@
 }
 
 .bm-ui .bm-ui__input::placeholder {
-	color: #8a9199;
+	color: var(--bm-placeholder);
 }
 
 .bm-ui__input--small {
@@ -194,7 +195,7 @@
 .bm-ui .bm-ui__btn:focus-visible {
 	outline: 3px solid var(--bm-primary);
 	outline-offset: 2px;
-	box-shadow: 0 0 0 3px var(--bm-primary);
+	box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--bm-primary);
 }
 
 .bm-ui .bm-ui__btn:disabled {
@@ -389,7 +390,7 @@
 	font-family: var(--bm-font);
 }
 
-.bm-ui--session-guard {
+.bm-ui.bm-ui--session-guard {
 	background: var(--bm-bg);
 	border: 1px solid var(--bm-border);
 	border-radius: calc(var(--bm-radius) + 2px);
