@@ -17,6 +17,7 @@
 	--bm-badge-text:    #ffffff;
 	--bm-link:          #5A8D24;
 	--bm-placeholder:   #8a9199;
+	--bm-muted:         #6b7280;
 	/* Shape / spacing tokens */
 	--bm-radius:        10px;
 	--bm-shadow:        0 2px 12px rgba(0,0,0,.10);
@@ -341,7 +342,7 @@
 .bm-ui .bm-ui__error   { color: #C0392B; }
 .bm-ui .bm-ui__success { color: var(--bm-primary); }
 .bm-ui .bm-ui__warn    { color: #B45309; }
-.bm-ui .bm-ui__muted   { color: #6b7280; font-size: .86rem; }
+.bm-ui .bm-ui__muted   { color: var(--bm-muted); font-size: .86rem; }
 
 /* ── List items ──────────────────────────────────────────────── */
 
@@ -425,7 +426,7 @@
 }
 
 .bm-ui .bm-ui__hint {
-	color: #6b7280;
+	color: var(--bm-muted);
 	font-size: .8rem;
 	line-height: 1.4;
 }

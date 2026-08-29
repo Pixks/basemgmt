@@ -287,7 +287,7 @@ final class ShortcodeHandler {
 				. '</div>'
 				. '<div class="bm-ui__field" x-show="staffId">'
 				. '<label class="bm-ui__label">' . esc_html__('Kod bezpieczeństwa', 'basemgmt') . '</label>'
-				. '<input x-show="staffId" class="bm-ui__input" type="password" x-model="code" maxlength="6" inputmode="numeric" @keydown.enter="submit()">'
+				. '<input class="bm-ui__input" type="password" x-model="code" maxlength="6" inputmode="numeric" @keydown.enter="submit()">'
 				. '</div>'
 				. '</div>'
 				. '<p class="bm-ui__error" x-show="error" x-text="error"></p>'
