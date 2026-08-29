@@ -455,7 +455,7 @@ final class AdminMenu {
 			if ( $custom_font_url !== '' ) {
 				wp_enqueue_style( 'basemgmt-custom-font', $custom_font_url, [], null );
 			}
-			// Admin-only preview panel CSS (tab switcher, form grid, etc.)
+			// Admin preview panel CSS (tab switcher, form grid, preview wrap)
 			wp_add_inline_style( 'basemgmt-shortcodes', '
 #bm-style-preview-wrap{contain:style;border-radius:12px;border:1px solid #dde;overflow:hidden}
 #bm-style-preview{padding:20px;transition:background .2s}
@@ -470,18 +470,12 @@ final class AdminMenu {
 .bm-prev-pane{display:none}
 .bm-prev-pane.active{display:block}
 ' );
-			wp_enqueue_script(
-				'basemgmt-style-preview',
-				BASEMGMT_URL . 'assets/js/bm-style-preview.js',
-				['jquery'],
-				BASEMGMT_VERSION,
-				true
-			);
-			wp_localize_script( 'basemgmt-style-preview', 'bmStyleSettings', [
+			// Pass settings data to the inline JS via a global var on basemgmt-admin
+			wp_add_inline_script( 'basemgmt-admin', 'window.bmStyleSettings = ' . wp_json_encode( [
 				'shadows'   => \BaseMgmt\Frontend\PanelStyleSettings::SHADOWS,
 				'fonts'     => \BaseMgmt\Frontend\PanelStyleSettings::FONT_FAMILIES,
-				'pillLabel' => __('Pill', 'basemgmt'),
-			] );
+				'pillLabel' => __( 'Pill', 'basemgmt' ),
+			] ) . ';', 'after' );
 		}
 
 		// FullCalendar – only on reservations page.
