@@ -185,7 +185,7 @@ Zdefiniowane w `basemgmt.php`:
 Na potrzeby developmentu możesz całkowicie wyłączyć system licencji przez dopisanie w `wp-config.php`:
 
 ```php
-define('BASEMGMT_DEV_LICENSE_OVERRIDE', 'TU_WPROWADZ_KOD_DEWELOPERSKI');
+define('BASEMGMT_DEV_LICENSE_OVERRIDE', '<developer_key>');
 ```
 
 Po ustawieniu tej stałej wtyczka przechodzi w tryb deweloperski, pomija walidację licencji i pokazuje odpowiedni status w zakładce licencji.
