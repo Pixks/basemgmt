@@ -131,7 +131,7 @@ $masked_key = '' !== $license_key
 			<code><?php echo esc_html($api_base); ?></code>
 			&nbsp;·&nbsp;
 			<?php esc_html_e('Kanał:', 'basemgmt'); ?>
-			<code><?php echo $update_channel === 'beta' ? esc_html__('testy (beta)', 'basemgmt') : esc_html__('produkcja', 'basemgmt'); ?></code>
+			<code><?php echo esc_html( 'beta' === $update_channel ? __('testy (beta)', 'basemgmt') : __('produkcja', 'basemgmt') ); ?></code>
 		</p>
 		<?php endif; ?>
 	</div>
