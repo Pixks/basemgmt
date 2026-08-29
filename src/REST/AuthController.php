@@ -125,11 +125,35 @@ final class AuthController extends BaseController {
 	}
 
 	private function is_rate_limited(string $key): bool {
-		return (int) get_transient($key) >= self::LOGIN_LIMIT_ATTEMPTS;
+		$state = get_transient($key);
+		if ( ! is_array($state) ) {
+			return false;
+		}
+
+		$attempts = (int) ($state['attempts'] ?? 0);
+		return $attempts >= self::LOGIN_LIMIT_ATTEMPTS;
 	}
 
 	private function bump_rate_limit(string $key): void {
-		$attempts = (int) get_transient($key);
-		set_transient($key, $attempts + 1, self::LOGIN_LIMIT_WINDOW);
+		$now   = time();
+		$state = get_transient($key);
+
+		if ( ! is_array($state) ) {
+			set_transient($key, ['attempts' => 1, 'window_started' => $now], self::LOGIN_LIMIT_WINDOW);
+			return;
+		}
+
+		$window_started = (int) ($state['window_started'] ?? $now);
+		$attempts       = (int) ($state['attempts'] ?? 0) + 1;
+		$remaining_ttl  = max(1, self::LOGIN_LIMIT_WINDOW - max(0, $now - $window_started));
+
+		set_transient(
+			$key,
+			[
+				'attempts'       => $attempts,
+				'window_started' => $window_started,
+			],
+			$remaining_ttl
+		);
 	}
 }
