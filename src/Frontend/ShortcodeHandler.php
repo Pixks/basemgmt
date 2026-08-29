@@ -296,15 +296,19 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_camp_header(): string {
-		return $this->wrap_panel( __('Przegląd obozu', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmCamp()" x-init="init()" >'
-			. '<div class="bm-ui__header"><h3 x-text="camp ? camp.name : \'Obóz\'"></h3></div>'
-			. '<div class="bm-ui__body">'
-			. '<p class="bm-ui__muted" x-show="!camp">' . esc_html__('Ładowanie danych obozu…', 'basemgmt') . '</p>'
-			. '<template x-if="camp"><div><p><span x-text="camp.start_date"></span> – <span x-text="camp.end_date"></span></p>'
-			. '<p x-show="submittedToday" class="bm-ui__success">✓ ' . esc_html__('Meldunek złożony', 'basemgmt') . '</p>'
-			. '<p x-show="!submittedToday" class="bm-ui__warn">⚠ ' . esc_html__('Brak meldunku', 'basemgmt') . '</p>'
-			. '<div class="bm-ui__stats" x-show="latestCount"><span><strong x-text="latestCount.participants ?? 0"></strong> ' . esc_html__('Uczestnicy', 'basemgmt') . '</span><span><strong x-text="latestCount.staff ?? 0"></strong> ' . esc_html__('Kadra', 'basemgmt') . '</span><span><strong x-text="latestCount.workers ?? 0"></strong> ' . esc_html__('Pracownicy', 'basemgmt') . '</span></div></div></template>'
-			. '</div></div>', true );
+		return $this->wrap_panel(
+			__('Przegląd obozu', 'basemgmt'),
+			'<div class="bm-ui bm-ui--card" x-data="bmCamp()" x-init="init()" >'
+				. '<div class="bm-ui__header"><h3 x-text="camp ? camp.name : \'Obóz\'"></h3></div>'
+				. '<div class="bm-ui__body">'
+				. '<p class="bm-ui__muted" x-show="!camp">' . esc_html__('Ładowanie danych obozu…', 'basemgmt') . '</p>'
+				. '<template x-if="camp"><div><p><span x-text="camp.start_date"></span> – <span x-text="camp.end_date"></span></p>'
+				. '<p x-show="submittedToday" class="bm-ui__success">✓ ' . esc_html__('Meldunek złożony', 'basemgmt') . '</p>'
+				. '<p x-show="!submittedToday" class="bm-ui__warn">⚠ ' . esc_html__('Brak meldunku', 'basemgmt') . '</p>'
+				. '<div class="bm-ui__stats" x-show="latestCount"><span><strong x-text="latestCount.participants ?? 0"></strong> ' . esc_html__('Uczestnicy', 'basemgmt') . '</span><span><strong x-text="latestCount.staff ?? 0"></strong> ' . esc_html__('Kadra', 'basemgmt') . '</span><span><strong x-text="latestCount.workers ?? 0"></strong> ' . esc_html__('Pracownicy', 'basemgmt') . '</span></div></div></template>'
+				. '</div></div>',
+			true
+		);
 	}
 
 	private function panel_logout(): string {
@@ -467,7 +471,7 @@ final class ShortcodeHandler {
 	private function wrap_panel( string $section_title, string $content, ?bool $show_when_authenticated = null, string $extra_classes = '' ): string {
 		$attrs = ' x-data="{}" x-cloak';
 		if ( $show_when_authenticated !== null ) {
-			$attrs .= ' x-show="' . ( $show_when_authenticated ? '$store.bm.authenticated' : '!$store.bm.authenticated' ) . '"';
+			$attrs .= ' x-show="' . ( $show_when_authenticated ? '($store.bm && $store.bm.authenticated)' : '!($store.bm && $store.bm.authenticated)' ) . '"';
 		}
 
 		$title_markup = $section_title !== ''
