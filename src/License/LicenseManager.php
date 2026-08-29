@@ -124,9 +124,9 @@ final class LicenseManager {
 	 * Returns the plan name from the last API response (e.g. 'starter', 'pro').
 	 */
 	public function get_plan(): string {
-		$status = $this->get_status();
-		if ( isset($status['data']['plan_name']) ) {
-			return (string) $status['data']['plan_name'];
+		if ( DeveloperOverride::is_active() ) {
+			$status = $this->get_status();
+			return (string) ( $status['data']['plan_name'] ?? 'developer' );
 		}
 
 		return $this->client->get_plan();

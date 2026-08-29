@@ -9,7 +9,7 @@ defined('ABSPATH') || exit;
 final class DeveloperOverride {
 
 	public const CONFIG_CONSTANT = 'BASEMGMT_DEV_LICENSE_OVERRIDE';
-	private const ACCESS_KEY_HASH = '39c9de358e15cc8e15b8f29ffd3730d28f277c84cbd1f9c06b244a4628f354e6';
+	private const ACCESS_KEY_HASH = 'f62b20adb55ecff91deb8ed5654b38d85628c71c6923a1864a501efa33fb27fb';
 
 	public static function is_active(): bool {
 		if ( ! defined(self::CONFIG_CONSTANT) ) {
