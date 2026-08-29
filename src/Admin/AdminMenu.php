@@ -441,7 +441,7 @@ final class AdminMenu {
 			wp_script_add_data( 'sortablejs', 'crossorigin', 'anonymous' );
 		}
 
-		// Shortcode UI stylesheet + live-preview inline vars – only on the style settings page.
+		// Shortcode UI stylesheet + live-preview script – only on the style settings page.
 		if ( $page === 'basemgmt-settings' && sanitize_key($_GET['tab'] ?? '') === 'wyglad'
 			&& current_user_can('manage_options') ) {
 			wp_enqueue_style(
@@ -455,6 +455,18 @@ final class AdminMenu {
 			if ( $custom_font_url !== '' ) {
 				wp_enqueue_style( 'basemgmt-custom-font', $custom_font_url, [], null );
 			}
+			wp_enqueue_script(
+				'basemgmt-style-preview',
+				BASEMGMT_URL . 'assets/js/bm-style-preview.js',
+				[],
+				BASEMGMT_VERSION,
+				true
+			);
+			wp_localize_script( 'basemgmt-style-preview', 'bmStyleSettings', [
+				'shadows'   => \BaseMgmt\Frontend\PanelStyleSettings::SHADOWS,
+				'fonts'     => \BaseMgmt\Frontend\PanelStyleSettings::FONT_FAMILIES,
+				'pillLabel' => __('Pill', 'basemgmt'),
+			] );
 		}
 
 		// FullCalendar – only on reservations page.
