@@ -716,6 +716,7 @@ final class AdminMenu {
 			// License
 			'bm_activate_license'   => [$this->license, 'handle_activate'],
 			'bm_deactivate_license' => [$this->license, 'handle_deactivate'],
+			'bm_refresh_license'    => [$this->license, 'handle_refresh'],
 		];
 	}
 
