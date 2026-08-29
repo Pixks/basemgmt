@@ -60,7 +60,7 @@ final class AuthController extends BaseController {
 		$camp_id  = (int) $request->get_param('camp_id');
 		$staff_id = (int) $request->get_param('staff_id');
 		$code     = (string) $request->get_param('security_code');
-		$rate_key = $this->login_rate_limit_key($camp_id, $staff_id);
+		$rate_key = $this->login_rate_limit_key();
 
 		if ( $this->is_rate_limited($rate_key) ) {
 			return $this->error('bm_rate_limited', __('Zbyt wiele prób logowania. Spróbuj ponownie później.', 'basemgmt'), 429);
@@ -82,8 +82,6 @@ final class AuthController extends BaseController {
 			}
 			return $this->ok($data, 401);
 		}
-
-		delete_transient($rate_key);
 
 		return $this->ok([
 			'success'      => true,
@@ -119,9 +117,9 @@ final class AuthController extends BaseController {
 		]);
 	}
 
-	private function login_rate_limit_key(int $camp_id, int $staff_id): string {
+	private function login_rate_limit_key(): string {
 		$ip = sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'] ?? ''));
-		return 'bm_login_rl_' . md5($ip . '|' . $camp_id . '|' . $staff_id);
+		return 'bm_login_rl_' . md5($ip);
 	}
 
 	private function is_rate_limited(string $key): bool {
