@@ -3,7 +3,7 @@
  * Plugin Name:       CampLink
  * Plugin URI:        https://pixks.pl
  * Description:       Modularny system zarządzania obozami — rezerwacje, grafiki, wyżywienie, powiadomienia e-mail, dzienniki operacji i eksport PDF w jednej wtyczce WordPress.
- * Version:           2.0.0-beta
+ * Version:           2.0.3-beta
  * Requires at least: 6.0
  * Requires PHP:      8.1
  * Author:            Pixks - Jakub Boiński

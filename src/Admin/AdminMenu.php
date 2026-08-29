@@ -455,10 +455,25 @@ final class AdminMenu {
 			if ( $custom_font_url !== '' ) {
 				wp_enqueue_style( 'basemgmt-custom-font', $custom_font_url, [], null );
 			}
+			// Admin-only preview panel CSS (tab switcher, form grid, etc.)
+			wp_add_inline_style( 'basemgmt-shortcodes', '
+#bm-style-preview-wrap{contain:style;border-radius:12px;border:1px solid #dde;overflow:hidden}
+#bm-style-preview{padding:20px;transition:background .2s}
+.bm-style-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 32px}
+.bm-style-form-group label{display:block;font-weight:600;margin-bottom:4px;font-size:.9rem}
+.bm-style-form-group input[type=color]{width:50px;height:32px;padding:2px 3px;border:1px solid #ccc;border-radius:5px;cursor:pointer;vertical-align:middle}
+.bm-style-form-group .color-hex{font-size:.8rem;color:#555;margin-left:6px;font-family:monospace;vertical-align:middle}
+.bm-style-section-title{font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;color:#666;border-bottom:1px solid #e0e0e0;padding-bottom:6px;margin:24px 0 16px}
+.bm-prev-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.bm-prev-tab{padding:5px 12px;font-size:.78rem;font-weight:600;border:1px solid #c9d0d8;border-radius:4px;background:#f6f7f9;color:#444;cursor:pointer}
+.bm-prev-tab.active{background:#2271b1;color:#fff;border-color:#2271b1}
+.bm-prev-pane{display:none}
+.bm-prev-pane.active{display:block}
+' );
 			wp_enqueue_script(
 				'basemgmt-style-preview',
 				BASEMGMT_URL . 'assets/js/bm-style-preview.js',
-				[],
+				['jquery'],
 				BASEMGMT_VERSION,
 				true
 			);
