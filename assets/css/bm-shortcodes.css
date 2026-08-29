@@ -183,7 +183,7 @@
 }
 
 .bm-ui.bm-ui--panel-login {
-	max-width: 1080px;
+	max-width: 860px;
 }
 
 .bm-ui--panel .bm-ui__section-title {
@@ -313,7 +313,7 @@
 }
 
 .bm-ui--auth-card .bm-ui__body {
-	padding: 18px 18px 16px;
+	padding: 20px 22px 18px;
 }
 
 .bm-ui--auth-card .bm-ui__label {
@@ -322,18 +322,33 @@
 	margin-bottom: 6px;
 }
 
+.bm-ui--auth-card .bm-ui__intro {
+	margin-bottom: 16px !important;
+	font-size: .96rem;
+	line-height: 1.5;
+}
+
 .bm-ui.bm-ui--auth-card .bm-ui__field {
 	gap: 6px;
 }
 
 .bm-ui--auth-card .bm-ui__actions {
-	margin-top: 2px;
+	margin-top: 6px;
+}
+
+.bm-ui--auth-card .bm-ui__hint {
+	font-size: .82rem;
+}
+
+.bm-ui--auth-card .bm-ui__auth-note {
+	margin-top: 10px !important;
 }
 
 .bm-ui .bm-ui__btn--login {
-	padding: 9px 18px;
+	padding: 10px 20px;
 	font-size: .9rem;
 	font-weight: 700;
+	min-width: 140px;
 }
 
 .bm-ui .bm-ui__btn:hover {

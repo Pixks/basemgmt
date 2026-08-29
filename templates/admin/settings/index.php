@@ -549,23 +549,30 @@ $font_labels = [
                             <h3><?php esc_html_e('Panel kadry obozowej', 'basemgmt'); ?></h3>
                         </div>
                         <div class="bm-ui__body">
+                            <p class="bm-ui__intro">
+                                <?php esc_html_e('Wybierz obóz, członka kadry i wpisz 6-cyfrowy kod bezpieczeństwa, aby przejść do panelu.', 'basemgmt'); ?>
+                            </p>
                             <div class="bm-ui__stack">
                             <div class="bm-ui__field">
                                 <label class="bm-ui__label"><?php esc_html_e('Obóz', 'basemgmt'); ?></label>
                                 <input type="text" class="bm-ui__input" readonly value="—">
+                                <div class="bm-ui__hint"><?php esc_html_e('Najpierw wybierz aktywny obóz, dla którego chcesz się zalogować.', 'basemgmt'); ?></div>
                             </div>
                             <div class="bm-ui__field" style="display:none;">
                                 <label class="bm-ui__label"><?php esc_html_e('Kadra', 'basemgmt'); ?></label>
                                 <input type="text" class="bm-ui__input" readonly value="Jan Kowalski — Komendant">
+                                <div class="bm-ui__hint"><?php esc_html_e('Pokażemy tylko osoby przypisane do wybranego obozu.', 'basemgmt'); ?></div>
                             </div>
                             <div class="bm-ui__field" style="display:none;">
                                 <label class="bm-ui__label"><?php esc_html_e('Kod bezpieczeństwa', 'basemgmt'); ?></label>
                                 <input type="text" class="bm-ui__input" readonly value="••••••">
+                                <div class="bm-ui__hint"><?php esc_html_e('Kod ma dokładnie 6 cyfr.', 'basemgmt'); ?></div>
                             </div>
                             </div>
                             <div class="bm-ui__actions">
-                                <button class="bm-ui__btn bm-ui__btn--login" type="button"><?php esc_html_e('Zaloguj', 'basemgmt'); ?></button>
+                                <button class="bm-ui__btn bm-ui__btn--login" type="button"><?php esc_html_e('Zaloguj się', 'basemgmt'); ?></button>
                             </div>
+                            <p class="bm-ui__muted bm-ui__auth-note"><?php esc_html_e('Po poprawnym logowaniu od razu zobaczysz panel kadry dla wybranego obozu.', 'basemgmt'); ?></p>
                         </div>
                     </div>
                 </div><!-- /prev-login -->
