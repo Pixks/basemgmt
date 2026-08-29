@@ -71,6 +71,11 @@ Pełna dokumentacja w katalogu [`docs/`](docs/README.md):
 | [10 – Bezpieczeństwo](docs/10-security.md) | Mechanizmy ochrony, rekomendacje |
 | [11 – Cron](docs/11-cron.md) | Zadania cykliczne, harmonogram |
 | [12 – Przewodnik dewelopera](docs/12-developer-guide.md) | Dodawanie modułów, hooki, konwencje |
+| [13 – Breakdance Custom Elements](docs/13-breakdance-elements.md) | Gotowe bloki HTML/Alpine dla elementów panelu |
+| [14 – Breakdance Elements – styl ZHP](docs/14-breakdance-elements-zhp.md) | Wariant gotowych bloków w stylu ZHP |
+| [15 – Gotowy panel – jeden blok](docs/15-panel-full-breakdance.md) | Kompletna strona panelu jako jeden blok |
+| [16 – Logi operacji](docs/16-operation-logs.md) | Dziennik zdarzeń i retencja |
+| [17 – Wdrożenie i dane startowe](docs/17-deployment-and-start-data.md) | Jednolita instrukcja wdrożenia, dane startowe i zakres instrukcji użytkownika |
 
 ---
 
