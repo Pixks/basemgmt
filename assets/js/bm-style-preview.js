@@ -54,10 +54,12 @@
 
 	// Card radius slider
 	var rng = document.getElementById('bm-ui-radius');
+	var rvLabel = document.getElementById('bm-radius-val');
 	if (rng) {
 		rng.addEventListener('input', function () {
 			css('--bm-radius', rng.value + 'px');
 			css('--bm-radius-sm', Math.max(0, parseInt(rng.value, 10) - 2) + 'px');
+			if (rvLabel) rvLabel.textContent = rng.value;
 		});
 	}
 
@@ -188,6 +190,13 @@
 			var target = document.getElementById(tab.dataset.pane);
 			if (target) target.classList.add('active');
 		});
+	});
+
+	// Prevent preview links from navigating (replaces CSP-unsafe onclick="return false;")
+	document.addEventListener('click', function (e) {
+		if (e.target.closest('[data-bm-preview-link]')) {
+			e.preventDefault();
+		}
 	});
 
 	// Init preview CSS vars from current form values on page load

@@ -399,7 +399,6 @@ $font_labels = [
                     <td>
                         <input type="range" id="bm-ui-radius" name="bm_ui_radius" min="0" max="32" step="1"
                                value="<?php echo esc_attr($ui_style['radius']); ?>"
-                               oninput="document.getElementById('bm-radius-val').textContent=this.value"
                                style="width:160px;vertical-align:middle;">
                         <strong id="bm-radius-val" style="margin-left:6px;font-family:monospace;"><?php echo esc_html($ui_style['radius']); ?></strong> px
                     </td>
@@ -523,7 +522,7 @@ $font_labels = [
                             <div style="font-size:.84rem;margin-bottom:10px;">
                                 <?php esc_html_e('Liczba uczestników: 48/50, stan sanitarny: dobry, brak incydentów.', 'basemgmt'); ?>
                             </div>
-                            <a href="#" class="bm-ui__read-more" onclick="return false;">
+                            <a href="#" class="bm-ui__read-more" data-bm-preview-link="1">
                                 <?php esc_html_e('Przeczytaj więcej', 'basemgmt'); ?> →
                             </a>
                         </div>
