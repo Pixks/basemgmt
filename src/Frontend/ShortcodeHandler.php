@@ -269,21 +269,18 @@ final class ShortcodeHandler {
 		$redirect_url = isset( $atts['redirect_url'] ) ? esc_url( (string) $atts['redirect_url'] ) : '';
 		$redirect_attr = $redirect_url ? ' data-bm-redirect="' . esc_attr( $redirect_url ) . '"' : '';
 		return $this->wrap_panel(
-			__('Panel kadry', 'basemgmt'),
-			'<div class="bm-ui bm-ui--card" x-data="bmLogin()" x-cloak x-init="init()" ' . $redirect_attr . '>'
-				. '<div class="bm-ui__header"><span>🔐 ' . esc_html__('Logowanie', 'basemgmt') . '</span></div>'
+			'',
+			'<div class="bm-ui bm-ui--card bm-ui--auth-card" x-data="bmLogin()" x-cloak x-init="init()" ' . $redirect_attr . '>'
+				. '<div class="bm-ui__header"><h3>' . esc_html__('Panel kadry obozowej', 'basemgmt') . '</h3></div>'
 				. '<div class="bm-ui__body">'
-				. '<p class="bm-ui__intro">' . esc_html__('Wybierz obóz i członka kadry, a następnie wpisz kod bezpieczeństwa.', 'basemgmt') . '</p>'
 				. '<div class="bm-ui__stack">'
 				. '<div class="bm-ui__field">'
 				. '<label class="bm-ui__label">' . esc_html__('Obóz', 'basemgmt') . '</label>'
 				. '<select class="bm-ui__input" x-model="campId" @change="loadStaff()"><option value="">—</option><template x-for="c in camps" :key="c.id"><option :value="c.id" x-text="c.name"></option></template></select>'
-				. '<div class="bm-ui__hint">' . esc_html__('Najpierw wybierz aktywny obóz, dla którego chcesz się zalogować.', 'basemgmt') . '</div>'
 				. '</div>'
 				. '<div class="bm-ui__field" x-show="campId && staffList.length">'
 				. '<label class="bm-ui__label">' . esc_html__('Kadra', 'basemgmt') . '</label>'
 				. '<select class="bm-ui__input" x-model="staffId"><option value="">—</option><template x-for="s in staffList" :key="s.id"><option :value="s.id" x-text="s.display_name"></option></template></select>'
-				. '<div class="bm-ui__hint">' . esc_html__('Po wyborze obozu pokażemy osoby przypisane do tej kadry.', 'basemgmt') . '</div>'
 				. '</div>'
 				. '<div class="bm-ui__field" x-show="staffId">'
 				. '<label class="bm-ui__label">' . esc_html__('Kod bezpieczeństwa', 'basemgmt') . '</label>'
@@ -291,9 +288,10 @@ final class ShortcodeHandler {
 				. '</div>'
 				. '</div>'
 				. '<p class="bm-ui__error" x-show="error" x-text="error"></p>'
-				. '<div class="bm-ui__actions"><button type="button" class="bm-ui__btn" @click="submit()" :disabled="loading || !campId || !staffId || !code" x-text="loading ? \'Logowanie…\' : \'Zaloguj się\'"></button></div>'
+				. '<div class="bm-ui__actions"><button type="button" class="bm-ui__btn bm-ui__btn--login" @click="submit()" :disabled="loading || !campId || !staffId || !code" x-text="loading ? \'Logowanie…\' : \'Zaloguj\'"></button></div>'
 				. '</div></div>',
-			'!$store.bm.authenticated'
+			'!$store.bm.authenticated',
+			'bm-ui--panel-login'
 		);
 	}
 
@@ -466,13 +464,19 @@ final class ShortcodeHandler {
 		return '<div class="bm-ui bm-ui--badge" x-data="{}" x-cloak x-show="$store.bm.authenticated"><span x-text="$store.bm.unreadCount"></span></div>';
 	}
 
-	private function wrap_panel( string $section_title, string $content, string $visibility = '' ): string {
+	private function wrap_panel( string $section_title, string $content, string $visibility = '', string $extra_classes = '' ): string {
 		$attrs = '';
 		if ( $visibility !== '' ) {
 			$attrs = ' x-data="{}" x-cloak x-show="' . esc_attr( $visibility ) . '"';
 		}
 
-		return '<div class="bm-ui bm-ui--panel"' . $attrs . '><div class="bm-ui__section-title">' . esc_html( $section_title ) . '</div>' . $content . '</div>';
+		$title_markup = $section_title !== ''
+			? '<div class="bm-ui__section-title">' . esc_html( $section_title ) . '</div>'
+			: '';
+
+		$classes = trim( 'bm-ui bm-ui--panel ' . $extra_classes );
+
+		return '<div class="' . esc_attr( $classes ) . '"' . $attrs . '>' . $title_markup . $content . '</div>';
 	}
 
 	private function build_config(): array {

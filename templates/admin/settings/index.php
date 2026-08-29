@@ -543,37 +543,28 @@ $font_labels = [
                 </div><!-- /prev-announcements -->
 
                 <!-- Pane: Logowanie -->
-                <div id="prev-login" class="bm-prev-pane bm-ui bm-ui--panel">
-                    <div class="bm-ui__section-title"><?php esc_html_e('PANEL KADRY', 'basemgmt'); ?></div>
-                    <div class="bm-ui bm-ui--card">
+                <div id="prev-login" class="bm-prev-pane bm-ui bm-ui--panel bm-ui--panel-login">
+                    <div class="bm-ui bm-ui--card bm-ui--auth-card">
                         <div class="bm-ui__header">
-                            <span>🔐 <?php esc_html_e('Logowanie', 'basemgmt'); ?></span>
+                            <h3><?php esc_html_e('Panel kadry obozowej', 'basemgmt'); ?></h3>
                         </div>
                         <div class="bm-ui__body">
-                            <p class="bm-ui__intro">
-                                <?php esc_html_e('Wybierz obóz i członka kadry, a następnie wpisz kod bezpieczeństwa.', 'basemgmt'); ?>
-                            </p>
                             <div class="bm-ui__stack">
                             <div class="bm-ui__field">
                                 <label class="bm-ui__label"><?php esc_html_e('Obóz', 'basemgmt'); ?></label>
-                                <input type="text" class="bm-ui__input" readonly value="Ośrodek Test — Chorągiew">
-                                <div class="bm-ui__hint"><?php esc_html_e('Najpierw wybierasz aktywny obóz.', 'basemgmt'); ?></div>
+                                <input type="text" class="bm-ui__input" readonly value="—">
                             </div>
-                            <div class="bm-ui__field">
+                            <div class="bm-ui__field" style="display:none;">
                                 <label class="bm-ui__label"><?php esc_html_e('Kadra', 'basemgmt'); ?></label>
                                 <input type="text" class="bm-ui__input" readonly value="Jan Kowalski — Komendant">
-                                <div class="bm-ui__hint"><?php esc_html_e('Lista kadry ładuje się po wskazaniu obozu.', 'basemgmt'); ?></div>
                             </div>
-                            <div class="bm-ui__field">
+                            <div class="bm-ui__field" style="display:none;">
                                 <label class="bm-ui__label"><?php esc_html_e('Kod bezpieczeństwa', 'basemgmt'); ?></label>
                                 <input type="text" class="bm-ui__input" readonly value="••••••">
                             </div>
                             </div>
                             <div class="bm-ui__actions">
-                                <button class="bm-ui__btn" type="button"><?php esc_html_e('Zaloguj się', 'basemgmt'); ?></button>
-                            </div>
-                            <div style="margin-top:10px;font-size:.8rem;">
-                                <a href="#" class="bm-ui__read-more" onclick="return false;"><?php esc_html_e('Po zalogowaniu od razu zobaczysz swój panel kadry', 'basemgmt'); ?></a>
+                                <button class="bm-ui__btn bm-ui__btn--login" type="button"><?php esc_html_e('Zaloguj', 'basemgmt'); ?></button>
                             </div>
                         </div>
                     </div>
