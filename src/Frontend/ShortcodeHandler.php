@@ -469,7 +469,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_unread_counter(): string {
-		return '<div class="bm-ui bm-ui--badge" x-data="{}" x-cloak x-show="($store.bm && $store.bm.authenticated)"><span x-text="$store.bm.unreadCount"></span></div>';
+		return '<div class="bm-ui bm-ui--badge" x-data="{}" x-cloak x-show="($store.bm && $store.bm.authenticated)"><span x-text="$store.bm ? $store.bm.unreadCount : 0"></span></div>';
 	}
 
 	/**
