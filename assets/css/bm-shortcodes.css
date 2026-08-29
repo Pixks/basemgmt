@@ -305,7 +305,8 @@
 .bm-ui--feature-card,
 .bm-ui--form-card,
 .bm-ui--list-card,
-.bm-ui--detail-card {
+.bm-ui--detail-card,
+.bm-ui--compact-card {
 	border-radius: calc(var(--bm-radius) + 2px);
 	box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
 }
@@ -320,7 +321,8 @@
 .bm-ui--feature-card .bm-ui__body,
 .bm-ui--form-card .bm-ui__body,
 .bm-ui--list-card .bm-ui__body,
-.bm-ui--detail-card .bm-ui__body {
+.bm-ui--detail-card .bm-ui__body,
+.bm-ui--compact-card .bm-ui__body {
 	padding: 18px;
 }
 
@@ -346,6 +348,16 @@
 
 .bm-ui--detail-card .bm-ui__json {
 	margin-top: 10px;
+}
+
+.bm-ui--compact-card {
+	padding: 12px 16px;
+	background: var(--bm-surface);
+	border: 1px solid var(--bm-border);
+}
+
+.bm-ui--compact-card .bm-ui__btn {
+	flex-shrink: 0;
 }
 
 .bm-ui--auth-card .bm-ui__header {
