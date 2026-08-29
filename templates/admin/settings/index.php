@@ -836,10 +836,10 @@ $font_labels = [
     var shadows = <?php echo wp_json_encode(PanelStyleSettings::SHADOWS); ?>;
     var fonts   = <?php echo wp_json_encode(PanelStyleSettings::FONT_FAMILIES); ?>;
     var p       = document.getElementById('bm-style-preview');
-    if (!p) return;
 
+    // css() is a no-op when the preview element is absent.
     function css(prop, val) {
-        p.style.setProperty(prop, val);
+        if (p) p.style.setProperty(prop, val);
     }
 
     // Update hex labels next to color pickers
@@ -848,7 +848,8 @@ $font_labels = [
         if (!el) return;
         el.addEventListener('input', function () {
             css(cssProp, el.value);
-            var hex = el.closest('.bm-style-form-group')?.querySelector('.color-hex');
+            var group = el.closest('.bm-style-form-group');
+            var hex = group ? group.querySelector('.color-hex') : null;
             if (hex) hex.textContent = el.value;
             updateHeader();
         });
@@ -891,6 +892,7 @@ $font_labels = [
     var btnActual = document.getElementById('bm-ui-btn-radius-actual');
     var btnLabel  = document.getElementById('bm-btn-radius-val');
     function updateBtnRadius() {
+        if (!btnRng) return;
         var v = parseInt(btnRng.value, 10);
         var actual = (v >= 32) ? 999 : v;
         if (btnActual) btnActual.value = actual;
@@ -938,13 +940,14 @@ $font_labels = [
         grd.addEventListener('change', updateHeader);
     }
 
-    // Preset buttons
+    // Preset buttons – registered unconditionally so they work regardless of preview presence
     document.querySelectorAll('[data-bm-preset]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            var d = JSON.parse(btn.dataset.bmPreset || '{}');
+            var d;
+            try { d = JSON.parse(btn.dataset.bmPreset || '{}'); } catch(e) { return; }
 
-            // Update form fields
-            var map = {
+            // Update color pickers
+            var colorMap = {
                 'bm-ui-primary-color':       'primary_color',
                 'bm-ui-primary-hover-color': 'primary_hover',
                 'bm-ui-badge-color':         'badge_color',
@@ -957,26 +960,26 @@ $font_labels = [
                 'bm-ui-background-color':    'background',
                 'bm-ui-border-color':        'border_color',
             };
-            for (var id in map) {
+            for (var id in colorMap) {
                 var el = document.getElementById(id);
-                if (el && map[id] in d && d[map[id]] !== undefined) {
-                    el.value = d[map[id]];
+                if (el && colorMap[id] in d && d[colorMap[id]] !== undefined) {
+                    el.value = d[colorMap[id]];
                     el.dispatchEvent(new Event('input'));
                 }
             }
 
             // Card radius
             var rv = document.getElementById('bm-ui-radius');
+            var rvLabel = document.getElementById('bm-radius-val');
             if (rv && d.radius) {
                 rv.value = d.radius;
-                document.getElementById('bm-radius-val').textContent = d.radius;
+                if (rvLabel) rvLabel.textContent = d.radius;
                 rv.dispatchEvent(new Event('input'));
             }
 
             // Button radius
             if (btnRng && d.btn_radius !== undefined) {
-                var bv = Math.min(32, parseInt(d.btn_radius, 10));
-                btnRng.value = bv;
+                btnRng.value = Math.min(32, parseInt(d.btn_radius, 10));
                 updateBtnRadius();
             }
 
@@ -1002,7 +1005,7 @@ $font_labels = [
         });
     });
 
-    // Preview tab switching
+    // Preview tab switching – registered unconditionally
     document.querySelectorAll('.bm-prev-tab').forEach(function (tab) {
         tab.addEventListener('click', function () {
             document.querySelectorAll('.bm-prev-tab').forEach(function (t) { t.classList.remove('active'); });
@@ -1013,34 +1016,39 @@ $font_labels = [
         });
     });
 
-    // Init preview vars from current values on page load
-    (function initPreview() {
-        var colorMap = {
-            'bm-ui-primary-color':       '--bm-primary',
-            'bm-ui-primary-hover-color': '--bm-primary-hover',
-            'bm-ui-badge-color':         '--bm-badge-bg',
-            'bm-ui-badge-text-color':    '--bm-badge-text',
-            'bm-ui-btn-text-color':      '--bm-btn-text',
-            'bm-ui-link-color':          '--bm-link',
-            'bm-ui-text-color':          '--bm-text',
-            'bm-ui-heading-color':       '--bm-heading',
-            'bm-ui-surface-color':       '--bm-surface',
-            'bm-ui-background-color':    '--bm-bg',
-            'bm-ui-border-color':        '--bm-border',
-        };
-        for (var id in colorMap) {
-            var el = document.getElementById(id);
-            if (el) css(colorMap[id], el.value);
-        }
-        if (rng) {
-            css('--bm-radius', rng.value + 'px');
-            css('--bm-radius-sm', Math.max(0, parseInt(rng.value, 10) - 2) + 'px');
-        }
-        if (btnRng) updateBtnRadius();
-        if (shd)    css('--bm-shadow', shadows[shd.value] || 'none');
+    // Init preview CSS vars from current form values on page load
+    if (p) {
+        (function initPreview() {
+            var colorMap = {
+                'bm-ui-primary-color':       '--bm-primary',
+                'bm-ui-primary-hover-color': '--bm-primary-hover',
+                'bm-ui-badge-color':         '--bm-badge-bg',
+                'bm-ui-badge-text-color':    '--bm-badge-text',
+                'bm-ui-btn-text-color':      '--bm-btn-text',
+                'bm-ui-link-color':          '--bm-link',
+                'bm-ui-text-color':          '--bm-text',
+                'bm-ui-heading-color':       '--bm-heading',
+                'bm-ui-surface-color':       '--bm-surface',
+                'bm-ui-background-color':    '--bm-bg',
+                'bm-ui-border-color':        '--bm-border',
+            };
+            for (var id in colorMap) {
+                var el = document.getElementById(id);
+                if (el) css(colorMap[id], el.value);
+            }
+            if (rng) {
+                css('--bm-radius', rng.value + 'px');
+                css('--bm-radius-sm', Math.max(0, parseInt(rng.value, 10) - 2) + 'px');
+            }
+            updateBtnRadius();
+            if (shd) css('--bm-shadow', shadows[shd.value] || 'none');
+            updateFontPreview();
+            updateHeader();
+        })();
+    } else {
+        // No preview element – still initialise font row visibility
         updateFontPreview();
-        updateHeader();
-    })();
+    }
 })();
 </script>
 
