@@ -18,6 +18,8 @@ $license_key    = $client->get_license_key();
 $api_base       = $client->get_api_base();
 $update_channel = $client->get_update_channel();
 $is_valid       = $manager->is_valid();
+$developer_override_active = $manager->is_developer_override_active();
+$developer_override_constant = \BaseMgmt\License\DeveloperOverride::CONFIG_CONSTANT;
 $known_servers  = $known_servers ?? LicenseClient::known_servers();
 
 // Expose extra vars with safe defaults when accessed from template directly.
@@ -45,7 +47,11 @@ foreach ( $known_servers as $preset_key => $preset_url ) {
 $error_code = $status['error']['code']    ?? '';
 $error_msg  = $status['error']['message'] ?? '';
 
-if ( '' === $license_key ) {
+if ( $developer_override_active ) {
+	$state_label = __('Aktywna · tryb deweloperski', 'basemgmt');
+	$state_class = 'bm-lic-badge--info';
+	$state_icon  = '🛠️';
+} elseif ( '' === $license_key ) {
 	$state_label = __('Brak klucza licencji', 'basemgmt');
 	$state_class = 'bm-lic-badge--none';
 	$state_icon  = '⬜';
@@ -174,6 +180,13 @@ $masked_key = '' !== $license_key
 			<?php echo esc_html($state_icon . ' ' . $state_label); ?>
 		</div>
 
+		<?php if ( $developer_override_active ): ?>
+		<p class="bm-lic-meta">
+			<?php esc_html_e('Aktywowano na potrzeby rozwoju wtyczki poprzez kod deweloperski w pliku wp-config.php.', 'basemgmt'); ?>
+			<code><?php echo esc_html($developer_override_constant); ?></code>
+		</p>
+		<?php endif; ?>
+
 		<?php if ( $masked_key ): ?>
 		<p class="bm-lic-meta">
 			<?php esc_html_e('Klucz:', 'basemgmt'); ?>
@@ -264,7 +277,7 @@ $masked_key = '' !== $license_key
 		<?php endif; ?>
 
 		<?php /* Refresh status button */ ?>
-		<?php if ( $license_key ): ?>
+		<?php if ( $license_key && ! $developer_override_active ): ?>
 		<div style="margin-top:16px;">
 			<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;">
 				<?php wp_nonce_field('bm_refresh_license'); ?>
@@ -280,6 +293,15 @@ $masked_key = '' !== $license_key
 	<?php /* ── ACTIVATE CARD ── */ ?>
 	<div class="bm-lic-card">
 		<h2>⚡ <?php esc_html_e('Konfiguracja i aktywacja', 'basemgmt'); ?></h2>
+		<?php if ( $developer_override_active ): ?>
+		<div class="bm-lic-badge bm-lic-badge--info">
+			🧑‍💻 <?php esc_html_e('Tryb deweloperski jest aktywny i całkowicie wyłącza system licencji oraz jego ograniczenia.', 'basemgmt'); ?>
+		</div>
+		<p style="font-size:13px;color:#555;margin:0;">
+			<?php esc_html_e('Aby wrócić do standardowej walidacji licencji, usuń tę stałą z pliku wp-config.php albo podaj inną wartość.', 'basemgmt'); ?>
+			<code><?php echo esc_html($developer_override_constant); ?></code>
+		</p>
+		<?php else: ?>
 		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="bm-activate-form">
 			<?php wp_nonce_field('bm_activate_license'); ?>
 			<input type="hidden" name="action" value="bm_activate_license">
@@ -367,10 +389,11 @@ $masked_key = '' !== $license_key
 
 			<?php submit_button(__('Zapisz i aktywuj licencję', 'basemgmt'), 'primary', 'submit', false, ['id' => 'bm-btn-activate']); ?>
 		</form>
+		<?php endif; ?>
 	</div>
 
 	<?php /* ── DEACTIVATE CARD ── */ ?>
-	<?php if ( $license_key ): ?>
+	<?php if ( $license_key && ! $developer_override_active ): ?>
 	<div class="bm-lic-card">
 		<h2>🔓 <?php esc_html_e('Dezaktywacja licencji', 'basemgmt'); ?></h2>
 		<p style="font-size:13px;color:#555;margin:0 0 12px;">
@@ -504,4 +527,3 @@ $masked_key = '' !== $license_key
 	});
 })();
 </script>
-

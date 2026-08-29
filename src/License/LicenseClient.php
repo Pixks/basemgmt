@@ -109,6 +109,10 @@ final class LicenseClient {
 
 	/** POST /api/v1/licenses/activate */
 	public function activate(): array {
+		if ( DeveloperOverride::is_active() ) {
+			return DeveloperOverride::build_status();
+		}
+
 		delete_transient(self::CACHE_KEY);
 		$response = $this->post('/api/v1/licenses/activate', [
 			'product_slug' => self::PRODUCT_SLUG,
@@ -128,6 +132,15 @@ final class LicenseClient {
 
 	/** POST /api/v1/licenses/deactivate */
 	public function deactivate(): array {
+		if ( DeveloperOverride::is_active() ) {
+			return [
+				'success' => true,
+				'data'    => [
+					'developer_override' => true,
+				],
+			];
+		}
+
 		delete_transient(self::CACHE_KEY);
 		return $this->post('/api/v1/licenses/deactivate', [
 			'product_slug' => self::PRODUCT_SLUG,
@@ -142,6 +155,10 @@ final class LicenseClient {
 	 * Result is cached in a transient for the grace period (min. 6 h).
 	 */
 	public function check(bool $force = false): array {
+		if ( DeveloperOverride::is_active() ) {
+			return DeveloperOverride::build_status();
+		}
+
 		$cached = get_transient(self::CACHE_KEY);
 		if ( ! $force && is_array($cached) && ! empty($cached['valid_until']) && $cached['valid_until'] > time() ) {
 			return $cached;
@@ -165,6 +182,10 @@ final class LicenseClient {
 
 	/** POST /api/v1/licenses/heartbeat */
 	public function heartbeat(): array {
+		if ( DeveloperOverride::is_active() ) {
+			return DeveloperOverride::build_status();
+		}
+
 		$response = $this->post('/api/v1/licenses/heartbeat', [
 			'product_slug' => self::PRODUCT_SLUG,
 			'license_key'  => $this->get_license_key(),
@@ -182,6 +203,16 @@ final class LicenseClient {
 
 	/** POST /api/v1/updates/check */
 	public function check_for_update(string $channel = 'stable'): array {
+		if ( DeveloperOverride::is_active() ) {
+			return [
+				'success' => true,
+				'data'    => [
+					'update_available'   => false,
+					'developer_override' => true,
+				],
+			];
+		}
+
 		return $this->post('/api/v1/updates/check', [
 			'product_slug'    => self::PRODUCT_SLUG,
 			'license_key'     => $this->get_license_key(),
@@ -196,6 +227,10 @@ final class LicenseClient {
 	 * Call from Bootstrap or Activator once.
 	 */
 	public function register_cron(): void {
+		if ( DeveloperOverride::is_active() ) {
+			return;
+		}
+
 		$hook = self::PRODUCT_SLUG . '_license_heartbeat';
 		if ( ! wp_next_scheduled($hook) ) {
 			wp_schedule_event(time() + HOUR_IN_SECONDS, 'twicedaily', $hook);
@@ -210,6 +245,10 @@ final class LicenseClient {
 	 *                            (e.g. "basemgmt/basemgmt.php").
 	 */
 	public function hook_updates(string $plugin_file): void {
+		if ( DeveloperOverride::is_active() ) {
+			return;
+		}
+
 		add_filter('pre_set_site_transient_update_plugins', function ($transient) use ($plugin_file) {
 			if ( ! is_object($transient) ) {
 				$transient = new \stdClass();

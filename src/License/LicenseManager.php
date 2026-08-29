@@ -64,6 +64,10 @@ final class LicenseManager {
 	 * Only a confirmed blocking error code marks the license as invalid.
 	 */
 	public function is_valid(): bool {
+		if ( DeveloperOverride::is_active() ) {
+			return true;
+		}
+
 		$status = $this->get_status();
 
 		// API returned a confirmed blocking error.
@@ -90,6 +94,10 @@ final class LicenseManager {
 	 * Forces a fresh API call when $force is true.
 	 */
 	public function get_status(bool $force = false): array {
+		if ( DeveloperOverride::is_active() ) {
+			return DeveloperOverride::build_status();
+		}
+
 		if ( '' === $this->client->get_license_key() ) {
 			return [
 				'success' => false,
@@ -116,6 +124,11 @@ final class LicenseManager {
 	 * Returns the plan name from the last API response (e.g. 'starter', 'pro').
 	 */
 	public function get_plan(): string {
+		if ( DeveloperOverride::is_active() ) {
+			$status = $this->get_status();
+			return (string) ( $status['data']['plan_name'] ?? 'developer' );
+		}
+
 		return $this->client->get_plan();
 	}
 
@@ -124,6 +137,10 @@ final class LicenseManager {
 	 * Falls back to true when no cached data is available (grace period).
 	 */
 	public function updates_allowed(): bool {
+		if ( DeveloperOverride::is_active() ) {
+			return true;
+		}
+
 		$status = $this->get_status();
 		if ( isset($status['data']['updates_allowed']) ) {
 			return (bool) $status['data']['updates_allowed'];
@@ -135,6 +152,10 @@ final class LicenseManager {
 	 * Returns whether support is active according to the last API response.
 	 */
 	public function support_active(): bool {
+		if ( DeveloperOverride::is_active() ) {
+			return true;
+		}
+
 		$status = $this->get_status();
 		if ( isset($status['data']['support_active']) ) {
 			return (bool) $status['data']['support_active'];
@@ -147,6 +168,10 @@ final class LicenseManager {
 	 * 'beta' once switched, otherwise 'stable' or ''.
 	 */
 	public function get_active_channel(): string {
+		if ( DeveloperOverride::is_active() ) {
+			return 'stable';
+		}
+
 		return $this->client->get_active_channel();
 	}
 
@@ -154,7 +179,18 @@ final class LicenseManager {
 	 * Returns the comma-separated allowed channels from the API ('stable,beta').
 	 */
 	public function get_allowed_channels(): string {
+		if ( DeveloperOverride::is_active() ) {
+			return 'stable,beta';
+		}
+
 		return $this->client->get_allowed_channels();
+	}
+
+	/**
+	 * Returns whether the developer override from wp-config.php is active.
+	 */
+	public function is_developer_override_active(): bool {
+		return DeveloperOverride::is_active();
 	}
 
 	/** Expose the underlying client for direct API calls (activate/deactivate). */

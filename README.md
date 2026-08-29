@@ -94,6 +94,16 @@ final class MojModulRepository {
 
 Szczegóły: [12 – Przewodnik dewelopera](docs/12-developer-guide.md)
 
+### Tryb deweloperski bez licencji
+
+Jeżeli potrzebujesz całkowicie wyłączyć system licencji na potrzeby rozwoju wtyczki, dodaj do `wp-config.php`:
+
+```php
+define('BASEMGMT_DEV_LICENSE_OVERRIDE', '<developer_key>');
+```
+
+Po zapisaniu w zakładce licencji pojawi się informacja o aktywacji poprzez kod deweloperski, a walidacja licencji i jej ograniczenia zostaną pominięte.
+
 ---
 
 ## Changelog

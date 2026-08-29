@@ -148,6 +148,16 @@ Zdefiniowane w `basemgmt.php`:
 | `BASEMGMT_MAX_ATTEMPTS` | `3` | Maks. prób logowania przed blokadą czasową |
 | `BASEMGMT_LOCKOUT_TTL` | `900` (15 min) | Bazowy czas blokady; realna wartość jest konfigurowalna w ustawieniach |
 
+### Tryb deweloperski licencji
+
+Na potrzeby developmentu możesz całkowicie wyłączyć system licencji przez dopisanie w `wp-config.php`:
+
+```php
+define('BASEMGMT_DEV_LICENSE_OVERRIDE', '<developer_key>');
+```
+
+Po ustawieniu tej stałej wtyczka przechodzi w tryb deweloperski, pomija walidację licencji i pokazuje odpowiedni status w zakładce licencji.
+
 ---
 
 ## Najważniejsze nowości w CampLink 2.0.0-beta
