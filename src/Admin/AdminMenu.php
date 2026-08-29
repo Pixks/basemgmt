@@ -358,11 +358,11 @@ final class AdminMenu {
 			[$this->license, 'render']
 		);
 
-		// Logs page: visible in the sidebar as a top-level submenu entry.
+		// Logs page: registered as a hidden page (no sidebar entry); accessible via the Settings → Logi tab.
 		add_submenu_page(
-			'basemgmt',
+			null,
 			__('Logi operacji', 'basemgmt'),
-			'🗒 ' . __('Logi', 'basemgmt'),
+			__('Logi', 'basemgmt'),
 			'manage_options',
 			'basemgmt-logs',
 			[$this->logs, 'render']

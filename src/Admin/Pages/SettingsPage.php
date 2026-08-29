@@ -8,6 +8,7 @@ use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Core\EmailService;
 use BaseMgmt\Core\EmailTemplateRepository;
+use BaseMgmt\Core\OperationLogger;
 use BaseMgmt\Core\PdfSettings;
 use BaseMgmt\Frontend\PanelStyleSettings;
 
@@ -24,9 +25,32 @@ final class SettingsPage {
 		$slug = sanitize_key($_GET['edit_template'] ?? '');
 		if ( $slug ) {
 			$this->render_template_editor($slug);
-		} else {
-			include BASEMGMT_DIR . 'templates/admin/settings/index.php';
+			return;
 		}
+
+		$tab = sanitize_key($_GET['tab'] ?? '');
+		if ( $tab === 'logi' && sanitize_key($_GET['bm_action'] ?? '') === 'clear' ) {
+			$this->handle_clear_logs();
+			return;
+		}
+
+		include BASEMGMT_DIR . 'templates/admin/settings/index.php';
+	}
+
+	// ── Logs clear action ─────────────────────────────────────────────────────
+
+	private function handle_clear_logs(): void {
+		if ( ! current_user_can('manage_options') && ! current_user_can('manage_basemgmt') ) {
+			wp_die(esc_html__('Brak uprawnień.', 'basemgmt'), esc_html__('Błąd', 'basemgmt'), ['response' => 403]);
+		}
+		$days = max(1, (int) ($_GET['days'] ?? 90));
+		check_admin_referer("bm_clear_logs_{$days}");
+		$deleted = OperationLogger::delete_older_than_days($days);
+		AdminMenu::set_notice(
+			sprintf(__('Usunięto %d wpisów logów starszych niż %d dni.', 'basemgmt'), $deleted, $days)
+		);
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-settings&tab=logi'));
+		exit;
 	}
 
 	// ── Email general settings ────────────────────────────────────────────────

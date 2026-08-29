@@ -9,7 +9,9 @@ defined('ABSPATH') || exit;
  * @var string $filter_date_from
  * @var string $filter_date_to
  * @var array  $action_types – unique action types
+ * @var bool   $bm_embedded  – true when included inside another page (e.g. settings tab)
  */
+$bm_embedded = $bm_embedded ?? false;
 $action_labels = [
 	'login_success'    => '✓ Logowanie OK',
 	'login_failed'     => '✗ Nieudane logowanie',
@@ -44,12 +46,15 @@ $action_labels = [
 	'template_applied' => '→ Szablon zastosowany',
 ];
 ?>
+<?php if ( ! $bm_embedded ): ?>
 <div class="wrap bm-admin-wrap">
 	<h1><?php esc_html_e('Logi operacji', 'basemgmt'); ?></h1>
+<?php endif; ?>
 
 	<!-- Filters -->
 	<form method="get" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
-		<input type="hidden" name="page" value="basemgmt-logs">
+		<input type="hidden" name="page" value="basemgmt-settings">
+		<input type="hidden" name="tab" value="logi">
 		<div>
 			<label style="display:block;font-size:12px;margin-bottom:3px;"><?php esc_html_e('Akcja', 'basemgmt'); ?></label>
 			<select name="filter_action">
@@ -70,12 +75,12 @@ $action_labels = [
 			<input type="date" name="filter_date_to" value="<?php echo esc_attr($filter_date_to); ?>">
 		</div>
 		<button type="submit" class="button"><?php esc_html_e('Filtruj', 'basemgmt'); ?></button>
-		<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-logs')); ?>" class="button"><?php esc_html_e('Wyczyść', 'basemgmt'); ?></a>
+		<a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-settings&tab=logi')); ?>" class="button"><?php esc_html_e('Wyczyść', 'basemgmt'); ?></a>
 	</form>
 
 	<p>
 		<?php printf(esc_html__('Łącznie: %d wpisów.', 'basemgmt'), $total); ?>
-		<a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=basemgmt-logs&bm_action=clear&days=90'), 'bm_clear_logs_90')); ?>"
+		<a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=basemgmt-settings&tab=logi&bm_action=clear&days=90'), 'bm_clear_logs_90')); ?>"
 		   class="button button-small"
 		   data-bm-confirm="<?php esc_attr_e('Usunąć wpisy starsze niż 90 dni?', 'basemgmt'); ?>">
 			<?php esc_html_e('Wyczyść logi >90 dni', 'basemgmt'); ?>
@@ -121,7 +126,8 @@ $action_labels = [
 	<div class="tablenav bottom"><div class="tablenav-pages">
 		<?php
 		$base_url = add_query_arg([
-			'page'             => 'basemgmt-logs',
+			'page'             => 'basemgmt-settings',
+			'tab'              => 'logi',
 			'filter_action'    => $filter_action,
 			'filter_date_from' => $filter_date_from,
 			'filter_date_to'   => $filter_date_to,
@@ -139,4 +145,6 @@ $action_labels = [
 	</div></div>
 	<?php endif; ?>
 	<?php endif; ?>
+<?php if ( ! $bm_embedded ): ?>
 </div>
+<?php endif; ?>
