@@ -113,7 +113,9 @@ final class AuthController extends BaseController {
 			'authenticated' => true,
 			'camp_id'       => (int) $session->camp_id,
 			'staff_id'      => (int) $session->staff_id,
-			'expires_at'    => $session->expires_at,
+			// SEC-05: Zamiast dokładnego timestampu zwracamy tylko liczbę sekund do wygaśnięcia
+			// (zaokrągloną do pełnych minut), aby nie ułatwiać ataków czasowych.
+			'expires_in'    => max( 0, (int) ceil( ( strtotime( $session->expires_at ) - time() ) / 60 ) * 60 ),
 		]);
 	}
 

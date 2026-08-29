@@ -100,7 +100,15 @@ final class SettingsPage {
 	// ── Email template actions ────────────────────────────────────────────────
 
 	public function handle_save_template(): void {
-		Capabilities::require_admin();
+		// SEC-01: Edycja szablonów e-mail wymaga uprawnień administratora WP (manage_options),
+		// ponieważ szablony zawierają surowy HTML wysyłany do zewnętrznych odbiorców.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die(
+				esc_html__( 'Edycja szablonów e-mail wymaga uprawnień administratora.', 'basemgmt' ),
+				esc_html__( 'Brak uprawnień', 'basemgmt' ),
+				[ 'response' => 403 ]
+			);
+		}
 		check_admin_referer('bm_save_email_template');
 
 		$slug      = sanitize_key($_POST['template_slug'] ?? '');
@@ -126,7 +134,14 @@ final class SettingsPage {
 	}
 
 	public function handle_reset_template(): void {
-		Capabilities::require_admin();
+		// SEC-01: Spójnie z handle_save_template – tylko administrator WP.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die(
+				esc_html__( 'Edycja szablonów e-mail wymaga uprawnień administratora.', 'basemgmt' ),
+				esc_html__( 'Brak uprawnień', 'basemgmt' ),
+				[ 'response' => 403 ]
+			);
+		}
 		$slug = sanitize_key($_POST['slug'] ?? '');
 		check_admin_referer("bm_reset_template_{$slug}");
 
@@ -212,11 +227,28 @@ final class SettingsPage {
 	}
 
 	public function handle_import(): void {
-		Capabilities::require_admin();
+		// SEC-08: Import danych (TRUNCATE + re-insert) wymaga uprawnień administratora WP.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die(
+				esc_html__( 'Import danych wymaga uprawnień administratora.', 'basemgmt' ),
+				esc_html__( 'Brak uprawnień', 'basemgmt' ),
+				[ 'response' => 403 ]
+			);
+		}
 		check_admin_referer('bm_import_data');
 
 		if ( empty( $_FILES['backup_file']['tmp_name'] ) ) {
 			AdminMenu::set_notice( __( 'Nie wybrano pliku.', 'basemgmt' ), 'error' );
+			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&tab=dane' ) );
+			exit;
+		}
+
+		// SEC-03: Walidacja rozmiaru pliku – max 5 MB, aby uniknąć DoS przez wyczerpanie pamięci.
+		// Używamy filesize() na pliku tymczasowym zamiast $_FILES['size'], ponieważ
+		// wartość $_FILES['size'] pochodzi od klienta HTTP i może być sfałszowana.
+		$max_bytes = 5 * 1024 * 1024;
+		if ( filesize( $_FILES['backup_file']['tmp_name'] ) > $max_bytes ) {
+			AdminMenu::set_notice( __( 'Plik backupu jest za duży (maksymalnie 5 MB).', 'basemgmt' ), 'error' );
 			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&tab=dane' ) );
 			exit;
 		}
@@ -247,6 +279,9 @@ final class SettingsPage {
 			'staff' => [ 'security_code_hash', 'failed_attempts', 'locked_until', 'permanent_lock', 'last_login' ],
 		];
 
+		// SEC-03: Limit wierszy na tabelę zapobiega wyczerpaniu zasobów przez duże backupy.
+		$max_rows_per_table = 10000;
+
 		foreach ( $data['tables'] as $key => $rows ) {
 			if ( empty( $tables[ $key ] ) || ! is_array( $rows ) ) {
 				continue;
@@ -267,7 +302,10 @@ final class SettingsPage {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "TRUNCATE TABLE `{$table}`" );
 
-			foreach ( $rows as $row ) {
+			// SEC-03: Ogranicz liczbę importowanych wierszy na tabelę.
+			$rows_to_import = array_slice( $rows, 0, $max_rows_per_table );
+
+			foreach ( $rows_to_import as $row ) {
 				if ( ! is_array( $row ) ) {
 					continue;
 				}
@@ -287,7 +325,14 @@ final class SettingsPage {
 	}
 
 	public function handle_clear(): void {
-		Capabilities::require_admin();
+		// SEC-08: Wyczyszczenie wszystkich danych wymaga uprawnień administratora WP.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die(
+				esc_html__( 'Wyczyszczenie danych wymaga uprawnień administratora.', 'basemgmt' ),
+				esc_html__( 'Brak uprawnień', 'basemgmt' ),
+				[ 'response' => 403 ]
+			);
+		}
 		check_admin_referer('bm_clear_data');
 
 		global $wpdb;

@@ -541,15 +541,15 @@ final class CampsPage {
 
 		for ( $i = 0; $i < $total_rows; $i++ ) {
 			$items[] = [
-				'label'       => wp_unslash((string) ($labels[$i] ?? '')),
-				'id'          => (string) (int) wp_unslash((string) ($ids[$i] ?? '0')),
-				'party'       => wp_unslash((string) ($parties[$i] ?? CampCaseRepository::CHECKLIST_PARTY_SHARED)),
-				'description' => wp_unslash((string) ($descriptions[$i] ?? '')),
-				'status'      => wp_unslash((string) ($statuses[$i] ?? CampCaseRepository::CHECKLIST_STATUS_PENDING)),
-				'priority'    => wp_unslash((string) ($priorities[$i] ?? CampCaseRepository::CHECKLIST_PRIORITY_NORMAL)),
-				'assigned_to' => wp_unslash((string) ($assigned[$i] ?? '')),
-				'due_date'    => wp_unslash((string) ($due_dates[$i] ?? '')),
-				'comment'     => wp_unslash((string) ($comments[$i] ?? '')),
+				'label'       => sanitize_text_field( wp_unslash( (string) ( $labels[$i] ?? '' ) ) ),
+				'id'          => (string) (int) wp_unslash( (string) ( $ids[$i] ?? '0' ) ),
+				'party'       => sanitize_key( wp_unslash( (string) ( $parties[$i] ?? CampCaseRepository::CHECKLIST_PARTY_SHARED ) ) ),
+				'description' => sanitize_textarea_field( wp_unslash( (string) ( $descriptions[$i] ?? '' ) ) ),
+				'status'      => sanitize_key( wp_unslash( (string) ( $statuses[$i] ?? CampCaseRepository::CHECKLIST_STATUS_PENDING ) ) ),
+				'priority'    => sanitize_key( wp_unslash( (string) ( $priorities[$i] ?? CampCaseRepository::CHECKLIST_PRIORITY_NORMAL ) ) ),
+				'assigned_to' => sanitize_text_field( wp_unslash( (string) ( $assigned[$i] ?? '' ) ) ),
+				'due_date'    => sanitize_text_field( wp_unslash( (string) ( $due_dates[$i] ?? '' ) ) ),
+				'comment'     => sanitize_textarea_field( wp_unslash( (string) ( $comments[$i] ?? '' ) ) ),
 			];
 		}
 
