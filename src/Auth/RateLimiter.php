@@ -14,10 +14,9 @@ defined('ABSPATH') || exit;
  * Logic:
  *   • After BASEMGMT_MAX_ATTEMPTS (default 3) consecutive failures → temporary
  *     lockout for BASEMGMT_LOCKOUT_TTL minutes (default 15).
- *   • If the account was previously temp-locked and the staff member fails
- *     again after it expires → permanent lock (permanent_lock = 1).
- *   • Permanent locks can only be lifted by an administrator from the Staff
- *     panel; lifting requires a mandatory security-code reset.
+ *   • Permanent lock is an administrative state (set outside this class) and
+ *     can only be lifted by an administrator from the Staff panel; lifting
+ *     requires a mandatory security-code reset.
  */
 final class RateLimiter {
 
@@ -44,25 +43,6 @@ final class RateLimiter {
 	 */
 	public static function record_failure(int $staff_id, object $staff): void {
 		global $wpdb;
-
-		// If a previous temp-lock has expired but was set → permanent lock now.
-		$had_temp_lock = ! empty($staff->locked_until);
-		$lock_expired  = $had_temp_lock && strtotime($staff->locked_until) <= time();
-
-		if ( $lock_expired ) {
-			// First failure after temp-lock expires → permanent lock.
-			$wpdb->update(
-				Schema::table('staff'),
-				[
-					'permanent_lock'  => 1,
-					'failed_attempts' => (int) $staff->failed_attempts + 1,
-				],
-				['id' => $staff_id],
-				['%d', '%d'],
-				['%d']
-			);
-			return;
-		}
 
 		$lockout_minutes = (int) get_option('bm_lockout_minutes', 15);
 		$lockout_ttl     = $lockout_minutes * MINUTE_IN_SECONDS;

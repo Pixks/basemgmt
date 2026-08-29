@@ -19,6 +19,9 @@ defined('ABSPATH') || exit;
  */
 final class AuthController extends BaseController {
 
+	private const LOGIN_LIMIT_ATTEMPTS = 10;
+	private const LOGIN_LIMIT_WINDOW   = 900; // 15 min.
+
 	public function register_routes(): void {
 		register_rest_route(self::NAMESPACE, '/auth/login', [
 			'methods'             => 'POST',
@@ -57,15 +60,22 @@ final class AuthController extends BaseController {
 		$camp_id  = (int) $request->get_param('camp_id');
 		$staff_id = (int) $request->get_param('staff_id');
 		$code     = (string) $request->get_param('security_code');
+		$rate_key = $this->login_rate_limit_key();
+
+		if ( $this->is_rate_limited($rate_key) ) {
+			return $this->error('bm_rate_limited', __('Zbyt wiele prób logowania. Spróbuj ponownie później.', 'basemgmt'), 429);
+		}
 
 		// Validate code format before touching the DB.
 		if ( ! preg_match('/^\d{6}$/', $code) ) {
+			$this->bump_rate_limit($rate_key);
 			return $this->ok(['success' => false, 'message' => __('Nieprawidłowe dane logowania.', 'basemgmt')], 401);
 		}
 
 		$result = FrontendAuth::attempt($camp_id, $staff_id, $code);
 
 		if ( ! $result['success'] ) {
+			$this->bump_rate_limit($rate_key);
 			$data = ['success' => false, 'message' => $result['message']];
 			if ( isset($result['locked_until']) ) {
 				$data['locked_until'] = $result['locked_until'];
@@ -105,5 +115,52 @@ final class AuthController extends BaseController {
 			'staff_id'      => (int) $session->staff_id,
 			'expires_at'    => $session->expires_at,
 		]);
+	}
+
+	private function login_rate_limit_key(): string {
+		$ip = $this->get_client_ip();
+		return 'bm_login_rl_' . md5($ip);
+	}
+
+	private function is_rate_limited(string $key): bool {
+		$state = get_transient($key);
+		if ( ! is_array($state) ) {
+			return false;
+		}
+
+		$attempts = (int) ($state['attempts'] ?? 0);
+		return $attempts >= self::LOGIN_LIMIT_ATTEMPTS;
+	}
+
+	private function bump_rate_limit(string $key): void {
+		$now   = time();
+		$state = get_transient($key);
+
+		if ( ! is_array($state) ) {
+			set_transient($key, ['attempts' => 1, 'window_started' => $now], self::LOGIN_LIMIT_WINDOW);
+			return;
+		}
+
+		$window_started = (int) ($state['window_started'] ?? $now);
+		$attempts       = (int) ($state['attempts'] ?? 0) + 1;
+		$remaining_ttl  = max(1, self::LOGIN_LIMIT_WINDOW - max(0, $now - $window_started));
+
+		set_transient(
+			$key,
+			[
+				'attempts'       => $attempts,
+				'window_started' => $window_started,
+			],
+			$remaining_ttl
+		);
+	}
+
+	/**
+	 * Uses REMOTE_ADDR by default; deployments behind trusted proxies can
+	 * override via 'bm_auth_client_ip' filter after validating headers.
+	 */
+	private function get_client_ip(): string {
+		$ip = sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'] ?? ''));
+		return (string) apply_filters('bm_auth_client_ip', $ip);
 	}
 }

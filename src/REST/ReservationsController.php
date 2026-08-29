@@ -107,6 +107,11 @@ final class ReservationsController extends BaseController {
 	}
 
 	public function create_reservation(WP_REST_Request $request): WP_REST_Response|\WP_Error {
+		$nonce_ok = $this->require_panel_nonce($request);
+		if ( is_wp_error($nonce_ok) ) {
+			return $nonce_ok;
+		}
+
 		$camp_id  = (int) $request->get_param('_camp_id');
 		$staff_id = (int) $request->get_param('_staff_id');
 
@@ -140,6 +145,11 @@ final class ReservationsController extends BaseController {
 	}
 
 	public function cancel_reservation(WP_REST_Request $request): WP_REST_Response|\WP_Error {
+		$nonce_ok = $this->require_panel_nonce($request);
+		if ( is_wp_error($nonce_ok) ) {
+			return $nonce_ok;
+		}
+
 		$camp_id = (int) $request->get_param('_camp_id');
 		$id      = (int) $request->get_param('id');
 

@@ -184,7 +184,12 @@ final class FormsController extends BaseController {
 		], 200);
 	}
 
-	public function submit_form(WP_REST_Request $request): WP_REST_Response {
+	public function submit_form(WP_REST_Request $request): WP_REST_Response|\WP_Error {
+		$nonce_ok = $this->require_panel_nonce($request);
+		if ( is_wp_error($nonce_ok) ) {
+			return $nonce_ok;
+		}
+
 		$camp_id  = (int) $request->get_param('_camp_id');
 		$staff_id = (int) $request->get_param('_staff_id');
 		$form_id  = (int) $request->get_param('form_id');
