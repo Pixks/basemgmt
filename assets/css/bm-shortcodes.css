@@ -328,7 +328,7 @@
 	line-height: 1.5;
 }
 
-.bm-ui.bm-ui--auth-card .bm-ui__field {
+.bm-ui--auth-card .bm-ui__field {
 	gap: 6px;
 }
 

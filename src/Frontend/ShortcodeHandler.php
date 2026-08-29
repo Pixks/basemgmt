@@ -311,7 +311,7 @@ final class ShortcodeHandler {
 				. '<p x-show="!submittedToday" class="bm-ui__warn">⚠ ' . esc_html__('Brak meldunku', 'basemgmt') . '</p>'
 				. '<div class="bm-ui__stats" x-show="latestCount"><span><strong x-text="latestCount.participants ?? 0"></strong> ' . esc_html__('Uczestnicy', 'basemgmt') . '</span><span><strong x-text="latestCount.staff ?? 0"></strong> ' . esc_html__('Kadra', 'basemgmt') . '</span><span><strong x-text="latestCount.workers ?? 0"></strong> ' . esc_html__('Pracownicy', 'basemgmt') . '</span></div></div></template>'
 				. '</div></div>',
-			true
+			''
 		);
 	}
 
@@ -383,7 +383,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_menu_day(): string {
-		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-cloak x-init="init(); setViewMode(\'day\')">'
+		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-cloak x-show="$store.bm.authenticated" x-init="init(); setViewMode(\'day\')">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Jadłospis dzienny', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<select class="bm-ui__input" x-model="selectedDate" @change="selectDate(selectedDate)"><template x-for="d in availableDates" :key="d"><option :value="d" x-text="d"></option></template></select>'
 			. '<template x-if="day"><div class="bm-ui__item"><template x-for="item in day.items" :key="item.id"><div class="bm-ui__line"><span x-text="mealTypeLabel(item.meal_type)"></span><strong x-text="item.name"></strong></div></template></div></template>'
@@ -391,7 +391,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_menu_week(): string {
-		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-cloak x-init="init(); setViewMode(\'week\')">'
+		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-cloak x-show="$store.bm.authenticated" x-init="init(); setViewMode(\'week\')">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Jadłospis tygodniowy', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<template x-for="dayItem in weekDays" :key="dayItem.date"><div class="bm-ui__item"><strong x-text="dayItem.date"></strong><template x-for="item in dayItem.items" :key="item.id"><div class="bm-ui__line"><span x-text="mealTypeLabel(item.meal_type)"></span><span x-text="item.name"></span></div></template></div></template>'
 			. '<p class="bm-ui__error" x-show="error" x-text="error"></p></div></div>' );
@@ -405,7 +405,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_conversation_new(): string {
-		return $this->wrap_panel( __('Nowa wiadomość', 'basemgmt'), '<form class="bm-ui bm-ui--card" x-data="bmConversations()" x-cloak x-init="init(); view=\'new\'" @submit.prevent="createThread()">'
+		return $this->wrap_panel( __('Nowa wiadomość', 'basemgmt'), '<form class="bm-ui bm-ui--card" x-data="bmConversations()" x-cloak x-show="$store.bm.authenticated" x-init="init(); view=\'new\'" @submit.prevent="createThread()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Nowy wątek', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<input class="bm-ui__input" type="text" x-model="form.subject" placeholder="' . esc_attr__('Temat', 'basemgmt') . '"><textarea class="bm-ui__input" rows="4" x-model="form.content" placeholder="' . esc_attr__('Treść', 'basemgmt') . '"></textarea><select class="bm-ui__input" x-model="form.priority"><option value="low">' . esc_html__('Niski', 'basemgmt') . '</option><option value="normal">' . esc_html__('Normalny', 'basemgmt') . '</option><option value="high">' . esc_html__('Wysoki', 'basemgmt') . '</option><option value="urgent">' . esc_html__('Pilny', 'basemgmt') . '</option></select>'
 			. '<p class="bm-ui__success" x-show="success" x-text="success"></p><p class="bm-ui__error" x-show="error" x-text="error"></p>'
@@ -473,6 +473,7 @@ final class ShortcodeHandler {
 	}
 
 	private function wrap_panel( string $section_title, string $content, string $extra_classes = '' ): string {
+		// Section titles are only rendered for authenticated-only panels.
 		$title_markup = $section_title !== ''
 			? '<div class="bm-ui__section-title" x-data="{}" x-cloak x-show="($store.bm && $store.bm.authenticated)">' . esc_html( $section_title ) . '</div>'
 			: '';
