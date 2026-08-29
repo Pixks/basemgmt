@@ -473,7 +473,9 @@ final class ShortcodeHandler {
 			'campId'        => $camp_id,
 			'staffId'       => $staff_id,
 			'displayName'   => $display_name,
-			'sessionExpires'=> $session ? max( 0, strtotime( $session->expires_at ) - time() ) : null,
+			// SEC-05: Zaokrąglamy do pełnych minut, aby zachować spójność z AuthController::status()
+			// i nie ujawniać dokładnego czasu wygaśnięcia sesji frontendowi JS.
+			'sessionExpires'=> $session ? max( 0, (int) ceil( ( strtotime( $session->expires_at ) - time() ) / 60 ) * 60 ) : null,
 			'activeCamps'   => FrontendAuth::get_active_camps(),
 		];
 	}

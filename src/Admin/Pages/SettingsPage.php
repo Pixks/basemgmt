@@ -244,8 +244,10 @@ final class SettingsPage {
 		}
 
 		// SEC-03: Walidacja rozmiaru pliku – max 5 MB, aby uniknąć DoS przez wyczerpanie pamięci.
+		// Używamy filesize() na pliku tymczasowym zamiast $_FILES['size'], ponieważ
+		// wartość $_FILES['size'] pochodzi od klienta HTTP i może być sfałszowana.
 		$max_bytes = 5 * 1024 * 1024;
-		if ( (int) ( $_FILES['backup_file']['size'] ?? 0 ) > $max_bytes ) {
+		if ( filesize( $_FILES['backup_file']['tmp_name'] ) > $max_bytes ) {
 			AdminMenu::set_notice( __( 'Plik backupu jest za duży (maksymalnie 5 MB).', 'basemgmt' ), 'error' );
 			wp_safe_redirect( admin_url( 'admin.php?page=basemgmt-settings&tab=dane' ) );
 			exit;
