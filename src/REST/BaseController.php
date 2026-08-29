@@ -40,6 +40,18 @@ abstract class BaseController {
 		return true;
 	}
 
+	/**
+	 * Nonce check for state-changing panel actions.
+	 */
+	protected function require_panel_nonce(WP_REST_Request $request): bool|\WP_Error {
+		$nonce = (string) ($request->get_param('nonce') ?? '');
+		if ( ! wp_verify_nonce($nonce, 'bm_panel') ) {
+			return new \WP_Error('bm_invalid_nonce', __('Nieprawidłowy token. Odśwież stronę.', 'basemgmt'), ['status' => 403]);
+		}
+
+		return true;
+	}
+
 	// ── Response helpers ──────────────────────────────────────────────────────
 
 	protected function ok(array $data = [], int $status = 200): WP_REST_Response {

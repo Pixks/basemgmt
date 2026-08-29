@@ -65,6 +65,11 @@ final class CommunicationController extends BaseController {
 	}
 
 	public function create_thread(WP_REST_Request $request): WP_REST_Response {
+		$nonce_ok = $this->require_panel_nonce($request);
+		if ( is_wp_error($nonce_ok) ) {
+			return $nonce_ok;
+		}
+
 		$camp_id  = (int) $request->get_param('_camp_id');
 		$staff_id = (int) $request->get_param('_staff_id');
 
@@ -114,6 +119,11 @@ final class CommunicationController extends BaseController {
 	}
 
 	public function reply(WP_REST_Request $request): WP_REST_Response {
+		$nonce_ok = $this->require_panel_nonce($request);
+		if ( is_wp_error($nonce_ok) ) {
+			return $nonce_ok;
+		}
+
 		$camp_id   = (int) $request->get_param('_camp_id');
 		$staff_id  = (int) $request->get_param('_staff_id');
 		$thread_id = (int) $request->get_param('id');

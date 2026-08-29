@@ -19,6 +19,9 @@ defined('ABSPATH') || exit;
  */
 final class AuthController extends BaseController {
 
+	private const LOGIN_LIMIT_ATTEMPTS = 10;
+	private const LOGIN_LIMIT_WINDOW   = 900; // 15 min.
+
 	public function register_routes(): void {
 		register_rest_route(self::NAMESPACE, '/auth/login', [
 			'methods'             => 'POST',
@@ -57,21 +60,30 @@ final class AuthController extends BaseController {
 		$camp_id  = (int) $request->get_param('camp_id');
 		$staff_id = (int) $request->get_param('staff_id');
 		$code     = (string) $request->get_param('security_code');
+		$rate_key = $this->login_rate_limit_key($camp_id, $staff_id);
+
+		if ( $this->is_rate_limited($rate_key) ) {
+			return $this->error('bm_rate_limited', __('Zbyt wiele prób logowania. Spróbuj ponownie później.', 'basemgmt'), 429);
+		}
 
 		// Validate code format before touching the DB.
 		if ( ! preg_match('/^\d{6}$/', $code) ) {
+			$this->bump_rate_limit($rate_key);
 			return $this->ok(['success' => false, 'message' => __('Nieprawidłowe dane logowania.', 'basemgmt')], 401);
 		}
 
 		$result = FrontendAuth::attempt($camp_id, $staff_id, $code);
 
 		if ( ! $result['success'] ) {
+			$this->bump_rate_limit($rate_key);
 			$data = ['success' => false, 'message' => $result['message']];
 			if ( isset($result['locked_until']) ) {
 				$data['locked_until'] = $result['locked_until'];
 			}
 			return $this->ok($data, 401);
 		}
+
+		delete_transient($rate_key);
 
 		return $this->ok([
 			'success'      => true,
@@ -105,5 +117,19 @@ final class AuthController extends BaseController {
 			'staff_id'      => (int) $session->staff_id,
 			'expires_at'    => $session->expires_at,
 		]);
+	}
+
+	private function login_rate_limit_key(int $camp_id, int $staff_id): string {
+		$ip = sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'] ?? ''));
+		return 'bm_login_rl_' . md5($ip . '|' . $camp_id . '|' . $staff_id);
+	}
+
+	private function is_rate_limited(string $key): bool {
+		return (int) get_transient($key) >= self::LOGIN_LIMIT_ATTEMPTS;
+	}
+
+	private function bump_rate_limit(string $key): void {
+		$attempts = (int) get_transient($key);
+		set_transient($key, $attempts + 1, self::LOGIN_LIMIT_WINDOW);
 	}
 }

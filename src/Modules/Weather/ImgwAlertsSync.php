@@ -516,11 +516,17 @@ final class ImgwAlertsSync {
         }
 
         $api_url = $settings['custom_api_url'] ?: self::API_URL;
+        if ( ! self::is_safe_api_url($api_url) ) {
+            $log['error'] = 'Nieprawidłowy lub niedozwolony URL API IMGW.';
+            $this->save_log($log);
+            return $log;
+        }
 
-        $response = wp_remote_get($api_url, [
-            'timeout'   => 15,
-            'sslverify' => true,
-            'headers'   => ['Accept' => 'application/json'],
+        $response = wp_safe_remote_get($api_url, [
+            'timeout'            => 15,
+            'sslverify'          => true,
+            'reject_unsafe_urls' => true,
+            'headers'            => ['Accept' => 'application/json'],
         ]);
 
         if ( is_wp_error($response) ) {
@@ -614,6 +620,27 @@ final class ImgwAlertsSync {
 
     private function save_log(array $log): void {
         update_option(self::SYNC_LOG_OPTION, $log);
+    }
+
+    private static function is_safe_api_url(string $url): bool {
+        $url = trim($url);
+        if ( $url === '' || ! wp_http_validate_url($url) ) {
+            return false;
+        }
+
+        $parts = wp_parse_url($url);
+        if ( ! is_array($parts) ) {
+            return false;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host   = strtolower((string) ($parts['host'] ?? ''));
+
+        if ( $scheme !== 'https' || $host === '' ) {
+            return false;
+        }
+
+        return true;
     }
 
     private function warning_has_exact_teryt(array $w, string $teryt): bool {
