@@ -2,6 +2,7 @@
 defined('ABSPATH') || exit;
 use BaseMgmt\Core\EmailService;
 use BaseMgmt\Core\EmailTemplateRepository;
+use BaseMgmt\Core\OperationLogger;
 use BaseMgmt\Core\PdfSettings;
 use BaseMgmt\Frontend\PanelStyleSettings;
 
@@ -17,7 +18,7 @@ wp_enqueue_script('wp-theme-plugin-editor');
 wp_enqueue_style('wp-codemirror');
 
 $current_tab = sanitize_key($_GET['tab'] ?? 'email');
-$valid_tabs  = ['email', 'pdf', 'wyglad', 'powiadomienia', 'dane', 'info'];
+$valid_tabs  = ['email', 'pdf', 'wyglad', 'powiadomienia', 'dane', 'shortcodes', 'logi', 'info'];
 if ( ! in_array($current_tab, $valid_tabs, true) ) {
 	$current_tab = 'email';
 }
@@ -30,6 +31,8 @@ $tabs = [
 	'wyglad'        => '🎨 ' . __('Wygląd', 'basemgmt'),
 	'powiadomienia' => '🔔 ' . __('Powiadomienia', 'basemgmt'),
 	'dane'          => '🗄 ' . __('Dane', 'basemgmt'),
+	'shortcodes'    => '[ ]  ' . __('Shortcodes', 'basemgmt'),
+	'logi'          => __('Logi', 'basemgmt'),
 	'info'          => 'ℹ️ ' . __('O pluginie', 'basemgmt'),
 ];
 ?>
@@ -1118,6 +1121,113 @@ $font_labels = [
             </form>
         </div>
     </div>
+
+<?php /* ═══════════════════════════════════════════════ SHORTCODES TAB ══ */ ?>
+<?php elseif ($current_tab === 'shortcodes'): ?>
+
+    <div class="postbox" style="max-width:900px;padding:20px 24px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 12px;">[ ] <?php esc_html_e('Lista shortcode\'ów', 'basemgmt'); ?></h2>
+        <p style="font-size:13px;color:#444;margin:0 0 16px;">
+            <?php esc_html_e('Poniżej znajdziesz wszystkie dostępne shortcode\'y wtyczki CampLink wraz z opisem. Możesz ich używać na dowolnych stronach lub postach WordPress.', 'basemgmt'); ?>
+        </p>
+        <?php
+        $shortcode_groups = [
+            __('Inicjalizacja i stan sesji', 'basemgmt') => [
+                '[bm_init]'                   => __('Inicjalizuje frontend wtyczki (skrypty, style). Umieść na każdej stronie, która używa panelu.', 'basemgmt'),
+                '[bm_auth_state]'             => __('Renderuje blok warunkowy zależny od stanu zalogowania. Używany wewnętrznie przez inne shortcody.', 'basemgmt'),
+                '[bm_panel_session_guard]'    => __('Blokuje dostęp do zawartości shortcode\'a dla niezalogowanych użytkowników. Opakowuje inne shortcody.', 'basemgmt'),
+                '[bm_panel_element]'          => __('Renderuje dowolny element panelu po nazwie (atrybut "element"). Zaawansowane użycie.', 'basemgmt'),
+            ],
+            __('Uwierzytelnianie', 'basemgmt') => [
+                '[bm_panel_login]'            => __('Formularz logowania kadry do panelu.', 'basemgmt'),
+                '[bm_panel_logout]'           => __('Przycisk / link wylogowania z panelu.', 'basemgmt'),
+            ],
+            __('Obóz – informacje ogólne', 'basemgmt') => [
+                '[bm_panel_camp_header]'      => __('Nagłówek obozu: nazwa, lokalizacja, daty.', 'basemgmt'),
+                '[bm_panel_unread_counter]'   => __('Licznik nieprzeczytanych powiadomień i wiadomości.', 'basemgmt'),
+            ],
+            __('Aktualności i meldunki', 'basemgmt') => [
+                '[bm_panel_announcements]'    => __('Lista aktualności / komunikatów dla kadry.', 'basemgmt'),
+                '[bm_panel_announcement_form]'=> __('Formularz dodawania nowej aktualności.', 'basemgmt'),
+                '[bm_panel_reports]'          => __('Lista meldunków dziennych i formularz ich składania.', 'basemgmt'),
+            ],
+            __('Plan dnia i jadłospis', 'basemgmt') => [
+                '[bm_panel_schedule]'         => __('Plan dnia obozu (widok listy aktywności z godzinami).', 'basemgmt'),
+                '[bm_panel_menu_day]'         => __('Jadłospis na bieżący dzień.', 'basemgmt'),
+                '[bm_panel_menu_week]'        => __('Jadłospis tygodniowy.', 'basemgmt'),
+            ],
+            __('Rezerwacje', 'basemgmt') => [
+                '[bm_panel_reservations]'     => __('Lista rezerwacji zasobów i formularz nowej rezerwacji.', 'basemgmt'),
+            ],
+            __('Wiadomości / konwersacje', 'basemgmt') => [
+                '[bm_panel_conversations]'    => __('Lista wątków konwersacji kadry.', 'basemgmt'),
+                '[bm_panel_conversation_new]' => __('Formularz nowej wiadomości / wątku.', 'basemgmt'),
+                '[bm_panel_conversation_thread]' => __('Widok pojedynczego wątku konwersacji.', 'basemgmt'),
+            ],
+            __('Baza wiedzy', 'basemgmt') => [
+                '[bm_panel_help_list]'        => __('Lista artykułów bazy wiedzy.', 'basemgmt'),
+                '[bm_panel_help_article]'     => __('Widok pojedynczego artykułu bazy wiedzy.', 'basemgmt'),
+            ],
+            __('Formularze i zgłoszenia', 'basemgmt') => [
+                '[bm_panel_forms_list]'       => __('Lista dostępnych formularzy zgłoszeniowych.', 'basemgmt'),
+                '[bm_panel_form]'             => __('Widok i wypełnianie konkretnego formularza.', 'basemgmt'),
+                '[bm_panel_submissions_list]' => __('Lista złożonych zgłoszeń.', 'basemgmt'),
+                '[bm_panel_submission]'       => __('Szczegóły pojedynczego zgłoszenia.', 'basemgmt'),
+            ],
+            __('Pogoda', 'basemgmt') => [
+                '[bm_panel_weather]'          => __('Widżet pogody dla lokalizacji obozu.', 'basemgmt'),
+            ],
+            __('Shortcody legacy (zachowane dla wstecznej zgodności)', 'basemgmt') => [
+                '[camp_panel]'         => __('Alias [bm_init] – inicjalizacja panelu.', 'basemgmt'),
+                '[camp_access]'        => __('Alias [bm_init].', 'basemgmt'),
+                '[camp_overview]'      => __('Alias [bm_init].', 'basemgmt'),
+                '[camp_announcements]' => __('Alias [bm_init].', 'basemgmt'),
+                '[camp_daily_count]'   => __('Alias [bm_init].', 'basemgmt'),
+            ],
+        ];
+        foreach ($shortcode_groups as $group_name => $items):
+        ?>
+        <h3 style="font-size:13px;font-weight:700;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #e0e0e0;">
+            <?php echo esc_html($group_name); ?>
+        </h3>
+        <table class="wp-list-table widefat fixed" style="border:0;margin-bottom:8px;">
+            <tbody>
+            <?php foreach ($items as $tag => $desc): ?>
+            <tr>
+                <td style="width:280px;padding:7px 12px;font-family:monospace;font-size:13px;white-space:nowrap;background:#f6f7f7;">
+                    <?php echo esc_html($tag); ?>
+                </td>
+                <td style="padding:7px 12px;font-size:13px;color:#444;"><?php echo esc_html($desc); ?></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endforeach; ?>
+    </div>
+
+<?php /* ══════════════════════════════════════════════════════ LOGI TAB ══ */ ?>
+<?php elseif ($current_tab === 'logi'): ?>
+
+    <?php
+    $filter_action    = sanitize_key($_GET['filter_action'] ?? '');
+    $filter_date_from = sanitize_text_field($_GET['filter_date_from'] ?? '');
+    $filter_date_to   = sanitize_text_field($_GET['filter_date_to']   ?? '');
+    $page             = max(1, (int) ($_GET['paged'] ?? 1));
+    $per_page         = 50;
+
+    $log_filters = [];
+    if ( $filter_action )    $log_filters['action']    = $filter_action;
+    if ( $filter_date_from ) $log_filters['date_from'] = $filter_date_from;
+    if ( $filter_date_to )   $log_filters['date_to']   = $filter_date_to;
+
+    $logs         = OperationLogger::get_all($log_filters, $per_page, $page);
+    $total        = OperationLogger::count($log_filters);
+    $pages        = (int) ceil($total / $per_page);
+    $action_types = OperationLogger::get_action_types();
+
+    $bm_embedded = true;
+    include BASEMGMT_DIR . 'templates/admin/logs/list.php';
+    ?>
 
 <?php /* ═══════════════════════════════════════════════════════ INFO TAB ══ */ ?>
 <?php elseif ($current_tab === 'info'): ?>

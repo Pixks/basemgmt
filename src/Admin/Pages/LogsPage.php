@@ -55,7 +55,7 @@ final class LogsPage {
 		AdminMenu::set_notice(
 			sprintf(__('Usunięto %d wpisów logów starszych niż %d dni.', 'basemgmt'), $deleted, $days)
 		);
-		wp_safe_redirect(admin_url('admin.php?page=basemgmt-logs'));
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-settings&tab=logi'));
 		exit;
 	}
 }
