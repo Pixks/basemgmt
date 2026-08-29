@@ -24,6 +24,7 @@ final class LicensePage {
 		$manager = LicenseManager::instance();
 		$client  = $manager->client();
 		$status  = $manager->get_status();
+		$known_servers = \BaseMgmt\License\LicenseClient::known_servers();
 
 		include BASEMGMT_DIR . 'templates/admin/license/index.php';
 	}
@@ -40,6 +41,14 @@ final class LicensePage {
 
 		$api_url     = sanitize_text_field(wp_unslash($_POST['license_api_url'] ?? ''));
 		$license_key = sanitize_text_field(wp_unslash($_POST['license_key'] ?? ''));
+		$channel     = sanitize_key($_POST['update_channel'] ?? 'stable');
+
+		// If "custom" server was selected, use the custom URL field instead.
+		$server_preset = sanitize_key($_POST['license_server_preset'] ?? 'custom');
+		if ( 'custom' !== $server_preset ) {
+			$presets = \BaseMgmt\License\LicenseClient::known_servers();
+			$api_url = $presets[$server_preset] ?? $api_url;
+		}
 
 		if ( '' === $api_url || '' === $license_key ) {
 			AdminMenu::set_notice(__('Podaj URL serwera licencji oraz klucz licencji.', 'basemgmt'), 'error');
@@ -49,6 +58,7 @@ final class LicensePage {
 
 		$client->save_api_base($api_url);
 		$client->save_license_key($license_key);
+		$client->save_update_channel($channel);
 
 		$response = $client->activate();
 

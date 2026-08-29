@@ -358,17 +358,15 @@ final class AdminMenu {
 			[$this->license, 'render']
 		);
 
-		// Logs page: registered so it remains accessible via URL, but hidden from the sidebar.
-		// Accessible from the Settings page.
+		// Logs page: visible in the sidebar as a top-level submenu entry.
 		add_submenu_page(
 			'basemgmt',
 			__('Logi operacji', 'basemgmt'),
-			__('Logi operacji', 'basemgmt'),
-			'manage_basemgmt',
+			'🗒 ' . __('Logi', 'basemgmt'),
+			'manage_options',
 			'basemgmt-logs',
 			[$this->logs, 'render']
 		);
-		remove_submenu_page('basemgmt', 'basemgmt-logs');
 	}
 
 	// ── Redirect parent-only menu pages before output ────────────────────────
