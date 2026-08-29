@@ -71,6 +71,7 @@ Pełna dokumentacja w katalogu [`docs/`](docs/README.md):
 | [10 – Bezpieczeństwo](docs/10-security.md) | Mechanizmy ochrony, rekomendacje |
 | [11 – Cron](docs/11-cron.md) | Zadania cykliczne, harmonogram |
 | [12 – Przewodnik dewelopera](docs/12-developer-guide.md) | Dodawanie modułów, hooki, konwencje |
+| [17 – Wdrożenie i dane startowe](docs/17-deployment-and-start-data.md) | Jednolita instrukcja wdrożenia, dane startowe i zakres instrukcji użytkownika |
 
 ---
 

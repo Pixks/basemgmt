@@ -64,45 +64,13 @@ WP Admin → Wtyczki → Dodaj nową → Wyślij wtyczkę → wybierz archiwum `
 
 Aktywacja wywołuje `Activator::activate()`, który:
 
-1. **Tworzy 30 tabel** w bazie danych przez `dbDelta()` (bezpieczne przy aktualizacjach)
+1. **Tworzy komplet tabel pluginu** w bazie danych przez `dbDelta()` (bezpieczne przy aktualizacjach)
 2. **Rejestruje role i uprawnienia** WordPress (capability `manage_basemgmt`)
-3. **Planuje zadania cykliczne** WP-Cron (9 hooków)
+3. **Planuje zadania cykliczne** WP-Cron (10 hooków)
 4. **Zapisuje wersję pluginu** w opcji `basemgmt_db_version`
+5. **Kompiluje tłumaczenia `.mo` oraz odświeża reguły routingu** (`flush_rewrite_rules()`), aby endpointy REST były dostępne od razu po aktywacji
 
-Tabele tworzone podczas aktywacji:
-
-```
-wp_bm_camps                  – obozy
-wp_bm_staff                  – kadra obozów
-wp_bm_daily_counts           – meldunki dzienne
-wp_bm_announcements          – ogłoszenia
-wp_bm_announcement_camps     – powiązania ogłoszenie→obóz
-wp_bm_sessions               – sesje frontendowe
-wp_bm_weather_alerts         – ostrzeżenia pogodowe
-wp_bm_plan_headers           – nagłówki planów dnia
-wp_bm_plan_items             – pozycje planu dnia
-wp_bm_plan_item_revisions    – historia zmian planu
-wp_bm_plan_camps             – powiązania plan→obóz
-wp_bm_resources              – zasoby do rezerwacji
-wp_bm_resource_reservations  – rezerwacje
-wp_bm_resource_blocks        – blokady techniczne zasobów
-wp_bm_meal_days              – dni jadłospisu
-wp_bm_meal_items             – pozycje jadłospisu
-wp_bm_conv_threads           – wątki komunikacji
-wp_bm_conv_messages          – wiadomości w wątkach
-wp_bm_help_articles          – baza pomocy
-wp_bm_forms                  – definicje formularzy
-wp_bm_form_fields            – pola formularzy
-wp_bm_form_camps             – przypisania formularzy do obozów
-wp_bm_submissions            – zgłoszenia
-wp_bm_submission_attachments – załączniki zgłoszeń
-wp_bm_submission_history     – historia zmian zgłoszeń
-wp_bm_operation_logs         – logi operacji
-wp_bm_plan_templates         – szablony planów dnia
-wp_bm_plan_template_items    – pozycje szablonów planów
-wp_bm_meal_diets             – predefiniowane diety
-wp_bm_meal_locations         – predefiniowane miejsca wydawania
-```
+Aktualna, pełna lista tabel jest utrzymywana w dokumencie: [06 – Schemat bazy danych](06-database-schema.md).
 
 ---
 
@@ -150,7 +118,7 @@ Dla każdej osoby:
 
 ### 3. Skonfiguruj panel frontendowy
 
-Wstaw shortcode `[camp_panel]` na wybraną stronę WordPress lub skonfiguruj go w Breakdance jako komponent niestandardowy z kodem PHP.
+Wstaw shortcody panelu `bm_panel_*` na wybranych stronach WordPress (np. `bm_panel_login`, `bm_panel_camp_header`, `bm_panel_announcements`) lub skonfiguruj elementy w Breakdance.
 
 ### 4. Skonfiguruj email
 
@@ -171,7 +139,7 @@ Zdefiniowane w `basemgmt.php`:
 
 | Stała | Wartość domyślna | Opis |
 |-------|-----------------|------|
-| `BASEMGMT_VERSION` | `2.0.0-PRE1` | Wersja pluginu |
+| `BASEMGMT_VERSION` | `2.0.0-beta` | Wersja pluginu |
 | `BASEMGMT_FILE` | `__FILE__` | Ścieżka do głównego pliku |
 | `BASEMGMT_DIR` | `plugin_dir_path(...)` | Ścieżka katalogu |
 | `BASEMGMT_URL` | `plugin_dir_url(...)` | URL katalogu |
@@ -182,7 +150,7 @@ Zdefiniowane w `basemgmt.php`:
 
 ---
 
-## Najważniejsze nowości w CampLink 2.0.0-PRE1
+## Najważniejsze nowości w CampLink 2.0.0-beta
 
 - **Teczka sprawy obozu** — każdy obóz zyskuje pełną dokumentację procesową: etap procesu handlowo-formalnego (od zapytania do zamknięcia), poziom ryzyka, termin następnego działania, notatki procesowe i flaga pilnej reakcji.
 - **Dane organizatora** — nowa zakładka z pełnymi danymi kontaktowymi i fakturowymi organizatora obozu.
@@ -210,7 +178,7 @@ Zdefiniowane w `basemgmt.php`:
 
 ### Panel frontendowy nie wyświetla się
 
-- Sprawdź, czy shortcode `[camp_panel]` jest na stronie
+- Sprawdź, czy na stronach frontendowych używasz shortcodów `bm_panel_*` (legacy `camp_*` działa tylko dla kompatybilności wstecznej)
 - Upewnij się, że REST API WordPress działa: `GET /wp-json/bm/v1/auth/status`
 - Sprawdź konsolę przeglądarki pod kątem błędów JS
 
