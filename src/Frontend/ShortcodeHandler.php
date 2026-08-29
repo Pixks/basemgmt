@@ -270,7 +270,7 @@ final class ShortcodeHandler {
 		$redirect_attr = $redirect_url ? ' data-bm-redirect="' . esc_attr( $redirect_url ) . '"' : '';
 		return $this->wrap_panel(
 			'',
-			'<div class="bm-ui bm-ui--card bm-ui--auth-card" x-data="bmLogin()" x-cloak x-init="init()" ' . $redirect_attr . '>'
+			'<div class="bm-ui bm-ui--card bm-ui--auth-card" x-data="bmLogin()" x-init="init()" ' . $redirect_attr . '>'
 				. '<div class="bm-ui__header"><h3>' . esc_html__('Panel kadry obozowej', 'basemgmt') . '</h3></div>'
 				. '<div class="bm-ui__body">'
 				. '<div class="bm-ui__stack">'
@@ -296,7 +296,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_camp_header(): string {
-		return $this->wrap_panel( __('Przegląd obozu', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmCamp()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Przegląd obozu', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmCamp()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3 x-text="camp ? camp.name : \'Obóz\'"></h3></div>'
 			. '<div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="!camp">' . esc_html__('Ładowanie danych obozu…', 'basemgmt') . '</p>'
@@ -308,14 +308,14 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_logout(): string {
-		return $this->wrap_panel( __('Sesja', 'basemgmt'), '<div class="bm-ui bm-ui--inline" x-data="bmLogout()" x-cloak >'
+		return $this->wrap_panel( __('Sesja', 'basemgmt'), '<div class="bm-ui bm-ui--inline" x-data="bmLogout()" >'
 			. '<span class="bm-ui__muted" x-text="\'Zalogowany: \' + $store.bm.displayName"></span>'
 			. '<button class="bm-ui__btn bm-ui__btn--small" @click="logout()">' . esc_html__('Wyloguj', 'basemgmt') . '</button>'
 			. '</div>', '$store.bm.authenticated' );
 	}
 
 	private function panel_announcements(): string {
-		return $this->wrap_panel( __('Aktualności', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmAnnouncements()" x-cloak >'
+		return $this->wrap_panel( __('Aktualności', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmAnnouncements()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Ogłoszenia', 'basemgmt') . '</h3><button class="bm-ui__btn bm-ui__btn--light bm-ui__btn--small" @click="refresh()">↻</button></div>'
 			. '<div class="bm-ui__body">'
 			. '<template x-for="ann in active" :key="ann.id"><div class="bm-ui__item"><strong x-text="ann.title"></strong><div x-html="ann.content"></div><small class="bm-ui__muted" x-text="ann.valid_until"></small></div></template>'
@@ -324,7 +324,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_announcement_form(): string {
-		return $this->wrap_panel( __('Nowe ogłoszenie', 'basemgmt'), '<form class="bm-ui bm-ui--card" x-data="bmAnnForm()" x-cloak @submit.prevent="submit()" >'
+		return $this->wrap_panel( __('Nowe ogłoszenie', 'basemgmt'), '<form class="bm-ui bm-ui--card" x-data="bmAnnForm()" @submit.prevent="submit()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Nowe ogłoszenie', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<input class="bm-ui__input" type="text" x-model="title" placeholder="' . esc_attr__('Tytuł', 'basemgmt') . '">' 
 			. '<textarea class="bm-ui__input" x-model="content" rows="4" placeholder="' . esc_attr__('Treść', 'basemgmt') . '"></textarea>'
@@ -336,7 +336,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_reports(): string {
-		return $this->wrap_panel( __('Meldunek dzienny', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmReports()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Meldunek dzienny', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmReports()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Meldunek dzienny', 'basemgmt') . '</h3><span x-text="statusLabel"></span></div><div class="bm-ui__body">'
 			. '<div class="bm-ui__grid"><input class="bm-ui__input" type="number" x-model.number="form.participants" min="0" placeholder="' . esc_attr__('Uczestnicy', 'basemgmt') . '"><input class="bm-ui__input" type="number" x-model.number="form.staff" min="0" placeholder="' . esc_attr__('Kadra', 'basemgmt') . '"><input class="bm-ui__input" type="number" x-model.number="form.workers" min="0" placeholder="' . esc_attr__('Pracownicy', 'basemgmt') . '"></div>'
 			. '<textarea class="bm-ui__input" x-model="form.notes" rows="3" placeholder="' . esc_attr__('Uwagi', 'basemgmt') . '"></textarea>'
@@ -347,7 +347,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_weather(): string {
-		return $this->wrap_panel( __('Pogoda', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmWeather()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Pogoda', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmWeather()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Pogoda i alerty', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="loading">' . esc_html__('Ładowanie…', 'basemgmt') . '</p>'
 			. '<p class="bm-ui__error" x-show="error" x-text="error"></p>'
@@ -358,7 +358,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_schedule(): string {
-		return $this->wrap_panel( __('Plan dnia', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmSchedule()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Plan dnia', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmSchedule()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Plan dnia', 'basemgmt') . '</h3><input class="bm-ui__input bm-ui__input--small" type="date" x-model="selectedDate" @change="loadSchedule()"></div><div class="bm-ui__body">'
 			. '<template x-for="plan in plans" :key="plan.id"><div class="bm-ui__item"><strong x-text="plan.title || \'Plan\'"></strong><template x-for="item in plan.items" :key="item.id"><div class="bm-ui__line"><span x-text="item.time_from"></span> <span x-text="item.title"></span></div></template></div></template>'
 			. '<p class="bm-ui__muted" x-show="!loading && !plans.length">' . esc_html__('Brak planu na wybrany dzień.', 'basemgmt') . '</p>'
@@ -366,7 +366,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_reservations(): string {
-		return $this->wrap_panel( __('Rezerwacje', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmReservations()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Rezerwacje', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmReservations()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Rezerwacje', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<template x-for="res in resources" :key="res.id"><div class="bm-ui__item"><strong x-text="res.name"></strong><button type="button" class="bm-ui__btn bm-ui__btn--small" @click="openForm(res)">' . esc_html__('Zarezerwuj', 'basemgmt') . '</button></div></template>'
 			. '<template x-if="selectedResource"><div class="bm-ui__item"><p><strong x-text="selectedResource.name"></strong></p><input class="bm-ui__input" type="date" x-model="form.res_date" @change="loadSlots()"><div class="bm-ui__grid"><input class="bm-ui__input" type="time" x-model="form.start_time"><input class="bm-ui__input" type="time" x-model="form.end_time"></div><input class="bm-ui__input" type="text" x-model="form.purpose" placeholder="' . esc_attr__('Cel rezerwacji', 'basemgmt') . '"><p class="bm-ui__error" x-show="formError" x-text="formError"></p><button class="bm-ui__btn" type="button" @click="submitReservation()">' . esc_html__('Wyślij rezerwację', 'basemgmt') . '</button></div></template>'
@@ -375,7 +375,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_menu_day(): string {
-		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-cloak x-init="init(); setViewMode(\'day\')" >'
+		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-init="init(); setViewMode(\'day\')" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Jadłospis dzienny', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<select class="bm-ui__input" x-model="selectedDate" @change="selectDate(selectedDate)"><template x-for="d in availableDates" :key="d"><option :value="d" x-text="d"></option></template></select>'
 			. '<template x-if="day"><div class="bm-ui__item"><template x-for="item in day.items" :key="item.id"><div class="bm-ui__line"><span x-text="mealTypeLabel(item.meal_type)"></span><strong x-text="item.name"></strong></div></template></div></template>'
@@ -383,21 +383,21 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_menu_week(): string {
-		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-cloak x-init="init(); setViewMode(\'week\')" >'
+		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-init="init(); setViewMode(\'week\')" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Jadłospis tygodniowy', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<template x-for="dayItem in weekDays" :key="dayItem.date"><div class="bm-ui__item"><strong x-text="dayItem.date"></strong><template x-for="item in dayItem.items" :key="item.id"><div class="bm-ui__line"><span x-text="mealTypeLabel(item.meal_type)"></span><span x-text="item.name"></span></div></template></div></template>'
 			. '<p class="bm-ui__error" x-show="error" x-text="error"></p></div></div>', '$store.bm.authenticated' );
 	}
 
 	private function panel_conversations(): string {
-		return $this->wrap_panel( __('Wiadomości', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmConversations()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Wiadomości', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmConversations()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Wiadomości', 'basemgmt') . '</h3><button type="button" class="bm-ui__btn bm-ui__btn--small" @click="view=\'new\'">' . esc_html__('Nowy', 'basemgmt') . '</button></div><div class="bm-ui__body">'
 			. '<template x-for="thread in threads" :key="thread.id"><button type="button" class="bm-ui__item bm-ui__item--button" @click="openThread(thread.id)"><strong x-text="thread.subject"></strong><small x-text="thread.unread_camp ? thread.unread_camp + \' nowe\' : \'\'"></small></button></template>'
 			. '</div></div>', '$store.bm.authenticated' );
 	}
 
 	private function panel_conversation_new(): string {
-		return $this->wrap_panel( __('Nowa wiadomość', 'basemgmt'), '<form class="bm-ui bm-ui--card" x-data="bmConversations()" x-cloak x-init="init(); view=\'new\'" @submit.prevent="createThread()" >'
+		return $this->wrap_panel( __('Nowa wiadomość', 'basemgmt'), '<form class="bm-ui bm-ui--card" x-data="bmConversations()" x-init="init(); view=\'new\'" @submit.prevent="createThread()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Nowy wątek', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<input class="bm-ui__input" type="text" x-model="form.subject" placeholder="' . esc_attr__('Temat', 'basemgmt') . '"><textarea class="bm-ui__input" rows="4" x-model="form.content" placeholder="' . esc_attr__('Treść', 'basemgmt') . '"></textarea><select class="bm-ui__input" x-model="form.priority"><option value="low">' . esc_html__('Niski', 'basemgmt') . '</option><option value="normal">' . esc_html__('Normalny', 'basemgmt') . '</option><option value="high">' . esc_html__('Wysoki', 'basemgmt') . '</option><option value="urgent">' . esc_html__('Pilny', 'basemgmt') . '</option></select>'
 			. '<p class="bm-ui__success" x-show="success" x-text="success"></p><p class="bm-ui__error" x-show="error" x-text="error"></p>'
@@ -405,7 +405,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_conversation_thread(): string {
-		return $this->wrap_panel( __('Wątek wiadomości', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmConversations()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Wątek wiadomości', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmConversations()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Widok wątku', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="!currentThread">' . esc_html__('Wybierz wątek z listy wiadomości.', 'basemgmt') . '</p>'
 			. '<template x-if="currentThread"><div><h4 x-text="currentThread.subject"></h4><template x-for="m in messages" :key="m.id"><div class="bm-ui__item"><strong x-text="m.author_type"></strong><div x-text="m.content"></div></div></template><textarea class="bm-ui__input" rows="3" x-model="replyContent"></textarea><button class="bm-ui__btn" type="button" @click="sendReply()">' . esc_html__('Odpowiedz', 'basemgmt') . '</button></div></template>'
@@ -413,7 +413,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_help_list(): string {
-		return $this->wrap_panel( __('Pomoc', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmHelp()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Pomoc', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmHelp()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Baza pomocy', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<div class="bm-ui__grid"><input class="bm-ui__input" type="text" x-model="search" placeholder="' . esc_attr__('Szukaj…', 'basemgmt') . '"><button type="button" class="bm-ui__btn bm-ui__btn--small" @click="applyFilters()">' . esc_html__('Filtruj', 'basemgmt') . '</button></div>'
 			. '<template x-for="article in articles" :key="article.id"><button type="button" class="bm-ui__item bm-ui__item--button" @click="openArticle(article.id)"><strong x-text="article.title"></strong></button></template>'
@@ -421,7 +421,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_help_article(): string {
-		return $this->wrap_panel( __('Artykuł pomocy', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmHelp()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Artykuł pomocy', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmHelp()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Artykuł pomocy', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="!current">' . esc_html__('Wybierz artykuł na liście pomocy.', 'basemgmt') . '</p>'
 			. '<template x-if="current"><div><h4 x-text="current.title"></h4><div x-html="current.content"></div></div></template>'
@@ -429,7 +429,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_forms_list(): string {
-		return $this->wrap_panel( __('Formularze', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmForms()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Formularze', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmForms()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Formularze', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<select class="bm-ui__input" x-model="filterCategory"><option value="">' . esc_html__('Wszystkie kategorie', 'basemgmt') . '</option><template x-for="c in categories" :key="c"><option :value="c" x-text="c"></option></template></select>'
 			. '<template x-for="formItem in filtered" :key="formItem.id"><button type="button" class="bm-ui__item bm-ui__item--button" @click="openForm(formItem.id)"><strong x-text="formItem.title"></strong></button></template>'
@@ -437,7 +437,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_form(): string {
-		return $this->wrap_panel( __('Wypełnianie formularza', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmForms()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Wypełnianie formularza', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmForms()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Wypełnij formularz', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="!currentForm">' . esc_html__('Wybierz formularz z listy formularzy.', 'basemgmt') . '</p>'
 			. '<template x-if="currentForm"><div><h4 x-text="currentForm.title"></h4><template x-for="f in fields" :key="f.id"><div><label class="bm-ui__label" x-text="f.label"></label><input class="bm-ui__input" type="text" x-model="formValues[f.field_key]"><small class="bm-ui__error" x-text="fieldError(f.field_key)"></small></div></template><p class="bm-ui__error" x-show="error" x-text="error"></p><button class="bm-ui__btn" type="button" @click="submit()" :disabled="submitting">' . esc_html__('Wyślij', 'basemgmt') . '</button><p class="bm-ui__success" x-show="submitted">' . esc_html__('Formularz wysłany.', 'basemgmt') . '</p></div></template>'
@@ -445,7 +445,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_submissions_list(): string {
-		return $this->wrap_panel( __('Moje zgłoszenia', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmSubmissions()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Moje zgłoszenia', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmSubmissions()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Moje zgłoszenia', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<select class="bm-ui__input" x-model="filterStatus" @change="applyFilter()"><option value="">' . esc_html__('Wszystkie statusy', 'basemgmt') . '</option><option value="new">' . esc_html__('Nowe', 'basemgmt') . '</option><option value="in_progress">' . esc_html__('W trakcie', 'basemgmt') . '</option><option value="waiting">' . esc_html__('Oczekuje', 'basemgmt') . '</option><option value="closed">' . esc_html__('Zamknięte', 'basemgmt') . '</option><option value="cancelled">' . esc_html__('Anulowane', 'basemgmt') . '</option></select>'
 			. '<template x-for="s in submissions" :key="s.id"><button type="button" class="bm-ui__item bm-ui__item--button" @click="openSubmission(s.id)"><strong x-text="s.form_title || s.category"></strong><small x-text="statusLabel(s.status)"></small></button></template>'
@@ -453,7 +453,7 @@ final class ShortcodeHandler {
 	}
 
 	private function panel_submission(): string {
-		return $this->wrap_panel( __('Szczegóły zgłoszenia', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmSubmissions()" x-cloak x-init="init()" >'
+		return $this->wrap_panel( __('Szczegóły zgłoszenia', 'basemgmt'), '<div class="bm-ui bm-ui--card" x-data="bmSubmissions()" x-init="init()" >'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Szczegóły zgłoszenia', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="!current">' . esc_html__('Wybierz zgłoszenie z listy.', 'basemgmt') . '</p>'
 			. '<template x-if="current"><div><p><strong>' . esc_html__('Status:', 'basemgmt') . '</strong> <span x-text="statusLabel(current.submission.status)"></span></p><p><strong>' . esc_html__('Priorytet:', 'basemgmt') . '</strong> <span x-text="priorityLabel(current.submission.priority)"></span></p><pre class="bm-ui__json" x-text="JSON.stringify(current.submission_data, null, 2)"></pre></div></template>'
@@ -465,9 +465,12 @@ final class ShortcodeHandler {
 	}
 
 	private function wrap_panel( string $section_title, string $content, string $visibility = '', string $extra_classes = '' ): string {
-		$attrs = '';
+		$attrs = ' x-cloak';
 		if ( $visibility !== '' ) {
-			$attrs = ' x-data="{}" x-cloak x-show="' . esc_attr( $visibility ) . '"';
+			$visibility = $this->sanitize_visibility_expression( $visibility );
+			if ( $visibility !== '' ) {
+				$attrs .= ' x-data="{}" x-show="' . $visibility . '"';
+			}
 		}
 
 		$title_markup = $section_title !== ''
@@ -477,6 +480,15 @@ final class ShortcodeHandler {
 		$classes = trim( 'bm-ui bm-ui--panel ' . $extra_classes );
 
 		return '<div class="' . esc_attr( $classes ) . '"' . $attrs . '>' . $title_markup . $content . '</div>';
+	}
+
+	private function sanitize_visibility_expression( string $visibility ): string {
+		$allowed = [
+			'$store.bm.authenticated',
+			'!$store.bm.authenticated',
+		];
+
+		return in_array( $visibility, $allowed, true ) ? $visibility : '';
 	}
 
 	private function build_config(): array {
