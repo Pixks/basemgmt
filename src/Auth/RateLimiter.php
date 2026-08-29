@@ -14,9 +14,9 @@ defined('ABSPATH') || exit;
  * Logic:
  *   • After BASEMGMT_MAX_ATTEMPTS (default 3) consecutive failures → temporary
  *     lockout for BASEMGMT_LOCKOUT_TTL minutes (default 15).
- *   • Permanent lock is an administrative state and can only be lifted by an
- *     administrator from the Staff panel; lifting requires a mandatory
- *     security-code reset.
+ *   • Permanent lock is an administrative state (set outside this class) and
+ *     can only be lifted by an administrator from the Staff panel; lifting
+ *     requires a mandatory security-code reset.
  */
 final class RateLimiter {
 

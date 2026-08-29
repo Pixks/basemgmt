@@ -118,7 +118,7 @@ final class AuthController extends BaseController {
 	}
 
 	private function login_rate_limit_key(): string {
-		$ip = sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'] ?? ''));
+		$ip = $this->get_client_ip();
 		return 'bm_login_rl_' . md5($ip);
 	}
 
@@ -153,5 +153,14 @@ final class AuthController extends BaseController {
 			],
 			$remaining_ttl
 		);
+	}
+
+	/**
+	 * Uses REMOTE_ADDR by default; deployments behind trusted proxies can
+	 * override via 'bm_auth_client_ip' filter after validating headers.
+	 */
+	private function get_client_ip(): string {
+		$ip = sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'] ?? ''));
+		return (string) apply_filters('bm_auth_client_ip', $ip);
 	}
 }
