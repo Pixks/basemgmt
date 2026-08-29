@@ -16,10 +16,24 @@ defined('ABSPATH') || exit;
  */
 final class LicenseClient {
 
-	private const PRODUCT_SLUG = 'camplink';
-	private const OPTION_KEY   = 'basemgmt_license_key';
-	private const OPTION_URL   = 'basemgmt_license_api_url';
-	private const CACHE_KEY    = 'basemgmt_license_status_cache';
+	private const PRODUCT_SLUG  = 'camplink';
+	private const OPTION_KEY    = 'basemgmt_license_key';
+	private const OPTION_URL    = 'basemgmt_license_api_url';
+	private const OPTION_CHANNEL = 'basemgmt_update_channel';
+	private const CACHE_KEY     = 'basemgmt_license_status_cache';
+
+	// ── Known servers ────────────────────────────────────────────────────────
+
+	/**
+	 * Returns a map of server preset key → URL for the license server dropdown.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function known_servers(): array {
+		return [
+			'pixks_prod' => 'https://pixks.pl/licencje',
+		];
+	}
 
 	// ── Accessors ────────────────────────────────────────────────────────────
 
@@ -37,6 +51,16 @@ final class LicenseClient {
 
 	public function save_api_base(string $url): void {
 		update_option(self::OPTION_URL, esc_url_raw($url), false);
+	}
+
+	public function get_update_channel(): string {
+		$channel = (string) get_option(self::OPTION_CHANNEL, 'stable');
+		return in_array($channel, ['stable', 'beta'], true) ? $channel : 'stable';
+	}
+
+	public function save_update_channel(string $channel): void {
+		$channel = in_array($channel, ['stable', 'beta'], true) ? $channel : 'stable';
+		update_option(self::OPTION_CHANNEL, $channel, false);
 	}
 
 	public function get_canonical_domain(): string {
@@ -138,7 +162,7 @@ final class LicenseClient {
 				$transient = new \stdClass();
 			}
 
-			$response = $this->check_for_update();
+			$response = $this->check_for_update( $this->get_update_channel() );
 			if ( ! empty($response['success']) && ! empty($response['data']['update_available']) ) {
 				$data                             = $response['data'];
 				$transient->response[$plugin_file] = (object) [

@@ -1122,19 +1122,128 @@ $font_labels = [
 <?php /* ═══════════════════════════════════════════════════════ INFO TAB ══ */ ?>
 <?php elseif ($current_tab === 'info'): ?>
 
-    <div class="postbox" style="max-width:700px;padding:16px 20px;">
-        <h2 class="hndle" style="padding:0 0 10px;"><?php esc_html_e('O pluginie', 'basemgmt'); ?></h2>
-        <p><?php printf(esc_html__('Baza Obozowa v%s', 'basemgmt'), esc_html(BASEMGMT_VERSION)); ?></p>
-        <ul style="margin:8px 0;padding-left:20px;color:#555;font-size:13px;">
-            <li><?php esc_html_e('Tabele danych: bm_camps, bm_staff, bm_daily_counts, bm_announcements, bm_sessions, bm_weather_alerts, bm_plan_headers, bm_plan_items, bm_resources, bm_resource_reservations, bm_resource_blocks', 'basemgmt'); ?></li>
-            <li><?php esc_html_e('REST API: /wp-json/bm/v1/...', 'basemgmt'); ?></li>
-            <li><?php esc_html_e('Wymagania: WordPress 6.0+, PHP 8.1+, MySQL InnoDB', 'basemgmt'); ?></li>
-        </ul>
-        <p>
-            <a href="<?php echo esc_url(admin_url('admin.php?page=basemgmt-logs')); ?>" class="button">
-                🗒 <?php esc_html_e('Logi operacji', 'basemgmt'); ?>
-            </a>
+    <?php /* ── About the plugin ── */ ?>
+    <div class="postbox" style="max-width:780px;padding:20px 24px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 12px;">ℹ️ <?php esc_html_e('CampLink – Baza Obozowa', 'basemgmt'); ?></h2>
+        <p style="font-size:14px;font-weight:600;margin:0 0 8px;">
+            <?php printf(esc_html__('Wersja %s', 'basemgmt'), esc_html(BASEMGMT_VERSION)); ?>
         </p>
+        <p style="font-size:13px;color:#444;line-height:1.6;margin:0 0 10px;">
+            <?php esc_html_e('CampLink to kompleksowy system zarządzania obozami harcerskimi i koloniami, zintegrowany bezpośrednio z WordPress. Wtyczka zapewnia narzędzia dla organizatorów i kadry obozowej: ewidencję obozów, zarządzanie kadrą, meldunki dzienne, jadłospis, plan dnia, rezerwacje zasobów, komunikację wewnętrzną, formularze zgłoszeniowe oraz eksport dokumentów PDF.', 'basemgmt'); ?>
+        </p>
+        <p style="font-size:13px;color:#444;line-height:1.6;margin:0;">
+            <?php esc_html_e('Wtyczka jest przeznaczona dla komend hufców, komend chorągwi oraz innych organizacji prowadzących wypoczynek dla dzieci i młodzieży. Interfejs frontendowy (panel kadry) dostępny jest za pomocą shortcode\'ów [bm_panel_*] i może być stylizowany zgodnie z identyfikacją wizualną organizacji.', 'basemgmt'); ?>
+        </p>
+    </div>
+
+    <?php /* ── Requirements & tables ── */ ?>
+    <div class="postbox" style="max-width:780px;padding:20px 24px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 12px;">⚙️ <?php esc_html_e('Wymagania systemowe', 'basemgmt'); ?></h2>
+        <table style="border-collapse:collapse;font-size:13px;width:100%;max-width:480px;">
+            <tbody>
+                <?php
+                $reqs = [
+                    [ __('WordPress', 'basemgmt'),  '6.2+' ],
+                    [ __('PHP', 'basemgmt'),         '8.1+' ],
+                    [ __('MySQL', 'basemgmt'),        '5.7+ / MariaDB 10.3+' ],
+                    [ __('Silnik tabel', 'basemgmt'), 'InnoDB' ],
+                    [ __('REST API', 'basemgmt'),     '/wp-json/bm/v1/…' ],
+                ];
+                foreach ( $reqs as [$label, $value] ):
+                ?>
+                <tr>
+                    <td style="padding:5px 16px 5px 0;color:#666;white-space:nowrap;"><?php echo esc_html($label); ?></td>
+                    <td style="padding:5px 0;font-weight:600;color:#222;"><?php echo esc_html($value); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <?php /* ── Database tables ── */ ?>
+    <div class="postbox" style="max-width:780px;padding:20px 24px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 12px;">🗄 <?php esc_html_e('Tabele bazy danych', 'basemgmt'); ?></h2>
+        <?php
+        $table_groups = [
+            __('Obozy', 'basemgmt') => [
+                'bm_camps', 'bm_camp_cases', 'bm_camp_case_history', 'bm_camp_organizers',
+                'bm_camp_checklist_items', 'bm_camp_workflow_events', 'bm_camp_prearrival',
+                'bm_camp_documents', 'bm_camp_document_versions', 'bm_camp_payment_schedules',
+                'bm_camp_payments', 'bm_camp_actual_stays', 'bm_camp_actual_meals',
+                'bm_camp_service_usages', 'bm_camp_pricing_tables', 'bm_camp_pricing_rules',
+                'bm_camp_settlements', 'bm_camp_settlement_lines', 'bm_camp_settlement_issues',
+                'bm_camp_closures', 'bm_camp_equipment', 'bm_camp_declarations',
+                'bm_camp_damages', 'bm_camp_decl_docs',
+            ],
+            __('Kadra i sesje', 'basemgmt') => [
+                'bm_staff', 'bm_sessions', 'bm_daily_counts',
+            ],
+            __('Komunikacja i ogłoszenia', 'basemgmt') => [
+                'bm_announcements', 'bm_announcement_camps',
+                'bm_conv_threads', 'bm_conv_messages',
+            ],
+            __('Plan dnia i jadłospis', 'basemgmt') => [
+                'bm_plan_headers', 'bm_plan_items', 'bm_plan_item_revisions', 'bm_plan_camps',
+                'bm_plan_templates', 'bm_plan_template_items',
+                'bm_meal_days', 'bm_meal_items', 'bm_meal_diets', 'bm_meal_diet_costs',
+                'bm_meal_locations', 'bm_meal_templates', 'bm_meal_template_items',
+            ],
+            __('Rezerwacje i zasoby', 'basemgmt') => [
+                'bm_resources', 'bm_resource_reservations', 'bm_resource_blocks',
+            ],
+            __('Formularze', 'basemgmt') => [
+                'bm_forms', 'bm_form_fields', 'bm_form_camps',
+                'bm_submissions', 'bm_submission_attachments', 'bm_submission_history',
+            ],
+            __('Organizacja', 'basemgmt') => [
+                'bm_doc_templates', 'bm_doc_library', 'bm_doc_attachments',
+                'bm_payment_packages', 'bm_payment_package_lines', 'bm_payment_pkg_accom',
+                'bm_payment_pkg_diet_slots', 'bm_task_templates',
+                'bm_accommodation_types', 'bm_camp_declaration_days',
+                'bm_camp_declaration_diet_lines', 'bm_camp_declaration_accommodation_lines',
+                'bm_decl_templates',
+            ],
+            __('Pogoda, pomoc i inne', 'basemgmt') => [
+                'bm_weather_alerts', 'bm_help_articles', 'bm_operation_logs',
+            ],
+        ];
+        ?>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+        <?php foreach ( $table_groups as $group_name => $tables ): ?>
+            <div>
+                <p style="font-weight:600;font-size:12px;text-transform:uppercase;color:#666;margin:0 0 4px;"><?php echo esc_html($group_name); ?></p>
+                <ul style="margin:0;padding:0;list-style:none;">
+                    <?php foreach ( $tables as $tbl ): ?>
+                    <li style="font-size:12px;color:#333;padding:2px 0;"><code style="background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:11px;"><?php echo esc_html($tbl); ?></code></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endforeach; ?>
+        </div>
+    </div>
+
+    <?php /* ── Support / Contact ── */ ?>
+    <div class="postbox" style="max-width:780px;padding:20px 24px;margin-bottom:24px;">
+        <h2 class="hndle" style="padding:0 0 12px;">💬 <?php esc_html_e('Kontakt i wsparcie', 'basemgmt'); ?></h2>
+        <p style="font-size:13px;color:#444;margin:0 0 10px;">
+            <?php esc_html_e('W razie pytań, problemów lub propozycji nowych funkcji – skontaktuj się z twórcą wtyczki:', 'basemgmt'); ?>
+        </p>
+        <table style="border-collapse:collapse;font-size:13px;">
+            <tbody>
+                <tr>
+                    <td style="padding:5px 16px 5px 0;color:#666;white-space:nowrap;">🌐 <?php esc_html_e('Strona', 'basemgmt'); ?></td>
+                    <td><a href="https://pixks.pl" target="_blank" rel="noopener noreferrer">pixks.pl</a></td>
+                </tr>
+                <tr>
+                    <td style="padding:5px 16px 5px 0;color:#666;white-space:nowrap;">📧 <?php esc_html_e('Email', 'basemgmt'); ?></td>
+                    <td><a href="mailto:kontakt@pixks.pl">kontakt@pixks.pl</a></td>
+                </tr>
+                <tr>
+                    <td style="padding:5px 16px 5px 0;color:#666;white-space:nowrap;">🐛 <?php esc_html_e('Zgłoszenia błędów', 'basemgmt'); ?></td>
+                    <td><a href="https://github.com/Pixks/basemgmt/issues" target="_blank" rel="noopener noreferrer">github.com/Pixks/basemgmt</a></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
 <?php endif; ?>

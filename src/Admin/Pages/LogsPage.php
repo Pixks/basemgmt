@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace BaseMgmt\Admin\Pages;
 
-use BaseMgmt\Auth\Capabilities;
 use BaseMgmt\Admin\AdminMenu;
 use BaseMgmt\Core\OperationLogger;
 
@@ -16,7 +15,9 @@ defined('ABSPATH') || exit;
 final class LogsPage {
 
 	public function render(): void {
-		Capabilities::require_admin();
+		if ( ! current_user_can('manage_options') && ! current_user_can('manage_basemgmt') ) {
+			wp_die(esc_html__('Brak uprawnień.', 'basemgmt'), esc_html__('Błąd', 'basemgmt'), ['response' => 403]);
+		}
 
 		$action = sanitize_key($_GET['bm_action'] ?? '');
 
@@ -45,7 +46,9 @@ final class LogsPage {
 	}
 
 	private function handle_clear(): void {
-		Capabilities::require_admin();
+		if ( ! current_user_can('manage_options') && ! current_user_can('manage_basemgmt') ) {
+			wp_die(esc_html__('Brak uprawnień.', 'basemgmt'), esc_html__('Błąd', 'basemgmt'), ['response' => 403]);
+		}
 		$days = max(1, (int) ($_GET['days'] ?? 90));
 		check_admin_referer("bm_clear_logs_{$days}");
 		$deleted = OperationLogger::delete_older_than_days($days);
