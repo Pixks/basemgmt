@@ -239,16 +239,6 @@ $font_labels = [
     padding: 20px;
     transition: background .2s;
 }
-/* items-row flex layout (not in bm-shortcodes.css) */
-#bm-style-preview .bm-ui__items-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-}
-#bm-style-preview .bm-ui__items-row .bm-ui__item {
-    flex: 1 1 180px;
-}
 .bm-style-form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -502,12 +492,18 @@ $font_labels = [
                 <button type="button" class="bm-prev-tab" data-pane="prev-login"><?php esc_html_e('Logowanie', 'basemgmt'); ?></button>
                 <button type="button" class="bm-prev-tab" data-pane="prev-schedule"><?php esc_html_e('Plan dnia', 'basemgmt'); ?></button>
                 <button type="button" class="bm-prev-tab" data-pane="prev-reservations"><?php esc_html_e('Rezerwacje', 'basemgmt'); ?></button>
+                <button type="button" class="bm-prev-tab" data-pane="prev-overview"><?php esc_html_e('Przegląd obozu', 'basemgmt'); ?></button>
+                <button type="button" class="bm-prev-tab" data-pane="prev-weather"><?php esc_html_e('Pogoda', 'basemgmt'); ?></button>
+                <button type="button" class="bm-prev-tab" data-pane="prev-menu"><?php esc_html_e('Jadłospis', 'basemgmt'); ?></button>
+                <button type="button" class="bm-prev-tab" data-pane="prev-messages"><?php esc_html_e('Wiadomości', 'basemgmt'); ?></button>
+                <button type="button" class="bm-prev-tab" data-pane="prev-help"><?php esc_html_e('Pomoc', 'basemgmt'); ?></button>
+                <button type="button" class="bm-prev-tab" data-pane="prev-forms"><?php esc_html_e('Formularze', 'basemgmt'); ?></button>
             </div>
             <div id="bm-style-preview-wrap">
             <div id="bm-style-preview" class="bm-ui" style="background:var(--bm-bg);padding:20px;">
 
                 <!-- Pane: Aktualności -->
-                <div id="prev-announcements" class="bm-prev-pane active">
+                <div id="prev-announcements" class="bm-prev-pane active bm-ui bm-ui--panel">
                     <div class="bm-ui__section-title">AKTUALNOŚCI</div>
 
                     <div class="bm-ui bm-ui--card">
@@ -553,33 +549,42 @@ $font_labels = [
                 </div><!-- /prev-announcements -->
 
                 <!-- Pane: Logowanie -->
-                <div id="prev-login" class="bm-prev-pane">
-                    <div class="bm-ui__section-title"><?php esc_html_e('PANEL KADRY', 'basemgmt'); ?></div>
-                    <div class="bm-ui bm-ui--card">
+                <div id="prev-login" class="bm-prev-pane bm-ui bm-ui--panel bm-ui--panel-login">
+                    <div class="bm-ui bm-ui--card bm-ui--auth-card">
                         <div class="bm-ui__header">
-                            <span>🔐 <?php esc_html_e('Logowanie', 'basemgmt'); ?></span>
+                            <h3><?php esc_html_e('Panel kadry obozowej', 'basemgmt'); ?></h3>
                         </div>
                         <div class="bm-ui__body">
-                            <div style="margin-bottom:10px;">
-                                <label class="bm-ui__label"><?php esc_html_e('Adres e-mail', 'basemgmt'); ?></label>
-                                <input type="text" class="bm-ui__input" readonly value="kadra@oboz.pl">
+                            <p class="bm-ui__intro">
+                                <?php esc_html_e('Wybierz obóz, członka kadry i wpisz 6-cyfrowy kod bezpieczeństwa, aby przejść do panelu.', 'basemgmt'); ?>
+                            </p>
+                            <div class="bm-ui__stack">
+                            <div class="bm-ui__field">
+                                <label class="bm-ui__label"><?php esc_html_e('Obóz', 'basemgmt'); ?></label>
+                                <input type="text" class="bm-ui__input" readonly value="—">
+                                <div class="bm-ui__hint"><?php esc_html_e('Najpierw wybierz aktywny obóz, dla którego chcesz się zalogować.', 'basemgmt'); ?></div>
                             </div>
-                            <div style="margin-bottom:14px;">
-                                <label class="bm-ui__label"><?php esc_html_e('Hasło', 'basemgmt'); ?></label>
-                                <input type="text" class="bm-ui__input" readonly value="••••••••">
+                            <div class="bm-ui__field" style="display:none;">
+                                <label class="bm-ui__label"><?php esc_html_e('Kadra', 'basemgmt'); ?></label>
+                                <input type="text" class="bm-ui__input" readonly value="Jan Kowalski — Komendant">
+                                <div class="bm-ui__hint"><?php esc_html_e('Pokażemy tylko osoby przypisane do wybranego obozu.', 'basemgmt'); ?></div>
+                            </div>
+                            <div class="bm-ui__field" style="display:none;">
+                                <label class="bm-ui__label"><?php esc_html_e('Kod bezpieczeństwa', 'basemgmt'); ?></label>
+                                <input type="text" class="bm-ui__input" readonly value="••••••">
+                                <div class="bm-ui__hint"><?php esc_html_e('Kod ma dokładnie 6 cyfr.', 'basemgmt'); ?></div>
+                            </div>
                             </div>
                             <div class="bm-ui__actions">
-                                <button class="bm-ui__btn" type="button"><?php esc_html_e('Zaloguj się', 'basemgmt'); ?></button>
+                                <button class="bm-ui__btn bm-ui__btn--login" type="button"><?php esc_html_e('Zaloguj się', 'basemgmt'); ?></button>
                             </div>
-                            <div style="margin-top:10px;font-size:.8rem;">
-                                <a href="#" class="bm-ui__read-more" onclick="return false;"><?php esc_html_e('Nie pamiętam hasła', 'basemgmt'); ?></a>
-                            </div>
+                            <p class="bm-ui__muted bm-ui__auth-note"><?php esc_html_e('Po poprawnym logowaniu od razu zobaczysz panel kadry dla wybranego obozu.', 'basemgmt'); ?></p>
                         </div>
                     </div>
                 </div><!-- /prev-login -->
 
                 <!-- Pane: Plan dnia -->
-                <div id="prev-schedule" class="bm-prev-pane">
+                <div id="prev-schedule" class="bm-prev-pane bm-ui bm-ui--panel">
                     <div class="bm-ui__section-title"><?php esc_html_e('PLAN DNIA', 'basemgmt'); ?></div>
                     <?php
                     $sched = [
@@ -608,9 +613,9 @@ $font_labels = [
                 </div><!-- /prev-schedule -->
 
                 <!-- Pane: Rezerwacje -->
-                <div id="prev-reservations" class="bm-prev-pane">
+                <div id="prev-reservations" class="bm-prev-pane bm-ui bm-ui--panel">
                     <div class="bm-ui__section-title"><?php esc_html_e('REZERWACJE', 'basemgmt'); ?></div>
-                    <div class="bm-ui bm-ui--card">
+                    <div class="bm-ui bm-ui--card bm-ui--form-card">
                         <div class="bm-ui__header">
                             <span>🏕 <?php esc_html_e('Lista rezerwacji', 'basemgmt'); ?></span>
                         </div>
@@ -636,6 +641,189 @@ $font_labels = [
                         </div>
                     </div>
                 </div><!-- /prev-reservations -->
+
+                <!-- Pane: Przegląd obozu -->
+                <div id="prev-overview" class="bm-prev-pane bm-ui bm-ui--panel">
+                    <div class="bm-ui__section-title"><?php esc_html_e('PRZEGLĄD OBOZU', 'basemgmt'); ?></div>
+                    <div class="bm-ui bm-ui--card bm-ui--feature-card">
+                        <div class="bm-ui__header">
+                            <span>🏕 <?php esc_html_e('Ośrodek Test — Chorągiew', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="bm-ui__body">
+                            <div class="bm-ui__eyebrow"><?php esc_html_e('Status dnia', 'basemgmt'); ?></div>
+                            <p class="bm-ui__intro"><?php esc_html_e('Najważniejsze informacje o obozie, dzisiejszym meldunku i aktywnej sesji kadry.', 'basemgmt'); ?></p>
+                            <div class="bm-ui__meta">
+                                <span>📅 01.07.2026 – 14.07.2026</span>
+                                <span>📍 <?php esc_html_e('Baza harcerska', 'basemgmt'); ?></span>
+                            </div>
+                            <div class="bm-ui__stats" style="margin-top:14px;">
+                                <span><strong>48</strong> <?php esc_html_e('Uczestnicy', 'basemgmt'); ?></span>
+                                <span><strong>8</strong> <?php esc_html_e('Kadra', 'basemgmt'); ?></span>
+                                <span><strong>4</strong> <?php esc_html_e('Pracownicy', 'basemgmt'); ?></span>
+                            </div>
+                            <p class="bm-ui__success" style="margin-top:12px;"><?php esc_html_e('✓ Dzisiejszy meldunek został już zapisany.', 'basemgmt'); ?></p>
+                            <div class="bm-ui__actions">
+                                <button class="bm-ui__btn bm-ui__btn--ghost" type="button"><?php esc_html_e('Wyloguj', 'basemgmt'); ?></button>
+                                <span class="bm-ui bm-ui--badge">3</span>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /prev-overview -->
+
+                <!-- Pane: Pogoda -->
+                <div id="prev-weather" class="bm-prev-pane bm-ui bm-ui--panel">
+                    <div class="bm-ui__section-title"><?php esc_html_e('POGODA', 'basemgmt'); ?></div>
+                    <div class="bm-ui bm-ui--card bm-ui--feature-card">
+                        <div class="bm-ui__header">
+                            <span>⛅ <?php esc_html_e('Pogoda i alerty', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="bm-ui__body">
+                            <div class="bm-ui__eyebrow"><?php esc_html_e('Warunki bieżące', 'basemgmt'); ?></div>
+                            <p style="font-size:1.2rem;font-weight:700;margin-bottom:4px;">☀ 24°C · 12 km/h</p>
+                            <p class="bm-ui__muted"><?php esc_html_e('Słonecznie, bez opadów do wieczora.', 'basemgmt'); ?></p>
+                            <div class="bm-ui__items-row">
+                                <div class="bm-ui__item">
+                                    <strong><?php esc_html_e('Sobota', 'basemgmt'); ?></strong>
+                                    <span><?php esc_html_e('☀ Ciepło i sucho', 'basemgmt'); ?></span>
+                                </div>
+                                <div class="bm-ui__item">
+                                    <strong><?php esc_html_e('Niedziela', 'basemgmt'); ?></strong>
+                                    <span><?php esc_html_e('⛅ Lekkie zachmurzenie', 'basemgmt'); ?></span>
+                                </div>
+                            </div>
+                            <div class="bm-ui__item bm-ui__item--urgent" style="margin-top:12px;">
+                                <strong><?php esc_html_e('Alert IMGW', 'basemgmt'); ?></strong>
+                                <p><?php esc_html_e('Możliwe silniejsze porywy wiatru po 18:00.', 'basemgmt'); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /prev-weather -->
+
+                <!-- Pane: Jadłospis -->
+                <div id="prev-menu" class="bm-prev-pane bm-ui bm-ui--panel">
+                    <div class="bm-ui__section-title"><?php esc_html_e('JADŁOSPIS', 'basemgmt'); ?></div>
+                    <div class="bm-ui bm-ui--card bm-ui--list-card">
+                        <div class="bm-ui__header">
+                            <span>🍽 <?php esc_html_e('Jadłospis dzienny', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="bm-ui__body">
+                            <div class="bm-ui__toolbar">
+                                <input type="text" class="bm-ui__input bm-ui__input--small" readonly value="2026-08-29">
+                            </div>
+                            <div class="bm-ui__item">
+                                <div class="bm-ui__line"><span><?php esc_html_e('Śniadanie', 'basemgmt'); ?></span><strong><?php esc_html_e('Owsianka z owocami', 'basemgmt'); ?></strong></div>
+                                <div class="bm-ui__line"><span><?php esc_html_e('Obiad', 'basemgmt'); ?></span><strong><?php esc_html_e('Rosół + kotlet z ziemniakami', 'basemgmt'); ?></strong></div>
+                                <div class="bm-ui__line"><span><?php esc_html_e('Kolacja', 'basemgmt'); ?></span><strong><?php esc_html_e('Kanapki i herbata', 'basemgmt'); ?></strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /prev-menu -->
+
+                <!-- Pane: Wiadomości -->
+                <div id="prev-messages" class="bm-prev-pane bm-ui bm-ui--panel">
+                    <div class="bm-ui__section-title"><?php esc_html_e('WIADOMOŚCI', 'basemgmt'); ?></div>
+                    <div class="bm-ui bm-ui--card bm-ui--list-card">
+                        <div class="bm-ui__header">
+                            <span>💬 <?php esc_html_e('Lista wątków', 'basemgmt'); ?></span>
+                            <button class="bm-ui__btn bm-ui__btn--small" type="button"><?php esc_html_e('Nowy', 'basemgmt'); ?></button>
+                        </div>
+                        <div class="bm-ui__body">
+                            <button type="button" class="bm-ui__item bm-ui__item--button">
+                                <strong><?php esc_html_e('Zmiana godziny wyjazdu', 'basemgmt'); ?></strong>
+                                <div class="bm-ui__meta"><span><?php esc_html_e('2 nowe wiadomości', 'basemgmt'); ?></span><span><?php esc_html_e('Priorytet: wysoki', 'basemgmt'); ?></span></div>
+                            </button>
+                            <button type="button" class="bm-ui__item bm-ui__item--button">
+                                <strong><?php esc_html_e('Lista zakupów do kuchni', 'basemgmt'); ?></strong>
+                                <div class="bm-ui__meta"><span><?php esc_html_e('Brak nieprzeczytanych', 'basemgmt'); ?></span></div>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bm-ui bm-ui--card bm-ui--form-card">
+                        <div class="bm-ui__header">
+                            <span>✉ <?php esc_html_e('Nowy wątek', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="bm-ui__body">
+                            <input type="text" class="bm-ui__input" readonly value="<?php esc_attr_e('Temat wiadomości', 'basemgmt'); ?>">
+                            <textarea class="bm-ui__input" rows="4" readonly><?php esc_textarea_e('Treść wiadomości do komendy.', 'basemgmt'); ?></textarea>
+                            <div class="bm-ui__actions">
+                                <button class="bm-ui__btn" type="button"><?php esc_html_e('Wyślij', 'basemgmt'); ?></button>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /prev-messages -->
+
+                <!-- Pane: Pomoc -->
+                <div id="prev-help" class="bm-prev-pane bm-ui bm-ui--panel">
+                    <div class="bm-ui__section-title"><?php esc_html_e('POMOC', 'basemgmt'); ?></div>
+                    <div class="bm-ui bm-ui--card bm-ui--list-card">
+                        <div class="bm-ui__header">
+                            <span>🧭 <?php esc_html_e('Baza pomocy', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="bm-ui__body">
+                            <div class="bm-ui__toolbar">
+                                <input type="text" class="bm-ui__input" readonly value="<?php esc_attr_e('Jak wysłać meldunek?', 'basemgmt'); ?>">
+                                <button class="bm-ui__btn bm-ui__btn--small" type="button"><?php esc_html_e('Filtruj', 'basemgmt'); ?></button>
+                            </div>
+                            <button type="button" class="bm-ui__item bm-ui__item--button">
+                                <strong><?php esc_html_e('Jak dodać rezerwację?', 'basemgmt'); ?></strong>
+                            </button>
+                            <button type="button" class="bm-ui__item bm-ui__item--button">
+                                <strong><?php esc_html_e('Jak odpowiedzieć na wiadomość?', 'basemgmt'); ?></strong>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bm-ui bm-ui--card bm-ui--detail-card">
+                        <div class="bm-ui__header">
+                            <span>📘 <?php esc_html_e('Artykuł pomocy', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="bm-ui__body">
+                            <h4><?php esc_html_e('Wysyłanie meldunku dziennego', 'basemgmt'); ?></h4>
+                            <p><?php esc_html_e('Uzupełnij liczbę uczestników, kadry i pracowników, a następnie zapisz lub wyślij formularz.', 'basemgmt'); ?></p>
+                        </div>
+                    </div>
+                </div><!-- /prev-help -->
+
+                <!-- Pane: Formularze -->
+                <div id="prev-forms" class="bm-prev-pane bm-ui bm-ui--panel">
+                    <div class="bm-ui__section-title"><?php esc_html_e('FORMULARZE I ZGŁOSZENIA', 'basemgmt'); ?></div>
+                    <div class="bm-ui bm-ui--card bm-ui--list-card">
+                        <div class="bm-ui__header">
+                            <span>📝 <?php esc_html_e('Formularze', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="bm-ui__body">
+                            <button type="button" class="bm-ui__item bm-ui__item--button">
+                                <strong><?php esc_html_e('Zapotrzebowanie transportowe', 'basemgmt'); ?></strong>
+                            </button>
+                            <button type="button" class="bm-ui__item bm-ui__item--button">
+                                <strong><?php esc_html_e('Prośba o zakup materiałów', 'basemgmt'); ?></strong>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bm-ui bm-ui--card bm-ui--form-card">
+                        <div class="bm-ui__header">
+                            <span>✅ <?php esc_html_e('Wypełnij formularz', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="bm-ui__body">
+                            <input type="text" class="bm-ui__input" readonly value="<?php esc_attr_e('Temat zgłoszenia', 'basemgmt'); ?>">
+                            <input type="text" class="bm-ui__input" readonly value="<?php esc_attr_e('Dodatkowe dane', 'basemgmt'); ?>">
+                            <div class="bm-ui__actions">
+                                <button class="bm-ui__btn" type="button"><?php esc_html_e('Wyślij', 'basemgmt'); ?></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bm-ui bm-ui--card bm-ui--detail-card">
+                        <div class="bm-ui__header">
+                            <span>📂 <?php esc_html_e('Szczegóły zgłoszenia', 'basemgmt'); ?></span>
+                        </div>
+                        <div class="bm-ui__body">
+                            <div class="bm-ui__meta">
+                                <span><?php esc_html_e('Status: w trakcie', 'basemgmt'); ?></span>
+                                <span><?php esc_html_e('Priorytet: normalny', 'basemgmt'); ?></span>
+                            </div>
+                            <pre class="bm-ui__json">{"transport":"autobus","osoby":12}</pre>
+                        </div>
+                    </div>
+                </div><!-- /prev-forms -->
 
             </div><!-- /bm-style-preview -->
             </div><!-- /bm-style-preview-wrap -->

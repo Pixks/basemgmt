@@ -17,6 +17,7 @@
 	--bm-badge-text:    #ffffff;
 	--bm-link:          #5A8D24;
 	--bm-placeholder:   #8a9199;
+	--bm-muted:         #6b7280;
 	/* Shape / spacing tokens */
 	--bm-radius:        10px;
 	--bm-shadow:        0 2px 12px rgba(0,0,0,.10);
@@ -48,8 +49,10 @@
 	padding: 0 !important;
 	border: 0 !important;
 	background: none !important;
-	font-size: inherit;
-	line-height: 1.3;
+	font-size: inherit !important;
+	line-height: 1.3 !important;
+	font-family: var(--bm-font) !important;
+	color: var(--bm-heading) !important;
 }
 
 .bm-ui p {
@@ -158,16 +161,41 @@
 
 .bm-ui__header h3 {
 	margin: 0;
-	color: inherit;
+	color: inherit !important;
+	font-size: .95rem !important;
+	font-weight: 700 !important;
+	line-height: 1.35 !important;
+	font-family: var(--bm-font) !important;
+}
+
+.bm-ui__header > span,
+.bm-ui__header > div,
+.bm-ui__header small {
+	color: inherit !important;
 	font-size: .95rem;
-	font-weight: 700;
 	line-height: 1.35;
+}
+
+.bm-ui.bm-ui--panel {
+	width: 100%;
+	max-width: 920px;
+	margin: 0 auto 20px;
+}
+
+.bm-ui.bm-ui--panel.bm-ui--panel-login {
+	max-width: 860px;
+}
+
+.bm-ui--panel .bm-ui__section-title {
+	margin-bottom: 12px;
+	font-size: 1.05rem;
+	letter-spacing: .08em;
 }
 
 /* ── Card body ───────────────────────────────────────────────── */
 
 .bm-ui__body {
-	padding: 14px 16px;
+	padding: 18px;
 	background: var(--bm-surface);
 }
 
@@ -213,7 +241,7 @@
 .bm-ui .bm-ui__input {
 	width: 100%;
 	margin: 0 0 10px;
-	padding: 9px 12px;
+	padding: 11px 14px;
 	border: 1px solid var(--bm-border);
 	border-radius: var(--bm-radius-sm);
 	background: var(--bm-surface);
@@ -222,7 +250,7 @@
 	font-size: .95rem;
 	line-height: 1.35;
 	box-shadow: none;
-	min-height: 40px;
+	min-height: 42px;
 	transition: border-color .15s, box-shadow .15s;
 }
 
@@ -256,7 +284,7 @@
 	border: none;
 	background: var(--bm-primary);
 	color: var(--bm-btn-text);
-	padding: 9px 20px;
+	padding: 10px 22px;
 	border-radius: var(--bm-radius-pill);
 	cursor: pointer;
 	font-weight: 700;
@@ -267,6 +295,118 @@
 	transition: background .15s, transform .1s, box-shadow .15s;
 	text-decoration: none;
 	box-shadow: none;
+}
+
+.bm-ui--auth-card {
+	border-radius: calc(var(--bm-radius) + 4px);
+	box-shadow: 0 10px 28px rgba(15, 23, 42, .10);
+}
+
+.bm-ui--feature-card,
+.bm-ui--form-card,
+.bm-ui--list-card,
+.bm-ui--detail-card,
+.bm-ui--compact-card {
+	border-radius: calc(var(--bm-radius) + 2px);
+	box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+}
+
+.bm-ui--feature-card .bm-ui__header,
+.bm-ui--form-card .bm-ui__header,
+.bm-ui--list-card .bm-ui__header,
+.bm-ui--detail-card .bm-ui__header {
+	padding: 14px 18px;
+}
+
+.bm-ui--feature-card .bm-ui__body,
+.bm-ui--form-card .bm-ui__body,
+.bm-ui--list-card .bm-ui__body,
+.bm-ui--detail-card .bm-ui__body,
+.bm-ui--compact-card .bm-ui__body {
+	padding: 18px;
+}
+
+.bm-ui--feature-card .bm-ui__body {
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--bm-bg) 32%, transparent), transparent 56%),
+		var(--bm-surface);
+}
+
+.bm-ui--form-card .bm-ui__actions,
+.bm-ui--detail-card .bm-ui__actions {
+	margin-top: 14px;
+}
+
+.bm-ui--list-card .bm-ui__item,
+.bm-ui--detail-card .bm-ui__item {
+	padding: 12px 14px;
+}
+
+.bm-ui--list-card .bm-ui__item--button {
+	border-radius: var(--bm-radius);
+}
+
+.bm-ui--detail-card .bm-ui__json {
+	margin-top: 10px;
+}
+
+.bm-ui--compact-card {
+	padding: 12px 16px;
+	background: var(--bm-surface);
+	border: 1px solid var(--bm-border);
+}
+
+.bm-ui--compact-card .bm-ui__btn {
+	flex-shrink: 0;
+}
+
+.bm-ui--auth-card .bm-ui__header {
+	padding: 20px 22px;
+}
+
+.bm-ui--auth-card .bm-ui__header h3 {
+	font-size: clamp(1.9rem, 3vw, 2.2rem) !important;
+	font-weight: 800 !important;
+	line-height: 1.2 !important;
+}
+
+.bm-ui--auth-card .bm-ui__body {
+	padding: 20px 22px 18px;
+}
+
+.bm-ui--auth-card .bm-ui__label {
+	font-size: 1rem;
+	font-weight: 500;
+	margin-bottom: 6px;
+}
+
+.bm-ui--auth-card .bm-ui__intro {
+	margin-bottom: 16px !important;
+	font-size: .96rem;
+	line-height: 1.5;
+}
+
+.bm-ui--auth-card .bm-ui__field {
+	gap: 6px;
+}
+
+.bm-ui--auth-card .bm-ui__actions {
+	margin-top: 6px;
+}
+
+.bm-ui--auth-card .bm-ui__hint {
+	font-size: .82rem;
+}
+
+.bm-ui--auth-card .bm-ui__auth-note {
+	margin-top: 10px !important;
+}
+
+.bm-ui .bm-ui__btn--login {
+	padding: 10px 20px;
+	font-size: .9rem;
+	font-weight: 700;
+	min-width: 140px;
 }
 
 .bm-ui .bm-ui__btn:hover {
@@ -324,7 +464,7 @@
 .bm-ui .bm-ui__error   { color: #C0392B; }
 .bm-ui .bm-ui__success { color: var(--bm-primary); }
 .bm-ui .bm-ui__warn    { color: #B45309; }
-.bm-ui .bm-ui__muted   { color: #6b7280; font-size: .86rem; }
+.bm-ui .bm-ui__muted   { color: var(--bm-muted); font-size: .86rem; }
 
 /* ── List items ──────────────────────────────────────────────── */
 
@@ -335,6 +475,40 @@
 	margin-bottom: 8px;
 	background: var(--bm-surface);
 	box-shadow: var(--bm-shadow);
+}
+
+.bm-ui .bm-ui__item strong {
+	display: block;
+	margin-bottom: 4px;
+	color: var(--bm-heading);
+}
+
+.bm-ui .bm-ui__eyebrow {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: .76rem;
+	font-weight: 800;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	color: var(--bm-primary);
+	margin-bottom: 10px;
+}
+
+.bm-ui .bm-ui__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	color: var(--bm-muted);
+	font-size: .82rem;
+	margin-top: 8px;
+}
+
+.bm-ui .bm-ui__empty {
+	padding: 12px 14px;
+	border: 1px dashed var(--bm-border);
+	border-radius: var(--bm-radius-sm);
+	background: color-mix(in srgb, var(--bm-bg) 45%, var(--bm-surface));
 }
 
 .bm-ui .bm-ui__item--button {
@@ -385,6 +559,39 @@
 	margin-top: 10px;
 }
 
+.bm-ui .bm-ui__stack {
+	display: grid;
+	gap: 12px;
+}
+
+.bm-ui .bm-ui__field {
+	display: grid;
+	gap: 4px;
+}
+
+.bm-ui .bm-ui__intro {
+	margin: 0 0 14px !important;
+	color: var(--bm-text) !important;
+	font-size: .92rem;
+}
+
+.bm-ui .bm-ui__hint {
+	color: var(--bm-muted);
+	font-size: .8rem;
+	line-height: 1.4;
+}
+
+.bm-ui .bm-ui__items-row {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin-top: 12px;
+}
+
+.bm-ui .bm-ui__items-row .bm-ui__item {
+	flex: 1 1 180px;
+}
+
 .bm-ui .bm-ui__stats {
 	display: flex;
 	flex-wrap: wrap;
@@ -394,6 +601,30 @@
 .bm-ui .bm-ui__stats strong {
 	display: inline-block;
 	min-width: 30px;
+}
+
+.bm-ui .bm-ui__toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+.bm-ui .bm-ui__toolbar .bm-ui__input {
+	flex: 1 1 auto;
+	min-width: min(240px, 100%);
+	margin-bottom: 0;
+}
+
+.bm-ui .bm-ui__toolbar .bm-ui__btn {
+	flex: 0 0 auto;
+}
+
+.bm-ui .bm-ui__note {
+	margin-top: 12px !important;
+	padding-top: 10px;
+	border-top: 1px solid var(--bm-border);
 }
 
 .bm-ui.bm-ui--inline {

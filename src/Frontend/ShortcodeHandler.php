@@ -268,50 +268,71 @@ final class ShortcodeHandler {
 	private function panel_login( array $atts = [] ): string {
 		$redirect_url = isset( $atts['redirect_url'] ) ? esc_url( (string) $atts['redirect_url'] ) : '';
 		$redirect_attr = $redirect_url ? ' data-bm-redirect="' . esc_attr( $redirect_url ) . '"' : '';
-		return '<div class="bm-ui bm-ui--card" x-data="bmLogin()" x-init="init()" x-cloak x-show="!$store.bm.authenticated"' . $redirect_attr . '>'
-			. '<div class="bm-ui__header"><h3>' . esc_html__('Panel kadry obozowej', 'basemgmt') . '</h3></div>'
-			. '<div class="bm-ui__body">'
-			. '<label class="bm-ui__label">' . esc_html__('Obóz', 'basemgmt') . '</label>'
-			. '<select class="bm-ui__input" x-model="campId" @change="loadStaff()"><option value="">—</option><template x-for="c in camps" :key="c.id"><option :value="c.id" x-text="c.name"></option></template></select>'
-			. '<label class="bm-ui__label" x-show="campId && staffList.length">' . esc_html__('Kadra', 'basemgmt') . '</label>'
-			. '<select class="bm-ui__input" x-show="campId && staffList.length" x-model="staffId"><option value="">—</option><template x-for="s in staffList" :key="s.id"><option :value="s.id" x-text="s.display_name"></option></template></select>'
-			. '<label class="bm-ui__label" x-show="staffId">' . esc_html__('Kod bezpieczeństwa', 'basemgmt') . '</label>'
-			. '<input x-show="staffId" class="bm-ui__input" type="password" x-model="code" maxlength="6" inputmode="numeric" @keydown.enter="submit()">'
-			. '<p class="bm-ui__error" x-show="error" x-text="error"></p>'
-			. '<button type="button" class="bm-ui__btn" @click="submit()" :disabled="loading || !campId || !staffId || !code" x-text="loading ? \'Logowanie…\' : \'Zaloguj\'"></button>'
-			. '</div></div>';
+		return $this->wrap_panel(
+			'',
+			'<div class="bm-ui bm-ui--card bm-ui--auth-card" x-data="bmLogin()" x-cloak x-show="!$store.bm.authenticated" x-init="init()" ' . $redirect_attr . '>'
+				. '<div class="bm-ui__header"><h3>' . esc_html__('Panel kadry obozowej', 'basemgmt') . '</h3></div>'
+				. '<div class="bm-ui__body">'
+				. '<p class="bm-ui__intro">' . esc_html__('Wybierz obóz, członka kadry i wpisz 6-cyfrowy kod bezpieczeństwa, aby przejść do panelu.', 'basemgmt') . '</p>'
+				. '<div class="bm-ui__stack">'
+				. '<div class="bm-ui__field">'
+				. '<label class="bm-ui__label">' . esc_html__('Obóz', 'basemgmt') . '</label>'
+				. '<select class="bm-ui__input" x-model="campId" @change="loadStaff()"><option value="">—</option><template x-for="c in camps" :key="c.id"><option :value="c.id" x-text="c.name"></option></template></select>'
+				. '<div class="bm-ui__hint">' . esc_html__('Najpierw wybierz aktywny obóz, dla którego chcesz się zalogować.', 'basemgmt') . '</div>'
+				. '</div>'
+				. '<div class="bm-ui__field" x-show="campId && staffList.length">'
+				. '<label class="bm-ui__label">' . esc_html__('Kadra', 'basemgmt') . '</label>'
+				. '<select class="bm-ui__input" x-model="staffId"><option value="">—</option><template x-for="s in staffList" :key="s.id"><option :value="s.id" x-text="s.display_name"></option></template></select>'
+				. '<div class="bm-ui__hint">' . esc_html__('Pokażemy tylko osoby przypisane do wybranego obozu.', 'basemgmt') . '</div>'
+				. '</div>'
+				. '<div class="bm-ui__field" x-show="staffId">'
+				. '<label class="bm-ui__label">' . esc_html__('Kod bezpieczeństwa', 'basemgmt') . '</label>'
+				. '<input class="bm-ui__input" type="password" x-model="code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" @keydown.enter="submit()">'
+				. '<div class="bm-ui__hint">' . esc_html__('Kod ma dokładnie 6 cyfr.', 'basemgmt') . '</div>'
+				. '</div>'
+				. '</div>'
+				. '<p class="bm-ui__error" x-show="error" x-text="error"></p>'
+				. '<div class="bm-ui__actions"><button type="button" class="bm-ui__btn bm-ui__btn--login" @click="submit()" :disabled="loading || !campId || !staffId || !code" x-text="loading ? \'Logowanie…\' : \'Zaloguj się\'"></button></div>'
+				. '<p class="bm-ui__muted bm-ui__auth-note">' . esc_html__('Po poprawnym logowaniu od razu zobaczysz panel kadry dla wybranego obozu.', 'basemgmt') . '</p>'
+				. '</div></div>',
+			'bm-ui--panel-login'
+		);
 	}
 
 	private function panel_camp_header(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmCamp()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
-			. '<div class="bm-ui__header"><h3 x-text="camp ? camp.name : \'Obóz\'"></h3></div>'
-			. '<div class="bm-ui__body">'
-			. '<p class="bm-ui__muted" x-show="!camp">' . esc_html__('Ładowanie danych obozu…', 'basemgmt') . '</p>'
-			. '<template x-if="camp"><div><p><span x-text="camp.start_date"></span> – <span x-text="camp.end_date"></span></p>'
-			. '<p x-show="submittedToday" class="bm-ui__success">✓ ' . esc_html__('Meldunek złożony', 'basemgmt') . '</p>'
-			. '<p x-show="!submittedToday" class="bm-ui__warn">⚠ ' . esc_html__('Brak meldunku', 'basemgmt') . '</p>'
-			. '<div class="bm-ui__stats" x-show="latestCount"><span><strong x-text="latestCount.participants ?? 0"></strong> ' . esc_html__('Uczestnicy', 'basemgmt') . '</span><span><strong x-text="latestCount.staff ?? 0"></strong> ' . esc_html__('Kadra', 'basemgmt') . '</span><span><strong x-text="latestCount.workers ?? 0"></strong> ' . esc_html__('Pracownicy', 'basemgmt') . '</span></div></div></template>'
-			. '</div></div>';
+		return $this->wrap_panel(
+			__('Przegląd obozu', 'basemgmt'),
+			'<div class="bm-ui bm-ui--card bm-ui--feature-card" x-data="bmCamp()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
+				. '<div class="bm-ui__header"><h3 x-text="camp ? camp.name : \'Obóz\'"></h3></div>'
+				. '<div class="bm-ui__body">'
+				. '<p class="bm-ui__muted" x-show="!camp">' . esc_html__('Ładowanie danych obozu…', 'basemgmt') . '</p>'
+				. '<template x-if="camp"><div><p><span x-text="camp.start_date"></span> – <span x-text="camp.end_date"></span></p>'
+				. '<p x-show="submittedToday" class="bm-ui__success">✓ ' . esc_html__('Meldunek złożony', 'basemgmt') . '</p>'
+				. '<p x-show="!submittedToday" class="bm-ui__warn">⚠ ' . esc_html__('Brak meldunku', 'basemgmt') . '</p>'
+				. '<div class="bm-ui__stats" x-show="latestCount"><span><strong x-text="latestCount.participants ?? 0"></strong> ' . esc_html__('Uczestnicy', 'basemgmt') . '</span><span><strong x-text="latestCount.staff ?? 0"></strong> ' . esc_html__('Kadra', 'basemgmt') . '</span><span><strong x-text="latestCount.workers ?? 0"></strong> ' . esc_html__('Pracownicy', 'basemgmt') . '</span></div></div></template>'
+				. '</div></div>',
+			''
+		);
 	}
 
 	private function panel_logout(): string {
-		return '<div class="bm-ui bm-ui--inline" x-data="bmLogout()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Sesja', 'basemgmt'), '<div class="bm-ui bm-ui--inline bm-ui--compact-card" x-data="bmLogout()" x-cloak x-show="$store.bm.authenticated">'
 			. '<span class="bm-ui__muted" x-text="\'Zalogowany: \' + $store.bm.displayName"></span>'
 			. '<button class="bm-ui__btn bm-ui__btn--small" @click="logout()">' . esc_html__('Wyloguj', 'basemgmt') . '</button>'
-			. '</div>';
+			. '</div>' );
 	}
 
 	private function panel_announcements(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmAnnouncements()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Aktualności', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--list-card" x-data="bmAnnouncements()" x-cloak x-show="$store.bm.authenticated">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Ogłoszenia', 'basemgmt') . '</h3><button class="bm-ui__btn bm-ui__btn--light bm-ui__btn--small" @click="refresh()">↻</button></div>'
 			. '<div class="bm-ui__body">'
 			. '<template x-for="ann in active" :key="ann.id"><div class="bm-ui__item"><strong x-text="ann.title"></strong><div x-html="ann.content"></div><small class="bm-ui__muted" x-text="ann.valid_until"></small></div></template>'
 			. '<p class="bm-ui__muted" x-show="!active.length">' . esc_html__('Brak aktywnych ogłoszeń.', 'basemgmt') . '</p>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_announcement_form(): string {
-		return '<form class="bm-ui bm-ui--card" x-data="bmAnnForm()" @submit.prevent="submit()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Nowe ogłoszenie', 'basemgmt'), '<form class="bm-ui bm-ui--card bm-ui--form-card" x-data="bmAnnForm()" x-cloak x-show="$store.bm.authenticated" @submit.prevent="submit()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Nowe ogłoszenie', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<input class="bm-ui__input" type="text" x-model="title" placeholder="' . esc_attr__('Tytuł', 'basemgmt') . '">' 
 			. '<textarea class="bm-ui__input" x-model="content" rows="4" placeholder="' . esc_attr__('Treść', 'basemgmt') . '"></textarea>'
@@ -319,137 +340,153 @@ final class ShortcodeHandler {
 			. '<input class="bm-ui__input" type="url" x-model="attachment_url" placeholder="https://">'
 			. '<p class="bm-ui__success" x-show="success" x-text="success"></p><p class="bm-ui__error" x-show="error" x-text="error"></p>'
 			. '<button class="bm-ui__btn" type="submit" :disabled="loading" x-text="loading ? \'Wysyłanie…\' : \'Wyślij\'"></button>'
-			. '</div></form>';
+			. '</div></form>' );
 	}
 
 	private function panel_reports(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmReports()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Meldunek dzienny', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--form-card" x-data="bmReports()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Meldunek dzienny', 'basemgmt') . '</h3><span x-text="statusLabel"></span></div><div class="bm-ui__body">'
 			. '<div class="bm-ui__grid"><input class="bm-ui__input" type="number" x-model.number="form.participants" min="0" placeholder="' . esc_attr__('Uczestnicy', 'basemgmt') . '"><input class="bm-ui__input" type="number" x-model.number="form.staff" min="0" placeholder="' . esc_attr__('Kadra', 'basemgmt') . '"><input class="bm-ui__input" type="number" x-model.number="form.workers" min="0" placeholder="' . esc_attr__('Pracownicy', 'basemgmt') . '"></div>'
 			. '<textarea class="bm-ui__input" x-model="form.notes" rows="3" placeholder="' . esc_attr__('Uwagi', 'basemgmt') . '"></textarea>'
 			. '<p class="bm-ui__muted">' . esc_html__('Łącznie:', 'basemgmt') . ' <strong x-text="total"></strong></p>'
 			. '<p class="bm-ui__success" x-show="success" x-text="success"></p><p class="bm-ui__error" x-show="error" x-text="error"></p>'
 			. '<div class="bm-ui__actions"><button type="button" class="bm-ui__btn bm-ui__btn--ghost" @click="saveDraft()" :disabled="loading || isSubmitted">' . esc_html__('Zapisz roboczo', 'basemgmt') . '</button><button type="button" class="bm-ui__btn" @click="submit()" :disabled="loading || isSubmitted">' . esc_html__('Wyślij', 'basemgmt') . '</button></div>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_weather(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmWeather()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Pogoda', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--feature-card" x-data="bmWeather()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Pogoda i alerty', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="loading">' . esc_html__('Ładowanie…', 'basemgmt') . '</p>'
 			. '<p class="bm-ui__error" x-show="error" x-text="error"></p>'
 			. '<template x-if="current"><div><p><strong x-text="current.icon"></strong> <span x-text="current.label"></span></p><p><span x-text="current.temperature"></span>°C · 💨 <span x-text="current.windspeed"></span> km/h</p></div></template>'
 			. '<template x-for="day in forecast" :key="day.date"><div class="bm-ui__item"><strong x-text="day.date"></strong><span x-text="day.icon + \' \' + day.label"></span></div></template>'
 			. '<template x-for="alert in alerts" :key="alert.id"><div class="bm-ui__item" :class="alert.is_urgent ? \'bm-ui__item--urgent\' : \'\'"><strong x-text="alert.title"></strong><p x-text="alert.message"></p></div></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_schedule(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmSchedule()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Plan dnia', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--list-card" x-data="bmSchedule()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Plan dnia', 'basemgmt') . '</h3><input class="bm-ui__input bm-ui__input--small" type="date" x-model="selectedDate" @change="loadSchedule()"></div><div class="bm-ui__body">'
 			. '<template x-for="plan in plans" :key="plan.id"><div class="bm-ui__item"><strong x-text="plan.title || \'Plan\'"></strong><template x-for="item in plan.items" :key="item.id"><div class="bm-ui__line"><span x-text="item.time_from"></span> <span x-text="item.title"></span></div></template></div></template>'
 			. '<p class="bm-ui__muted" x-show="!loading && !plans.length">' . esc_html__('Brak planu na wybrany dzień.', 'basemgmt') . '</p>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_reservations(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmReservations()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Rezerwacje', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--form-card" x-data="bmReservations()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Rezerwacje', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<template x-for="res in resources" :key="res.id"><div class="bm-ui__item"><strong x-text="res.name"></strong><button type="button" class="bm-ui__btn bm-ui__btn--small" @click="openForm(res)">' . esc_html__('Zarezerwuj', 'basemgmt') . '</button></div></template>'
 			. '<template x-if="selectedResource"><div class="bm-ui__item"><p><strong x-text="selectedResource.name"></strong></p><input class="bm-ui__input" type="date" x-model="form.res_date" @change="loadSlots()"><div class="bm-ui__grid"><input class="bm-ui__input" type="time" x-model="form.start_time"><input class="bm-ui__input" type="time" x-model="form.end_time"></div><input class="bm-ui__input" type="text" x-model="form.purpose" placeholder="' . esc_attr__('Cel rezerwacji', 'basemgmt') . '"><p class="bm-ui__error" x-show="formError" x-text="formError"></p><button class="bm-ui__btn" type="button" @click="submitReservation()">' . esc_html__('Wyślij rezerwację', 'basemgmt') . '</button></div></template>'
 			. '<template x-for="r in myReservations" :key="r.id"><div class="bm-ui__line"><span x-text="r.res_date + \' \' + r.start_time + \'-\' + r.end_time"></span><button type="button" class="bm-ui__btn bm-ui__btn--small bm-ui__btn--ghost" x-show="r.status === \'pending\'" @click="cancel(r.id)">' . esc_html__('Anuluj', 'basemgmt') . '</button></div></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_menu_day(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-init="init(); setViewMode(\'day\')" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--list-card" x-data="bmMenu()" x-cloak x-show="$store.bm.authenticated" x-init="init(); setViewMode(\'day\')">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Jadłospis dzienny', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<select class="bm-ui__input" x-model="selectedDate" @change="selectDate(selectedDate)"><template x-for="d in availableDates" :key="d"><option :value="d" x-text="d"></option></template></select>'
 			. '<template x-if="day"><div class="bm-ui__item"><template x-for="item in day.items" :key="item.id"><div class="bm-ui__line"><span x-text="mealTypeLabel(item.meal_type)"></span><strong x-text="item.name"></strong></div></template></div></template>'
-			. '<p class="bm-ui__error" x-show="error" x-text="error"></p></div></div>';
+			. '<p class="bm-ui__error" x-show="error" x-text="error"></p></div></div>' );
 	}
 
 	private function panel_menu_week(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmMenu()" x-init="init(); setViewMode(\'week\')" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Jadłospis', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--list-card" x-data="bmMenu()" x-cloak x-show="$store.bm.authenticated" x-init="init(); setViewMode(\'week\')">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Jadłospis tygodniowy', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<template x-for="dayItem in weekDays" :key="dayItem.date"><div class="bm-ui__item"><strong x-text="dayItem.date"></strong><template x-for="item in dayItem.items" :key="item.id"><div class="bm-ui__line"><span x-text="mealTypeLabel(item.meal_type)"></span><span x-text="item.name"></span></div></template></div></template>'
-			. '<p class="bm-ui__error" x-show="error" x-text="error"></p></div></div>';
+			. '<p class="bm-ui__error" x-show="error" x-text="error"></p></div></div>' );
 	}
 
 	private function panel_conversations(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmConversations()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Wiadomości', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--list-card" x-data="bmConversations()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Wiadomości', 'basemgmt') . '</h3><button type="button" class="bm-ui__btn bm-ui__btn--small" @click="view=\'new\'">' . esc_html__('Nowy', 'basemgmt') . '</button></div><div class="bm-ui__body">'
 			. '<template x-for="thread in threads" :key="thread.id"><button type="button" class="bm-ui__item bm-ui__item--button" @click="openThread(thread.id)"><strong x-text="thread.subject"></strong><small x-text="thread.unread_camp ? thread.unread_camp + \' nowe\' : \'\'"></small></button></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_conversation_new(): string {
-		return '<form class="bm-ui bm-ui--card" x-data="bmConversations()" x-init="init(); view=\'new\'" @submit.prevent="createThread()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Nowa wiadomość', 'basemgmt'), '<form class="bm-ui bm-ui--card bm-ui--form-card" x-data="bmConversations()" x-cloak x-show="$store.bm.authenticated" x-init="init(); view=\'new\'" @submit.prevent="createThread()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Nowy wątek', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<input class="bm-ui__input" type="text" x-model="form.subject" placeholder="' . esc_attr__('Temat', 'basemgmt') . '"><textarea class="bm-ui__input" rows="4" x-model="form.content" placeholder="' . esc_attr__('Treść', 'basemgmt') . '"></textarea><select class="bm-ui__input" x-model="form.priority"><option value="low">' . esc_html__('Niski', 'basemgmt') . '</option><option value="normal">' . esc_html__('Normalny', 'basemgmt') . '</option><option value="high">' . esc_html__('Wysoki', 'basemgmt') . '</option><option value="urgent">' . esc_html__('Pilny', 'basemgmt') . '</option></select>'
 			. '<p class="bm-ui__success" x-show="success" x-text="success"></p><p class="bm-ui__error" x-show="error" x-text="error"></p>'
-			. '<button class="bm-ui__btn" type="submit" :disabled="loading">' . esc_html__('Wyślij', 'basemgmt') . '</button></div></form>';
+			. '<button class="bm-ui__btn" type="submit" :disabled="loading">' . esc_html__('Wyślij', 'basemgmt') . '</button></div></form>' );
 	}
 
 	private function panel_conversation_thread(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmConversations()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Wątek wiadomości', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--detail-card" x-data="bmConversations()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Widok wątku', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="!currentThread">' . esc_html__('Wybierz wątek z listy wiadomości.', 'basemgmt') . '</p>'
 			. '<template x-if="currentThread"><div><h4 x-text="currentThread.subject"></h4><template x-for="m in messages" :key="m.id"><div class="bm-ui__item"><strong x-text="m.author_type"></strong><div x-text="m.content"></div></div></template><textarea class="bm-ui__input" rows="3" x-model="replyContent"></textarea><button class="bm-ui__btn" type="button" @click="sendReply()">' . esc_html__('Odpowiedz', 'basemgmt') . '</button></div></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_help_list(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmHelp()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Pomoc', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--list-card" x-data="bmHelp()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Baza pomocy', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<div class="bm-ui__grid"><input class="bm-ui__input" type="text" x-model="search" placeholder="' . esc_attr__('Szukaj…', 'basemgmt') . '"><button type="button" class="bm-ui__btn bm-ui__btn--small" @click="applyFilters()">' . esc_html__('Filtruj', 'basemgmt') . '</button></div>'
 			. '<template x-for="article in articles" :key="article.id"><button type="button" class="bm-ui__item bm-ui__item--button" @click="openArticle(article.id)"><strong x-text="article.title"></strong></button></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_help_article(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmHelp()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Artykuł pomocy', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--detail-card" x-data="bmHelp()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Artykuł pomocy', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="!current">' . esc_html__('Wybierz artykuł na liście pomocy.', 'basemgmt') . '</p>'
 			. '<template x-if="current"><div><h4 x-text="current.title"></h4><div x-html="current.content"></div></div></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_forms_list(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmForms()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Formularze', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--list-card" x-data="bmForms()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Formularze', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<select class="bm-ui__input" x-model="filterCategory"><option value="">' . esc_html__('Wszystkie kategorie', 'basemgmt') . '</option><template x-for="c in categories" :key="c"><option :value="c" x-text="c"></option></template></select>'
 			. '<template x-for="formItem in filtered" :key="formItem.id"><button type="button" class="bm-ui__item bm-ui__item--button" @click="openForm(formItem.id)"><strong x-text="formItem.title"></strong></button></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_form(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmForms()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Wypełnianie formularza', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--form-card" x-data="bmForms()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Wypełnij formularz', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="!currentForm">' . esc_html__('Wybierz formularz z listy formularzy.', 'basemgmt') . '</p>'
 			. '<template x-if="currentForm"><div><h4 x-text="currentForm.title"></h4><template x-for="f in fields" :key="f.id"><div><label class="bm-ui__label" x-text="f.label"></label><input class="bm-ui__input" type="text" x-model="formValues[f.field_key]"><small class="bm-ui__error" x-text="fieldError(f.field_key)"></small></div></template><p class="bm-ui__error" x-show="error" x-text="error"></p><button class="bm-ui__btn" type="button" @click="submit()" :disabled="submitting">' . esc_html__('Wyślij', 'basemgmt') . '</button><p class="bm-ui__success" x-show="submitted">' . esc_html__('Formularz wysłany.', 'basemgmt') . '</p></div></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_submissions_list(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmSubmissions()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Moje zgłoszenia', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--list-card" x-data="bmSubmissions()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Moje zgłoszenia', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<select class="bm-ui__input" x-model="filterStatus" @change="applyFilter()"><option value="">' . esc_html__('Wszystkie statusy', 'basemgmt') . '</option><option value="new">' . esc_html__('Nowe', 'basemgmt') . '</option><option value="in_progress">' . esc_html__('W trakcie', 'basemgmt') . '</option><option value="waiting">' . esc_html__('Oczekuje', 'basemgmt') . '</option><option value="closed">' . esc_html__('Zamknięte', 'basemgmt') . '</option><option value="cancelled">' . esc_html__('Anulowane', 'basemgmt') . '</option></select>'
 			. '<template x-for="s in submissions" :key="s.id"><button type="button" class="bm-ui__item bm-ui__item--button" @click="openSubmission(s.id)"><strong x-text="s.form_title || s.category"></strong><small x-text="statusLabel(s.status)"></small></button></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_submission(): string {
-		return '<div class="bm-ui bm-ui--card" x-data="bmSubmissions()" x-init="init()" x-cloak x-show="$store.bm.authenticated">'
+		return $this->wrap_panel( __('Szczegóły zgłoszenia', 'basemgmt'), '<div class="bm-ui bm-ui--card bm-ui--detail-card" x-data="bmSubmissions()" x-cloak x-show="$store.bm.authenticated" x-init="init()">'
 			. '<div class="bm-ui__header"><h3>' . esc_html__('Szczegóły zgłoszenia', 'basemgmt') . '</h3></div><div class="bm-ui__body">'
 			. '<p class="bm-ui__muted" x-show="!current">' . esc_html__('Wybierz zgłoszenie z listy.', 'basemgmt') . '</p>'
 			. '<template x-if="current"><div><p><strong>' . esc_html__('Status:', 'basemgmt') . '</strong> <span x-text="statusLabel(current.submission.status)"></span></p><p><strong>' . esc_html__('Priorytet:', 'basemgmt') . '</strong> <span x-text="priorityLabel(current.submission.priority)"></span></p><pre class="bm-ui__json" x-text="JSON.stringify(current.submission_data, null, 2)"></pre></div></template>'
-			. '</div></div>';
+			. '</div></div>' );
 	}
 
 	private function panel_unread_counter(): string {
-		return '<div class="bm-ui bm-ui--badge" x-cloak x-show="$store.bm.authenticated"><span x-text="$store.bm.unreadCount"></span></div>';
+		return '<div class="bm-ui bm-ui--badge" x-data="{}" x-cloak x-show="($store.bm && $store.bm.authenticated)"><span x-text="$store.bm ? $store.bm.unreadCount : 0"></span></div>';
 	}
+
+	/**
+	 * Wraps shortcode content in the shared outer panel container.
+	 * Pass an empty section title to suppress the title row entirely.
+	 */
+	private function wrap_panel( string $section_title, string $content, string $extra_classes = '' ): string {
+		// Section titles are only rendered for authenticated-only panels.
+		$title_markup = $section_title !== ''
+			? '<div class="bm-ui__section-title" x-data="{}" x-cloak x-show="($store.bm && $store.bm.authenticated)">' . esc_html( $section_title ) . '</div>'
+			: '';
+
+		$classes = trim( 'bm-ui bm-ui--panel ' . $extra_classes );
+
+		return '<div class="' . esc_attr( $classes ) . '">' . $title_markup . $content . '</div>';
+	}
+
 
 	private function build_config(): array {
 		$session      = SessionManager::current();
