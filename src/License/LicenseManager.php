@@ -186,6 +186,9 @@ final class LicenseManager {
 		return $this->client->get_allowed_channels();
 	}
 
+	/**
+	 * Returns whether the developer override from wp-config.php is active.
+	 */
 	public function is_developer_override_active(): bool {
 		return DeveloperOverride::is_active();
 	}
