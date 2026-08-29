@@ -239,16 +239,6 @@ $font_labels = [
     padding: 20px;
     transition: background .2s;
 }
-/* items-row flex layout (not in bm-shortcodes.css) */
-#bm-style-preview .bm-ui__items-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-}
-#bm-style-preview .bm-ui__items-row .bm-ui__item {
-    flex: 1 1 180px;
-}
 .bm-style-form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -507,7 +497,7 @@ $font_labels = [
             <div id="bm-style-preview" class="bm-ui" style="background:var(--bm-bg);padding:20px;">
 
                 <!-- Pane: Aktualności -->
-                <div id="prev-announcements" class="bm-prev-pane active">
+                <div id="prev-announcements" class="bm-prev-pane active bm-ui bm-ui--panel">
                     <div class="bm-ui__section-title">AKTUALNOŚCI</div>
 
                     <div class="bm-ui bm-ui--card">
@@ -553,33 +543,44 @@ $font_labels = [
                 </div><!-- /prev-announcements -->
 
                 <!-- Pane: Logowanie -->
-                <div id="prev-login" class="bm-prev-pane">
+                <div id="prev-login" class="bm-prev-pane bm-ui bm-ui--panel">
                     <div class="bm-ui__section-title"><?php esc_html_e('PANEL KADRY', 'basemgmt'); ?></div>
                     <div class="bm-ui bm-ui--card">
                         <div class="bm-ui__header">
                             <span>🔐 <?php esc_html_e('Logowanie', 'basemgmt'); ?></span>
                         </div>
                         <div class="bm-ui__body">
-                            <div style="margin-bottom:10px;">
-                                <label class="bm-ui__label"><?php esc_html_e('Adres e-mail', 'basemgmt'); ?></label>
-                                <input type="text" class="bm-ui__input" readonly value="kadra@oboz.pl">
+                            <p class="bm-ui__intro">
+                                <?php esc_html_e('Wybierz obóz i członka kadry, a następnie wpisz kod bezpieczeństwa.', 'basemgmt'); ?>
+                            </p>
+                            <div class="bm-ui__stack">
+                            <div class="bm-ui__field">
+                                <label class="bm-ui__label"><?php esc_html_e('Obóz', 'basemgmt'); ?></label>
+                                <input type="text" class="bm-ui__input" readonly value="Ośrodek Test — Chorągiew">
+                                <div class="bm-ui__hint"><?php esc_html_e('Najpierw wybierasz aktywny obóz.', 'basemgmt'); ?></div>
                             </div>
-                            <div style="margin-bottom:14px;">
-                                <label class="bm-ui__label"><?php esc_html_e('Hasło', 'basemgmt'); ?></label>
-                                <input type="text" class="bm-ui__input" readonly value="••••••••">
+                            <div class="bm-ui__field">
+                                <label class="bm-ui__label"><?php esc_html_e('Kadra', 'basemgmt'); ?></label>
+                                <input type="text" class="bm-ui__input" readonly value="Jan Kowalski — Komendant">
+                                <div class="bm-ui__hint"><?php esc_html_e('Lista kadry ładuje się po wskazaniu obozu.', 'basemgmt'); ?></div>
+                            </div>
+                            <div class="bm-ui__field">
+                                <label class="bm-ui__label"><?php esc_html_e('Kod bezpieczeństwa', 'basemgmt'); ?></label>
+                                <input type="text" class="bm-ui__input" readonly value="••••••">
+                            </div>
                             </div>
                             <div class="bm-ui__actions">
                                 <button class="bm-ui__btn" type="button"><?php esc_html_e('Zaloguj się', 'basemgmt'); ?></button>
                             </div>
                             <div style="margin-top:10px;font-size:.8rem;">
-                                <a href="#" class="bm-ui__read-more" onclick="return false;"><?php esc_html_e('Nie pamiętam hasła', 'basemgmt'); ?></a>
+                                <a href="#" class="bm-ui__read-more" onclick="return false;"><?php esc_html_e('Po zalogowaniu od razu zobaczysz swój panel kadry', 'basemgmt'); ?></a>
                             </div>
                         </div>
                     </div>
                 </div><!-- /prev-login -->
 
                 <!-- Pane: Plan dnia -->
-                <div id="prev-schedule" class="bm-prev-pane">
+                <div id="prev-schedule" class="bm-prev-pane bm-ui bm-ui--panel">
                     <div class="bm-ui__section-title"><?php esc_html_e('PLAN DNIA', 'basemgmt'); ?></div>
                     <?php
                     $sched = [
@@ -608,7 +609,7 @@ $font_labels = [
                 </div><!-- /prev-schedule -->
 
                 <!-- Pane: Rezerwacje -->
-                <div id="prev-reservations" class="bm-prev-pane">
+                <div id="prev-reservations" class="bm-prev-pane bm-ui bm-ui--panel">
                     <div class="bm-ui__section-title"><?php esc_html_e('REZERWACJE', 'basemgmt'); ?></div>
                     <div class="bm-ui bm-ui--card">
                         <div class="bm-ui__header">
