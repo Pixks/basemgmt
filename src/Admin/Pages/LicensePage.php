@@ -26,6 +26,13 @@ final class LicensePage {
 		$status  = $manager->get_status();
 		$known_servers = \BaseMgmt\License\LicenseClient::known_servers();
 
+		// Extra fields from the licensemanager API.
+		$plan            = $manager->get_plan();
+		$active_channel  = $manager->get_active_channel();
+		$allowed_channels = $manager->get_allowed_channels();
+		$updates_allowed = $manager->updates_allowed();
+		$support_active  = $manager->support_active();
+
 		include BASEMGMT_DIR . 'templates/admin/license/index.php';
 	}
 
@@ -85,6 +92,28 @@ final class LicensePage {
 			AdminMenu::set_notice(__('Licencja dezaktywowana.', 'basemgmt'));
 		} else {
 			$msg = $response['error']['message'] ?? __('Dezaktywacja nie powiodła się.', 'basemgmt');
+			AdminMenu::set_notice(esc_html($msg), 'error');
+		}
+
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-license'));
+		exit;
+	}
+
+	/**
+	 * Forces a fresh check of the license status (clears transient cache).
+	 */
+	public function handle_refresh(): void {
+		if ( ! current_user_can('manage_options') ) {
+			wp_die(esc_html__('Brak uprawnień.', 'basemgmt'), esc_html__('Błąd', 'basemgmt'), ['response' => 403]);
+		}
+		check_admin_referer('bm_refresh_license');
+
+		$status = LicenseManager::instance()->get_status(true);
+
+		if ( ! empty($status['success']) ) {
+			AdminMenu::set_notice(__('Status licencji odświeżony pomyślnie.', 'basemgmt'));
+		} else {
+			$msg = sanitize_text_field($status['error']['message'] ?? __('Nie udało się odświeżyć statusu.', 'basemgmt'));
 			AdminMenu::set_notice(esc_html($msg), 'error');
 		}
 

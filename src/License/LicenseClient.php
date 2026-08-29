@@ -63,6 +63,43 @@ final class LicenseClient {
 		update_option(self::OPTION_CHANNEL, $channel, false);
 	}
 
+	/**
+	 * Returns the channel that the license server has locked this license to
+	 * ('beta' once switched, or 'stable'/'').
+	 * Sourced from the last API response stored in cache.
+	 */
+	public function get_active_channel(): string {
+		$cached = get_transient(self::CACHE_KEY);
+		if ( is_array($cached) ) {
+			return (string) ( $cached['data']['channel'] ?? '' );
+		}
+		return '';
+	}
+
+	/**
+	 * Returns the comma-separated list of channels allowed by the license
+	 * (e.g. 'stable,beta').  Defaults to 'stable' (not 'stable,beta') until
+	 * the API explicitly confirms eligibility.
+	 */
+	public function get_allowed_channels(): string {
+		$cached = get_transient(self::CACHE_KEY);
+		if ( is_array($cached) ) {
+			return (string) ( $cached['data']['allowed_channels'] ?? 'stable' );
+		}
+		return 'stable';
+	}
+
+	/**
+	 * Returns the plan name from the last API response (e.g. 'starter', 'pro').
+	 */
+	public function get_plan(): string {
+		$cached = get_transient(self::CACHE_KEY);
+		if ( is_array($cached) ) {
+			return (string) ( $cached['data']['plan_name'] ?? '' );
+		}
+		return '';
+	}
+
 	public function get_canonical_domain(): string {
 		$host = wp_parse_url(home_url(), PHP_URL_HOST) ?: '';
 		return trim((string) preg_replace('/^www\./', '', strtolower($host)), '.');
@@ -73,13 +110,20 @@ final class LicenseClient {
 	/** POST /api/v1/licenses/activate */
 	public function activate(): array {
 		delete_transient(self::CACHE_KEY);
-		return $this->post('/api/v1/licenses/activate', [
+		$response = $this->post('/api/v1/licenses/activate', [
 			'product_slug' => self::PRODUCT_SLUG,
 			'license_key'  => $this->get_license_key(),
 			'domain'       => $this->get_canonical_domain(),
 			'site_url'     => home_url(),
 			'fingerprint'  => hash('sha256', home_url() . ABSPATH),
+			'channel'      => $this->get_update_channel(),
 		]);
+		if ( ! empty($response['success']) ) {
+			$ttl                    = max(6 * HOUR_IN_SECONDS, ((int) ($response['data']['grace_period_days'] ?? 10)) * DAY_IN_SECONDS);
+			$response['valid_until'] = time() + $ttl;
+			set_transient(self::CACHE_KEY, $response, $ttl);
+		}
+		return $response;
 	}
 
 	/** POST /api/v1/licenses/deactivate */
@@ -107,6 +151,7 @@ final class LicenseClient {
 			'product_slug' => self::PRODUCT_SLUG,
 			'license_key'  => $this->get_license_key(),
 			'domain'       => $this->get_canonical_domain(),
+			'channel'      => $this->get_update_channel(),
 		]);
 
 		if ( ! empty($response['success']) ) {
@@ -120,11 +165,19 @@ final class LicenseClient {
 
 	/** POST /api/v1/licenses/heartbeat */
 	public function heartbeat(): array {
-		return $this->post('/api/v1/licenses/heartbeat', [
+		$response = $this->post('/api/v1/licenses/heartbeat', [
 			'product_slug' => self::PRODUCT_SLUG,
 			'license_key'  => $this->get_license_key(),
 			'domain'       => $this->get_canonical_domain(),
+			'channel'      => $this->get_update_channel(),
 		]);
+		// Update cache with fresh heartbeat data.
+		if ( ! empty($response['success']) ) {
+			$ttl                    = max(6 * HOUR_IN_SECONDS, ((int) ($response['data']['grace_period_days'] ?? 10)) * DAY_IN_SECONDS);
+			$response['valid_until'] = time() + $ttl;
+			set_transient(self::CACHE_KEY, $response, $ttl);
+		}
+		return $response;
 	}
 
 	/** POST /api/v1/updates/check */

@@ -112,6 +112,51 @@ final class LicenseManager {
 		return in_array($code, self::BLOCKING_CODES, true) ? $code : '';
 	}
 
+	/**
+	 * Returns the plan name from the last API response (e.g. 'starter', 'pro').
+	 */
+	public function get_plan(): string {
+		return $this->client->get_plan();
+	}
+
+	/**
+	 * Returns whether updates are allowed according to the last API response.
+	 * Falls back to true when no cached data is available (grace period).
+	 */
+	public function updates_allowed(): bool {
+		$status = $this->get_status();
+		if ( isset($status['data']['updates_allowed']) ) {
+			return (bool) $status['data']['updates_allowed'];
+		}
+		return ! empty($status['success']);
+	}
+
+	/**
+	 * Returns whether support is active according to the last API response.
+	 */
+	public function support_active(): bool {
+		$status = $this->get_status();
+		if ( isset($status['data']['support_active']) ) {
+			return (bool) $status['data']['support_active'];
+		}
+		return ! empty($status['success']);
+	}
+
+	/**
+	 * Returns the channel the license server has locked this license to.
+	 * 'beta' once switched, otherwise 'stable' or ''.
+	 */
+	public function get_active_channel(): string {
+		return $this->client->get_active_channel();
+	}
+
+	/**
+	 * Returns the comma-separated allowed channels from the API ('stable,beta').
+	 */
+	public function get_allowed_channels(): string {
+		return $this->client->get_allowed_channels();
+	}
+
 	/** Expose the underlying client for direct API calls (activate/deactivate). */
 	public function client(): LicenseClient {
 		return $this->client;
