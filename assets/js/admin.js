@@ -1,7 +1,6 @@
 /* Baza Obozowa – Admin JS */
 (function ($) {
     'use strict';
-    console.log('[BM admin.js] loaded, jQuery version:', $.fn && $.fn.jquery);
 
     /* ── Camp dashboard tabs ──────────────────────────────────────────────── */
     var HASH_MAP = {
@@ -136,7 +135,6 @@
     /* ── Style preview (Wygląd tab) ──────────────────────────────────────── */
     function initStylePreview() {
         var presets = document.querySelectorAll('[data-bm-preset]');
-        console.log('[BM initStylePreview] presets found:', presets.length, 'jQuery:', typeof $);
         if (!presets.length) return;
 
         var SHADOWS = {
@@ -224,7 +222,6 @@
             var presetBtn = e.target.closest('[data-bm-preset]');
             if (presetBtn) {
                 e.preventDefault();
-                console.log('[BM] preset click', presetBtn.getAttribute('data-bm-preset').substring(0, 40));
                 var d;
                 try { d = JSON.parse(presetBtn.getAttribute('data-bm-preset') || '{}'); } catch (ex) { return; }
                 var cmap = {
@@ -260,7 +257,6 @@
             var tabBtn = e.target.closest('.bm-prev-tab');
             if (tabBtn) {
                 e.preventDefault();
-                console.log('[BM] tab click', tabBtn.dataset.pane);
                 document.querySelectorAll('.bm-prev-tab').forEach(function (b) { b.classList.remove('active'); });
                 document.querySelectorAll('.bm-prev-pane').forEach(function (p) { p.classList.remove('active'); });
                 tabBtn.classList.add('active');
@@ -270,9 +266,7 @@
             }
             // Preview links – block navigation
             if (e.target.closest('[data-bm-preview-link]')) { e.preventDefault(); }
-        }, true); // capture phase to run before any stopPropagation
-
-        console.log('[BM initStylePreview] handlers attached');
+        }, true); // capture phase
 
         // Initialize preview with current form values.
         if ($('#bm-style-preview').length) {
