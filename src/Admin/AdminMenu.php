@@ -579,6 +579,12 @@ jQuery(function ($) {
 JSCODE;
 
 			wp_add_inline_script( 'basemgmt-admin', $js_data . "\n" . $js_interactive, 'after' );
+
+			// Fallback: also inject via admin_footer in case wp_add_inline_script is suppressed.
+			$js_full = $js_data . "\n" . $js_interactive;
+			add_action( 'admin_footer', static function () use ( $js_full ) {
+				echo '<script id="bm-style-preview-js">' . $js_full . '</script>' . "\n"; // phpcs:ignore
+			} );
 		}
 
 		// FullCalendar – only on reservations page.
