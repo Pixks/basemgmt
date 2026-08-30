@@ -398,7 +398,7 @@ final class AdminMenu {
 			BASEMGMT_URL . 'assets/js/bm-modal.js',
 			[],
 			BASEMGMT_VERSION,
-			true
+			false
 		);
 
 		wp_enqueue_script(
@@ -406,7 +406,7 @@ final class AdminMenu {
 			BASEMGMT_URL . 'assets/js/admin.js',
 			['jquery', 'basemgmt-modal'],
 			BASEMGMT_VERSION,
-			true
+			false
 		);
 
 		// Sortable.js – only on schedule edit page.
