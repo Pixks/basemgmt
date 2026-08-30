@@ -757,6 +757,25 @@ $font_labels = [
     </div>
 </div><!-- /grid -->
 
+<script>
+/* BM WYGLAD DEBUG - jeśli to widzisz w konsoli, inline scripts działają */
+window._bmDebug = 'inline_ok';
+console.log('[BM] inline script loaded, jQuery:', typeof jQuery, 'bmStyleSettings:', typeof window.bmStyleSettings);
+jQuery(function($){
+    console.log('[BM] jQuery ready, presets:', $('[data-bm-preset]').length, 'tabs:', $('.bm-prev-tab').length);
+    $(document).on('click', '[data-bm-preset]', function(e){
+        e.preventDefault(); e.stopImmediatePropagation();
+        console.log('[BM] preset clicked');
+    });
+    $(document).on('click', '.bm-prev-tab', function(e){
+        e.preventDefault(); e.stopImmediatePropagation();
+        console.log('[BM] tab clicked');
+        $('.bm-prev-tab').removeClass('active'); $('.bm-prev-pane').removeClass('active');
+        $(this).addClass('active');
+        var pane = $(this).data('pane'); if(pane){ $('#'+pane).addClass('active'); }
+    });
+});
+</script>
 
 <?php /* ══════════════════════════════════════════ POWIADOMIENIA TAB ══ */ ?>
 <?php elseif ($current_tab === 'powiadomienia'): ?>
