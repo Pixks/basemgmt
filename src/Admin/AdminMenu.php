@@ -470,12 +470,115 @@ final class AdminMenu {
 .bm-prev-pane{display:none}
 .bm-prev-pane.active{display:block}
 ' );
-			// Pass settings data to the inline JS via a global var on basemgmt-admin
-			wp_add_inline_script( 'basemgmt-admin', 'window.bmStyleSettings = ' . wp_json_encode( [
+			// Pass bmStyleSettings data, then attach all interactive JS to basemgmt-admin (jQuery guaranteed).
+			// wp_add_inline_script MUST be called here (in admin_enqueue_scripts), not from a template.
+			$js_data = 'window.bmStyleSettings = ' . wp_json_encode( [
 				'shadows'   => \BaseMgmt\Frontend\PanelStyleSettings::SHADOWS,
 				'fonts'     => \BaseMgmt\Frontend\PanelStyleSettings::FONT_FAMILIES,
 				'pillLabel' => __( 'Pill', 'basemgmt' ),
-			] ) . ';', 'after' );
+			] ) . ';';
+
+			$js_interactive = <<<'JSCODE'
+jQuery(function ($) {
+    "use strict";
+    var cfg     = window.bmStyleSettings || {};
+    var shadows = cfg.shadows || {};
+    var fonts   = cfg.fonts   || {};
+
+    function css(prop, val) {
+        var p = document.getElementById("bm-style-preview");
+        if (p) { p.style.setProperty(prop, val); }
+    }
+    function updateHeader() {
+        var isGrad  = $("[name=bm_ui_header_gradient]").prop("checked");
+        var primary = $("#bm-ui-primary-color").val() || "";
+        var hover   = $("#bm-ui-primary-hover-color").val() || "";
+        css("--bm-header-bg", isGrad ? "linear-gradient(135deg," + primary + "," + hover + ")" : primary);
+    }
+    function bindColor(id, prop) {
+        $("#" + id).on("input", function () {
+            css(prop, this.value);
+            $(this).closest(".bm-style-form-group").find(".color-hex").text(this.value);
+            updateHeader();
+        });
+    }
+    bindColor("bm-ui-primary-color",       "--bm-primary");
+    bindColor("bm-ui-primary-hover-color", "--bm-primary-hover");
+    bindColor("bm-ui-badge-color",         "--bm-badge-bg");
+    bindColor("bm-ui-badge-text-color",    "--bm-badge-text");
+    bindColor("bm-ui-btn-text-color",      "--bm-btn-text");
+    bindColor("bm-ui-link-color",          "--bm-link");
+    bindColor("bm-ui-text-color",          "--bm-text");
+    bindColor("bm-ui-heading-color",       "--bm-heading");
+    bindColor("bm-ui-surface-color",       "--bm-surface");
+    bindColor("bm-ui-background-color",    "--bm-bg");
+    bindColor("bm-ui-border-color",        "--bm-border");
+
+    var $rng     = $("#bm-ui-radius");
+    var $rvLabel = $("#bm-radius-val");
+    $rng.on("input", function () {
+        var v = parseInt(this.value, 10);
+        css("--bm-radius", v + "px"); css("--bm-radius-sm", Math.max(0, v - 2) + "px");
+        $rvLabel.text(this.value);
+    });
+    var $btnRng    = $("#bm-ui-btn-radius");
+    var $btnActual = $("#bm-ui-btn-radius-actual");
+    var $btnLabel  = $("#bm-btn-radius-val");
+    function updateBtnRadius() {
+        var v = parseInt($btnRng.val(), 10), actual = (v >= 32) ? 999 : v;
+        $btnActual.val(actual);
+        $btnLabel.text((v >= 32) ? (cfg.pillLabel || "Pill") : v);
+        css("--bm-radius-pill", actual + "px");
+    }
+    $btnRng.on("input", updateBtnRadius);
+    var $shd = $("#bm-ui-shadow");
+    $shd.on("change", function () { css("--bm-shadow", shadows[this.value] || "none"); });
+    var $fnt = $("#bm-ui-font-family"), $fontName = $("#bm-ui-custom-font-name");
+    function updateFont() {
+        var isCustom = $fnt.val() === "custom";
+        $("#bm-row-custom-font-url, #bm-row-custom-font-name").toggle(isCustom);
+        css("--bm-font", (isCustom && $fontName.val()) ? ('"' + $fontName.val() + '", sans-serif') : (fonts[$fnt.val()] || "sans-serif"));
+    }
+    $fnt.on("change", updateFont);
+    $fontName.on("input", updateFont);
+    $("[name=bm_ui_header_gradient]").on("change", updateHeader);
+
+    $(document).on("click", "[data-bm-preset]", function (e) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        var $btn = $(this), d;
+        try { d = JSON.parse($btn.attr("data-bm-preset") || "{}"); } catch (ex) { return; }
+        var cmap = {"bm-ui-primary-color":"primary_color","bm-ui-primary-hover-color":"primary_hover","bm-ui-badge-color":"badge_color","bm-ui-badge-text-color":"badge_text_color","bm-ui-btn-text-color":"btn_text_color","bm-ui-link-color":"link_color","bm-ui-text-color":"text_color","bm-ui-heading-color":"heading_color","bm-ui-surface-color":"surface_color","bm-ui-background-color":"background","bm-ui-border-color":"border_color"};
+        $.each(cmap, function (id, key) { if (d[key] !== undefined) { $("#" + id).val(d[key]).trigger("input"); } });
+        if (d.radius !== undefined)     { $rng.val(d.radius).trigger("input"); }
+        if (d.btn_radius !== undefined) { $btnRng.val(Math.min(32, parseInt(d.btn_radius, 10))); updateBtnRadius(); }
+        if (d.shadow)      { $shd.val(d.shadow).trigger("change"); }
+        if (d.font_family) { $fnt.val(d.font_family).trigger("change"); }
+        $("[name=bm_ui_header_gradient]").prop("checked", d.header_gradient === "1").trigger("change");
+        if (d.key) { $("#bm-ui-style-preset").val(d.key); }
+        $("[data-bm-preset]").removeClass("button-primary").addClass("button");
+        $btn.addClass("button-primary").removeClass("button");
+    });
+
+    $(document).on("click", ".bm-prev-tab", function (e) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        $(".bm-prev-tab").removeClass("active"); $(".bm-prev-pane").removeClass("active");
+        $(this).addClass("active");
+        var pane = $(this).data("pane"); if (pane) { $("#" + pane).addClass("active"); }
+    });
+
+    $(document).on("click", "[data-bm-preview-link]", function (e) { e.preventDefault(); });
+
+    if ($("#bm-style-preview").length) {
+        $.each({"bm-ui-primary-color":"--bm-primary","bm-ui-primary-hover-color":"--bm-primary-hover","bm-ui-badge-color":"--bm-badge-bg","bm-ui-badge-text-color":"--bm-badge-text","bm-ui-btn-text-color":"--bm-btn-text","bm-ui-link-color":"--bm-link","bm-ui-text-color":"--bm-text","bm-ui-heading-color":"--bm-heading","bm-ui-surface-color":"--bm-surface","bm-ui-background-color":"--bm-bg","bm-ui-border-color":"--bm-border"}, function (id, prop) { var v = $("#" + id).val(); if (v) { css(prop, v); } });
+        if ($rng.length) { var rv = parseInt($rng.val(), 10); css("--bm-radius", rv + "px"); css("--bm-radius-sm", Math.max(0, rv - 2) + "px"); }
+        updateBtnRadius();
+        if ($shd.length) { css("--bm-shadow", shadows[$shd.val()] || "none"); }
+        updateFont(); updateHeader();
+    } else { updateFont(); }
+});
+JSCODE;
+
+			wp_add_inline_script( 'basemgmt-admin', $js_data . "\n" . $js_interactive, 'after' );
 		}
 
 		// FullCalendar – only on reservations page.
