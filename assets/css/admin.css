@@ -732,3 +732,46 @@ margin-bottom: 16px;
 /* ── Danger button ──────────────────────────────────────────────────────────── */
 .bm-danger { color: #d63638 !important; border-color: #d63638 !important; }
 .bm-danger:hover { background: #d63638 !important; color: #fff !important; }
+
+/* ── Collapsible menu sub-groups ────────────────────────────────────────────── */
+
+/* Arrow toggle icon appended to group-parent <a> links */
+.bm-menu-arrow {
+display: inline-block;
+width: 16px;
+height: 16px;
+line-height: 16px;
+text-align: center;
+margin-left: auto;
+margin-right: 4px;
+flex-shrink: 0;
+font-style: normal;
+font-size: 10px;
+color: rgba(255,255,255,.65);
+transition: transform .2s ease;
+vertical-align: middle;
+float: right;
+}
+.bm-menu-arrow::after {
+content: '▼';
+}
+.bm-menu-arrow[data-bm-collapsed]::after {
+content: '▶';
+}
+
+/* Parent item: make the <a> a flex row so the arrow sits at the far right */
+#toplevel_page_basemgmt > ul.wp-submenu > li[data-bm-group] > a {
+display: flex !important;
+align-items: center;
+justify-content: space-between;
+}
+
+/* Hidden child items */
+#toplevel_page_basemgmt > ul.wp-submenu > li[data-bm-hidden] {
+display: none !important;
+}
+
+/* Visual hint: collapsed parent row is slightly muted */
+#toplevel_page_basemgmt > ul.wp-submenu > li[data-bm-collapsed] > a {
+opacity: .82;
+}

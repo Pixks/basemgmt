@@ -85,7 +85,7 @@ final class SettingsPage {
 
 		AdminMenu::set_notice(__('Ustawienia zapisane.', 'basemgmt'));
 		$tab = sanitize_key($_POST['_bm_current_tab'] ?? '');
-		$tab = in_array($tab, ['email', 'pdf', 'wyglad', 'powiadomienia', 'dane', 'info'], true) ? $tab : 'email';
+		$tab = in_array($tab, ['email', 'pdf', 'wyglad', 'powiadomienia', 'dane', 'info', 'licencja'], true) ? $tab : 'email';
 		wp_safe_redirect(admin_url("admin.php?page=basemgmt-settings&tab=$tab"));
 		exit;
 	}

@@ -179,12 +179,12 @@
 
 .bm-ui.bm-ui--panel {
 	width: 100%;
-	max-width: 920px;
-	margin: 0 auto 20px;
+	max-width: 100%;
+	margin: 0 0 20px;
 }
 
 .bm-ui.bm-ui--panel.bm-ui--panel-login {
-	max-width: 860px;
+	max-width: 100%;
 }
 
 .bm-ui--panel .bm-ui__section-title {
@@ -711,16 +711,281 @@
 }
 
 .bm-ui.bm-ui--session-guard {
-	background: var(--bm-bg);
-	border: 1px solid var(--bm-border);
-	border-radius: calc(var(--bm-radius) + 2px);
-	padding: 28px;
+	/* No wrapper background/border – sizing is controlled by the Breakdance container */
 }
+
+/* ── Camp header ─────────────────────────────────────────────── */
+
+.bm-ui--camp-header {
+	background: var(--bm-surface);
+	border: 1px solid var(--bm-border);
+	border-radius: 14px;
+	box-shadow: 0 4px 20px rgba(15, 23, 42, .07);
+	overflow: hidden;
+}
+
+.bm-ui__camp-loading {
+	padding: 32px;
+	text-align: center;
+}
+
+/* ── Two-column layout ───────────────────────────────────────── */
+
+.bm-ui__camp-body {
+	display: flex;
+	align-items: stretch;
+}
+
+/* ── Left: stay information ──────────────────────────────────── */
+
+.bm-ui__camp-info {
+	flex: 1;
+	min-width: 0;
+	padding: 28px 32px;
+	border-right: 1px solid var(--bm-border);
+	background: var(--bm-header-bg);
+}
+
+.bm-ui__camp-eyebrow {
+	font-size: .75rem;
+	font-weight: 600;
+	letter-spacing: .09em;
+	text-transform: uppercase;
+	color: rgba(255,255,255,.7);
+	margin: 0 0 6px !important;
+}
+
+.bm-ui__camp-name {
+	font-size: clamp(1.25rem, 2.4vw, 1.65rem) !important;
+	font-weight: 800 !important;
+	color: #fff !important;
+	margin: 0 0 10px !important;
+	line-height: 1.2 !important;
+	text-shadow: none !important;
+}
+
+.bm-ui__camp-guest {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: .875rem;
+	color: rgba(255,255,255,.8);
+	margin: 0 0 20px !important;
+}
+
+.bm-ui__camp-ico {
+	flex-shrink: 0;
+	color: rgba(255,255,255,.7);
+	opacity: 1;
+}
+
+/* dl / dt / dd resets for WordPress themes */
+.bm-ui__camp-dates {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+.bm-ui__camp-date-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.bm-ui__camp-date-row dt {
+	font-size: .8rem !important;
+	font-weight: 600 !important;
+	color: rgba(255,255,255,.65) !important;
+	white-space: nowrap;
+	float: none !important;
+	width: auto !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+.bm-ui__camp-date-row dt::after {
+	content: ':';
+}
+
+.bm-ui__camp-date-row dd {
+	font-size: .875rem !important;
+	font-weight: 600 !important;
+	color: #fff !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+.bm-ui__camp-nights dt,
+.bm-ui__camp-nights dd {
+	color: rgba(255,255,255,.9) !important;
+}
+
+/* ── Right: check-in status panel ────────────────────────────── */
+
+.bm-ui__camp-checkin {
+	flex-shrink: 0;
+	width: 272px;
+	display: flex;
+	align-items: center;
+	padding: 24px 22px;
+}
+
+.bm-ui__camp-checkin-block {
+	width: 100%;
+	border-radius: 10px;
+	padding: 18px 16px;
+}
+
+/* variant: required (amber) */
+.bm-ui__camp-checkin-block--required {
+	background: #FFFBEB;
+	border: 1.5px solid #FCD34D;
+}
+
+.bm-ui__camp-checkin-block--required .bm-ui__camp-status-ico {
+	color: #B45309;
+}
+
+.bm-ui__camp-checkin-block--required .bm-ui__camp-checkin-label {
+	color: #78350F;
+}
+
+/* variant: completed (green) */
+.bm-ui__camp-checkin-block--completed {
+	background: #F0FAF0;
+	border: 1.5px solid #86EFAC;
+}
+
+.bm-ui__camp-checkin-block--completed .bm-ui__camp-status-ico {
+	color: var(--bm-primary);
+}
+
+.bm-ui__camp-checkin-block--completed .bm-ui__camp-checkin-label {
+	color: #166534;
+}
+
+/* variant: unavailable (neutral) */
+.bm-ui__camp-checkin-block--unavailable {
+	background: #F8FAFC;
+	border: 1.5px solid #CBD5E1;
+}
+
+.bm-ui__camp-checkin-block--unavailable .bm-ui__camp-status-ico {
+	color: #64748B;
+}
+
+.bm-ui__camp-checkin-block--unavailable .bm-ui__camp-checkin-label {
+	color: #475569;
+}
+
+.bm-ui__camp-checkin-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.bm-ui__camp-status-ico {
+	flex-shrink: 0;
+}
+
+.bm-ui__camp-checkin-label {
+	font-size: .9rem !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+}
+
+.bm-ui__camp-checkin-desc {
+	font-size: .8rem !important;
+	color: var(--bm-muted) !important;
+	margin: 0 0 14px !important;
+	line-height: 1.5 !important;
+}
+
+.bm-ui__camp-checkin-cta {
+	width: 100% !important;
+	justify-content: center !important;
+	min-height: 44px !important;
+}
+
+/* ── Stats strip ─────────────────────────────────────────────── */
+
+.bm-ui__camp-stats {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	border-top: 1px solid var(--bm-border);
+	background: var(--bm-surface);
+}
+
+.bm-ui__camp-stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 16px 12px;
+	gap: 3px;
+	border-right: 1px solid var(--bm-border);
+}
+
+.bm-ui__camp-stat:last-child {
+	border-right: none;
+}
+
+.bm-ui__camp-stat-value {
+	font-size: 1.7rem;
+	font-weight: 800;
+	color: var(--bm-primary);
+	line-height: 1;
+}
+
+.bm-ui__camp-stat-label {
+	font-size: .7rem;
+	font-weight: 600;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	color: var(--bm-muted);
+}
+
 
 /* ── Responsive ──────────────────────────────────────────────── */
 
 @media (max-width: 767px) {
 	.bm-ui__grid {
 		grid-template-columns: 1fr;
+	}
+
+	/* Camp header: single column on mobile */
+	.bm-ui__camp-body {
+		flex-direction: column;
+	}
+
+	.bm-ui__camp-info {
+		border-right: none;
+		border-bottom: 1px solid var(--bm-border);
+		padding: 22px 20px;
+	}
+
+	.bm-ui__camp-checkin {
+		width: 100%;
+		padding: 20px;
+	}
+
+	.bm-ui__camp-checkin-cta {
+		width: 100% !important;
+	}
+
+	.bm-ui__camp-stats {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.bm-ui__camp-stat:nth-child(2) {
+		border-right: none;
+	}
+
+	.bm-ui__camp-stat:nth-child(1),
+	.bm-ui__camp-stat:nth-child(2) {
+		border-bottom: 1px solid var(--bm-border);
 	}
 }

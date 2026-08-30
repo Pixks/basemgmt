@@ -3,38 +3,30 @@ defined('ABSPATH') || exit;
 use BaseMgmt\License\LicenseManager;
 use BaseMgmt\License\LicenseClient;
 
-// Variables provided by LicensePage::render():
-// $manager         – LicenseManager instance
-// $client          – LicenseClient instance
-// $status          – current status array from API/cache
-// $known_servers   – array of preset key => URL
-// $plan            – plan name from API (string)
-// $active_channel  – server-locked channel ('beta'|'stable'|'')
-// $allowed_channels – comma-separated allowed channels
-// $updates_allowed – bool
-// $support_active  – bool
+// Self-initialises – works both as a standalone include and as an embedded settings tab.
+$manager = LicenseManager::instance();
+$client  = $manager->client();
+$status  = $manager->get_status();
 
 $license_key    = $client->get_license_key();
 $api_base       = $client->get_api_base();
 $update_channel = $client->get_update_channel();
 $is_valid       = $manager->is_valid();
-$developer_override_active = $manager->is_developer_override_active();
-$developer_override_constant = \BaseMgmt\License\DeveloperOverride::CONFIG_CONSTANT;
-$known_servers  = $known_servers ?? LicenseClient::known_servers();
+$is_enterprise  = $manager->is_enterprise();
+$edition        = $manager->get_edition();
+$developer_override_active    = $manager->is_developer_override_active();
+$developer_override_constant  = \BaseMgmt\License\DeveloperOverride::CONFIG_CONSTANT;
+$known_servers  = LicenseClient::known_servers();
 
-// Expose extra vars with safe defaults when accessed from template directly.
-$plan             = $plan            ?? $manager->get_plan();
-$active_channel   = $active_channel  ?? $manager->get_active_channel();
-$allowed_channels = $allowed_channels ?? $manager->get_allowed_channels();
-$updates_allowed  = $updates_allowed ?? $manager->updates_allowed();
-$support_active   = $support_active  ?? $manager->support_active();
+$plan             = $manager->get_plan();
+$active_channel   = $manager->get_active_channel();
+$allowed_channels = $manager->get_allowed_channels();
+$updates_allowed  = $manager->updates_allowed();
+$support_active   = $manager->support_active();
 
-// Is the license currently locked to beta?
-$beta_locked = ( 'beta' === $active_channel );
-// Is beta channel allowed for this license?
+$beta_locked  = ( 'beta' === $active_channel );
 $beta_allowed = str_contains($allowed_channels, 'beta');
 
-// Detect which preset matches current URL (if any).
 $selected_preset = 'custom';
 foreach ( $known_servers as $preset_key => $preset_url ) {
 	if ( rtrim($api_base, '/') === rtrim($preset_url, '/') ) {
@@ -43,38 +35,33 @@ foreach ( $known_servers as $preset_key => $preset_url ) {
 	}
 }
 
-// Determine display state.
 $error_code = $status['error']['code']    ?? '';
 $error_msg  = $status['error']['message'] ?? '';
 
 if ( $developer_override_active ) {
-	$state_label = __('Aktywna · tryb deweloperski', 'basemgmt');
-	$state_class = 'bm-lic-badge--info';
-	$state_icon  = '🛠️';
-} elseif ( '' === $license_key ) {
-	$state_label = __('Brak klucza licencji', 'basemgmt');
-	$state_class = 'bm-lic-badge--none';
-	$state_icon  = '⬜';
-} elseif ( $is_valid ) {
-	$expiry      = $status['data']['expires_at'] ?? '';
-	$state_label = $expiry
+	$ent_state_label = __('Aktywna · tryb deweloperski', 'basemgmt');
+	$ent_state_class = 'bm-lic-badge--info';
+	$ent_state_icon  = '🛠️';
+} elseif ( $is_enterprise ) {
+	$expiry          = $status['data']['expires_at'] ?? '';
+	$ent_state_label = $expiry
 		? sprintf(/* translators: %s: expiry date */ __('Aktywna · wygasa %s', 'basemgmt'), esc_html($expiry))
 		: __('Aktywna', 'basemgmt');
-	$state_class = 'bm-lic-badge--active';
-	$state_icon  = '✅';
+	$ent_state_class = 'bm-lic-badge--active';
+	$ent_state_icon  = '✅';
 } else {
 	$blocking_labels = [
 		'license_expired'   => __('Licencja wygasła', 'basemgmt'),
 		'license_revoked'   => __('Licencja cofnięta', 'basemgmt'),
 		'license_suspended' => __('Licencja zawieszona', 'basemgmt'),
 	];
-	$state_label = $blocking_labels[$error_code]
-		?? ( $error_msg ?: __('Nieaktywna', 'basemgmt') );
-	$state_class = 'bm-lic-badge--error';
-	$state_icon  = '❌';
+	$ent_state_label = '' !== $license_key
+		? ( $blocking_labels[$error_code] ?? ( $error_msg ?: __('Nieaktywna', 'basemgmt') ) )
+		: '';
+	$ent_state_class = 'bm-lic-badge--error';
+	$ent_state_icon  = '❌';
 }
 
-// Compute masked key display.
 $masked_key = '' !== $license_key
 	? substr($license_key, 0, 8) . str_repeat('•', max(0, strlen($license_key) - 8))
 	: '';
@@ -112,6 +99,8 @@ $masked_key = '' !== $license_key
 .bm-lic-badge--none    { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
 .bm-lic-badge--warn    { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
 .bm-lic-badge--info    { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+.bm-lic-badge--std     { background: #f3f4f6; color: #374151; border: 1px solid #9ca3af; }
+.bm-lic-badge--ent     { background: #ede9fe; color: #4c1d95; border: 1px solid #a78bfa; }
 .bm-lic-meta { margin: 8px 0 0; font-size: 13px; color: #555; }
 .bm-lic-meta code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
 .bm-lic-detail-grid {
@@ -153,6 +142,12 @@ $masked_key = '' !== $license_key
 	border-radius: 4px; cursor: pointer; font-size: 13px; margin-left: 8px;
 }
 .bm-lic-refresh-btn:hover { background: #f0f6fc; }
+.bm-lic-features { list-style: none; margin: 12px 0 0; padding: 0; }
+.bm-lic-features li { padding: 5px 0; font-size: 13px; color: #374151; display: flex; align-items: center; gap: 8px; }
+.bm-lic-tiers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 4px; }
+.bm-lic-tier { border: 2px solid #e5e7eb; border-radius: 8px; padding: 16px 18px; }
+.bm-lic-tier.bm-tier-active { border-color: #a78bfa; background: #faf5ff; }
+.bm-lic-tier h3 { margin: 0 0 8px; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
 /* Beta warning modal */
 .bm-modal-overlay {
 	display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
@@ -170,143 +165,184 @@ $masked_key = '' !== $license_key
 .bm-modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 </style>
 
-<div class="wrap bm-lic-wrap">
-	<h1>🔑 <?php esc_html_e('Licencja CampLink', 'basemgmt'); ?></h1>
+<div class="bm-lic-wrap">
 
-	<?php /* ── STATUS CARD ── */ ?>
+	<?php /* ── EDITION OVERVIEW ── */ ?>
 	<div class="bm-lic-card">
-		<h2>📊 <?php esc_html_e('Status licencji', 'basemgmt'); ?></h2>
-		<div class="bm-lic-badge <?php echo esc_attr($state_class); ?>">
-			<?php echo esc_html($state_icon . ' ' . $state_label); ?>
-		</div>
+		<h2>🔑 <?php esc_html_e('Wersja wtyczki', 'basemgmt'); ?></h2>
 
-		<?php if ( $developer_override_active ): ?>
-		<p class="bm-lic-meta">
-			<?php esc_html_e('Aktywowano na potrzeby rozwoju wtyczki poprzez kod deweloperski w pliku wp-config.php.', 'basemgmt'); ?>
-			<code><?php echo esc_html($developer_override_constant); ?></code>
-		</p>
-		<?php endif; ?>
-
-		<?php if ( $masked_key ): ?>
-		<p class="bm-lic-meta">
-			<?php esc_html_e('Klucz:', 'basemgmt'); ?>
-			<code><?php echo esc_html($masked_key); ?></code>
-		</p>
-		<?php endif; ?>
-
-		<?php if ( $api_base ): ?>
-		<p class="bm-lic-meta">
-			<?php esc_html_e('Serwer:', 'basemgmt'); ?>
-			<code><?php echo esc_html($api_base); ?></code>
-		</p>
-		<?php endif; ?>
-
-		<?php if ( $is_valid ): ?>
-		<div class="bm-lic-detail-grid">
-			<?php if ( '' !== $plan ): ?>
-			<div class="bm-lic-detail-item">
-				<span class="bm-lic-detail-label"><?php esc_html_e('Plan', 'basemgmt'); ?></span>
-				<span class="bm-lic-detail-value">
-					<span class="bm-lic-pill bm-pill-stable"><?php echo esc_html(strtoupper($plan)); ?></span>
-				</span>
-			</div>
-			<?php endif; ?>
-
-			<div class="bm-lic-detail-item">
-				<span class="bm-lic-detail-label"><?php esc_html_e('Kanał aktywny', 'basemgmt'); ?></span>
-				<span class="bm-lic-detail-value">
-					<?php if ( $beta_locked ): ?>
-					<span class="bm-lic-pill bm-pill-beta">🧪 <?php esc_html_e('beta', 'basemgmt'); ?></span>
-					<span style="font-size:11px;color:#92400e;">🔒 <?php esc_html_e('nieodwracalne', 'basemgmt'); ?></span>
-					<?php else: ?>
-					<span class="bm-lic-pill bm-pill-stable">🚀 <?php esc_html_e('stable', 'basemgmt'); ?></span>
-					<?php endif; ?>
-				</span>
-			</div>
-
-			<div class="bm-lic-detail-item">
-				<span class="bm-lic-detail-label"><?php esc_html_e('Aktualizacje', 'basemgmt'); ?></span>
-				<span class="bm-lic-detail-value">
-					<?php if ( $updates_allowed ): ?>
-					<span class="bm-lic-pill bm-pill-ok">✔ <?php esc_html_e('dostępne', 'basemgmt'); ?></span>
-					<?php else: ?>
-					<span class="bm-lic-pill bm-pill-no">✖ <?php esc_html_e('niedostępne', 'basemgmt'); ?></span>
-					<?php endif; ?>
-				</span>
-			</div>
-
-			<div class="bm-lic-detail-item">
-				<span class="bm-lic-detail-label"><?php esc_html_e('Wsparcie', 'basemgmt'); ?></span>
-				<span class="bm-lic-detail-value">
-					<?php if ( $support_active ): ?>
-					<span class="bm-lic-pill bm-pill-ok">✔ <?php esc_html_e('aktywne', 'basemgmt'); ?></span>
-					<?php else: ?>
-					<span class="bm-lic-pill bm-pill-no">✖ <?php esc_html_e('nieaktywne', 'basemgmt'); ?></span>
-					<?php endif; ?>
-				</span>
-			</div>
-
-			<?php
-			$activations_in_use = $status['data']['activations_in_use'] ?? null;
-			$activation_limit   = $status['data']['activation_limit']   ?? null;
-			if ( null !== $activations_in_use ):
-			?>
-			<div class="bm-lic-detail-item">
-				<span class="bm-lic-detail-label"><?php esc_html_e('Aktywacje', 'basemgmt'); ?></span>
-				<span class="bm-lic-detail-value">
-					<?php echo esc_html($activations_in_use); ?>
-					<?php if ( null !== $activation_limit ): ?>
-					/ <?php echo esc_html($activation_limit); ?>
-					<?php endif; ?>
-				</span>
-			</div>
-			<?php endif; ?>
-
-			<?php
-			$grace_days = $status['data']['grace_period_days'] ?? null;
-			if ( null !== $grace_days ):
-			?>
-			<div class="bm-lic-detail-item">
-				<span class="bm-lic-detail-label"><?php esc_html_e('Okres karencji', 'basemgmt'); ?></span>
-				<span class="bm-lic-detail-value">
-					<?php echo esc_html($grace_days); ?> <?php esc_html_e('dni', 'basemgmt'); ?>
-				</span>
-			</div>
-			<?php endif; ?>
-		</div>
-		<?php endif; ?>
-
-		<?php /* Refresh status button */ ?>
-		<?php if ( $license_key && ! $developer_override_active ): ?>
-		<div style="margin-top:16px;">
-			<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;">
-				<?php wp_nonce_field('bm_refresh_license'); ?>
-				<input type="hidden" name="action" value="bm_refresh_license">
-				<button type="submit" class="bm-lic-refresh-btn">
-					🔄 <?php esc_html_e('Odśwież status', 'basemgmt'); ?>
-				</button>
-			</form>
-		</div>
-		<?php endif; ?>
-	</div>
-
-	<?php /* ── ACTIVATE CARD ── */ ?>
-	<div class="bm-lic-card">
-		<h2>⚡ <?php esc_html_e('Konfiguracja i aktywacja', 'basemgmt'); ?></h2>
 		<?php if ( $developer_override_active ): ?>
 		<div class="bm-lic-badge bm-lic-badge--info">
-			🧑‍💻 <?php esc_html_e('Tryb deweloperski jest aktywny i całkowicie wyłącza system licencji oraz jego ograniczenia.', 'basemgmt'); ?>
+			🛠️ <?php esc_html_e('Tryb deweloperski', 'basemgmt'); ?>
 		</div>
-		<p style="font-size:13px;color:#555;margin:0;">
-			<?php esc_html_e('Aby wrócić do standardowej walidacji licencji, usuń tę stałą z pliku wp-config.php albo podaj inną wartość.', 'basemgmt'); ?>
+		<p class="bm-lic-meta" style="margin-top:8px;">
+			<?php esc_html_e('Aktywowano poprzez stałą deweloperską w wp-config.php.', 'basemgmt'); ?>
 			<code><?php echo esc_html($developer_override_constant); ?></code>
 		</p>
 		<?php else: ?>
+
+		<div class="bm-lic-tiers">
+			<div class="bm-lic-tier<?php echo $edition === 'standard' ? ' bm-tier-active' : ''; ?>">
+				<h3>🥈 <?php esc_html_e('Standard', 'basemgmt'); ?>
+					<?php if ( $edition === 'standard' ): ?>
+					<span class="bm-lic-badge bm-lic-badge--none" style="font-size:11px;padding:2px 8px;margin:0;"><?php esc_html_e('aktywna', 'basemgmt'); ?></span>
+					<?php endif; ?>
+				</h3>
+				<p style="font-size:13px;color:#555;margin:0 0 8px;"><?php esc_html_e('Wszystkie funkcje wtyczki są dostępne bez klucza licencji.', 'basemgmt'); ?></p>
+				<ul class="bm-lic-features">
+					<li>✅ <?php esc_html_e('Pełna funkcjonalność wtyczki', 'basemgmt'); ?></li>
+					<li>✅ <?php esc_html_e('Brak ograniczeń danych ani użytkowników', 'basemgmt'); ?></li>
+					<li>❌ <?php esc_html_e('Brak wsparcia producenta', 'basemgmt'); ?></li>
+					<li>❌ <?php esc_html_e('Brak automatycznych aktualizacji', 'basemgmt'); ?></li>
+				</ul>
+			</div>
+
+			<div class="bm-lic-tier<?php echo $edition === 'enterprise' ? ' bm-tier-active' : ''; ?>">
+				<h3>💎 <?php esc_html_e('Enterprise', 'basemgmt'); ?>
+					<?php if ( $edition === 'enterprise' ): ?>
+					<span class="bm-lic-badge bm-lic-badge--ent" style="font-size:11px;padding:2px 8px;margin:0;"><?php esc_html_e('aktywna', 'basemgmt'); ?></span>
+					<?php endif; ?>
+				</h3>
+				<p style="font-size:13px;color:#555;margin:0 0 8px;"><?php esc_html_e('Wymaga klucza licencji. Dodaje:', 'basemgmt'); ?></p>
+				<ul class="bm-lic-features">
+					<li>✅ <?php esc_html_e('Wszystko z wersji Standard', 'basemgmt'); ?></li>
+					<li>✅ <?php esc_html_e('Wsparcie producenta (priorytetowa pomoc)', 'basemgmt'); ?></li>
+					<li>✅ <?php esc_html_e('Automatyczne aktualizacje wtyczki', 'basemgmt'); ?></li>
+					<li>✅ <?php esc_html_e('Dostęp do kanału beta (opcjonalnie)', 'basemgmt'); ?></li>
+				</ul>
+			</div>
+		</div>
+
+		<?php /* Show Enterprise status details if active */ ?>
+		<?php if ( $is_enterprise ): ?>
+		<div style="margin-top:16px;">
+			<div class="bm-lic-badge <?php echo esc_attr($ent_state_class); ?>">
+				<?php echo esc_html($ent_state_icon . ' ' . $ent_state_label); ?>
+			</div>
+
+			<?php if ( $masked_key ): ?>
+			<p class="bm-lic-meta"><?php esc_html_e('Klucz:', 'basemgmt'); ?> <code><?php echo esc_html($masked_key); ?></code></p>
+			<?php endif; ?>
+			<?php if ( $api_base ): ?>
+			<p class="bm-lic-meta"><?php esc_html_e('Serwer:', 'basemgmt'); ?> <code><?php echo esc_html($api_base); ?></code></p>
+			<?php endif; ?>
+
+			<div class="bm-lic-detail-grid">
+				<?php if ( '' !== $plan ): ?>
+				<div class="bm-lic-detail-item">
+					<span class="bm-lic-detail-label"><?php esc_html_e('Plan', 'basemgmt'); ?></span>
+					<span class="bm-lic-detail-value">
+						<span class="bm-lic-pill bm-pill-stable"><?php echo esc_html(strtoupper($plan)); ?></span>
+					</span>
+				</div>
+				<?php endif; ?>
+
+				<div class="bm-lic-detail-item">
+					<span class="bm-lic-detail-label"><?php esc_html_e('Kanał aktywny', 'basemgmt'); ?></span>
+					<span class="bm-lic-detail-value">
+						<?php if ( $beta_locked ): ?>
+						<span class="bm-lic-pill bm-pill-beta">🧪 <?php esc_html_e('beta', 'basemgmt'); ?></span>
+						<span style="font-size:11px;color:#92400e;">🔒 <?php esc_html_e('nieodwracalne', 'basemgmt'); ?></span>
+						<?php else: ?>
+						<span class="bm-lic-pill bm-pill-stable">🚀 <?php esc_html_e('stable', 'basemgmt'); ?></span>
+						<?php endif; ?>
+					</span>
+				</div>
+
+				<div class="bm-lic-detail-item">
+					<span class="bm-lic-detail-label"><?php esc_html_e('Aktualizacje', 'basemgmt'); ?></span>
+					<span class="bm-lic-detail-value">
+						<?php if ( $updates_allowed ): ?>
+						<span class="bm-lic-pill bm-pill-ok">✔ <?php esc_html_e('dostępne', 'basemgmt'); ?></span>
+						<?php else: ?>
+						<span class="bm-lic-pill bm-pill-no">✖ <?php esc_html_e('niedostępne', 'basemgmt'); ?></span>
+						<?php endif; ?>
+					</span>
+				</div>
+
+				<div class="bm-lic-detail-item">
+					<span class="bm-lic-detail-label"><?php esc_html_e('Wsparcie', 'basemgmt'); ?></span>
+					<span class="bm-lic-detail-value">
+						<?php if ( $support_active ): ?>
+						<span class="bm-lic-pill bm-pill-ok">✔ <?php esc_html_e('aktywne', 'basemgmt'); ?></span>
+						<?php else: ?>
+						<span class="bm-lic-pill bm-pill-no">✖ <?php esc_html_e('nieaktywne', 'basemgmt'); ?></span>
+						<?php endif; ?>
+					</span>
+				</div>
+
+				<?php
+				$activations_in_use = $status['data']['activations_in_use'] ?? null;
+				$activation_limit   = $status['data']['activation_limit']   ?? null;
+				if ( null !== $activations_in_use ):
+				?>
+				<div class="bm-lic-detail-item">
+					<span class="bm-lic-detail-label"><?php esc_html_e('Aktywacje', 'basemgmt'); ?></span>
+					<span class="bm-lic-detail-value">
+						<?php echo esc_html($activations_in_use); ?>
+						<?php if ( null !== $activation_limit ): ?>/ <?php echo esc_html($activation_limit); ?><?php endif; ?>
+					</span>
+				</div>
+				<?php endif; ?>
+
+				<?php
+				$grace_days = $status['data']['grace_period_days'] ?? null;
+				if ( null !== $grace_days ):
+				?>
+				<div class="bm-lic-detail-item">
+					<span class="bm-lic-detail-label"><?php esc_html_e('Okres karencji', 'basemgmt'); ?></span>
+					<span class="bm-lic-detail-value">
+						<?php echo esc_html($grace_days); ?> <?php esc_html_e('dni', 'basemgmt'); ?>
+					</span>
+				</div>
+				<?php endif; ?>
+			</div>
+
+			<div style="margin-top:16px;">
+				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;">
+					<?php wp_nonce_field('bm_refresh_license'); ?>
+					<input type="hidden" name="action" value="bm_refresh_license">
+					<button type="submit" class="bm-lic-refresh-btn">
+						🔄 <?php esc_html_e('Odśwież status', 'basemgmt'); ?>
+					</button>
+				</form>
+			</div>
+		</div>
+		<?php endif; /* is_enterprise */ ?>
+
+		<?php /* Show error state if key is set but blocked */ ?>
+		<?php if ( '' !== $license_key && ! $is_enterprise && ! $developer_override_active ): ?>
+		<div style="margin-top:16px;">
+			<div class="bm-lic-badge <?php echo esc_attr($ent_state_class); ?>">
+				<?php echo esc_html($ent_state_icon . ' ' . $ent_state_label); ?>
+			</div>
+			<p class="bm-lic-meta">
+				<?php esc_html_e('Wtyczka działa w trybie Standard. Dezaktywuj licencję, aby wyczyścić konfigurację.', 'basemgmt'); ?>
+			</p>
+		</div>
+		<?php endif; ?>
+
+		<?php endif; /* not developer_override */ ?>
+	</div>
+
+	<?php /* ── ENTERPRISE ACTIVATION CARD ── */ ?>
+	<?php if ( ! $developer_override_active ): ?>
+	<div class="bm-lic-card">
+		<h2>⚡ <?php esc_html_e('Aktywacja Enterprise', 'basemgmt'); ?></h2>
+		<p style="font-size:13px;color:#555;margin:0 0 16px;">
+			<?php
+			if ( $is_enterprise ) {
+				esc_html_e('Możesz zaktualizować klucz lub zmienić serwer licencji.', 'basemgmt');
+			} else {
+				esc_html_e('Wprowadź klucz licencji Enterprise, aby odblokować wsparcie producenta i automatyczne aktualizacje.', 'basemgmt');
+			}
+			?>
+		</p>
+
 		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="bm-activate-form">
 			<?php wp_nonce_field('bm_activate_license'); ?>
 			<input type="hidden" name="action" value="bm_activate_license">
 
-			<?php /* Server dropdown */ ?>
 			<div class="bm-lic-form-row">
 				<label for="bm-server-preset"><?php esc_html_e('Serwer licencji', 'basemgmt'); ?></label>
 				<select id="bm-server-preset" name="license_server_preset" onchange="bmLicServerChange(this.value)">
@@ -333,16 +369,14 @@ $masked_key = '' !== $license_key
 				</div>
 			</div>
 
-			<?php /* License key */ ?>
 			<div class="bm-lic-form-row">
-				<label for="bm-license-key"><?php esc_html_e('Klucz licencji', 'basemgmt'); ?></label>
+				<label for="bm-license-key"><?php esc_html_e('Klucz licencji Enterprise', 'basemgmt'); ?></label>
 				<input type="text" id="bm-license-key" name="license_key"
 					   value="<?php echo esc_attr($license_key); ?>"
 					   placeholder="XXXX-XXXX-XXXX-XXXX"
 					   autocomplete="off">
 			</div>
 
-			<?php /* Update channel */ ?>
 			<div class="bm-lic-form-row">
 				<label><?php esc_html_e('Kanał aktualizacji', 'basemgmt'); ?></label>
 
@@ -387,32 +421,34 @@ $masked_key = '' !== $license_key
 				<?php endif; ?>
 			</div>
 
-			<?php submit_button(__('Zapisz i aktywuj licencję', 'basemgmt'), 'primary', 'submit', false, ['id' => 'bm-btn-activate']); ?>
+			<?php submit_button(__('Zapisz i aktywuj Enterprise', 'basemgmt'), 'primary', 'submit', false, ['id' => 'bm-btn-activate']); ?>
 		</form>
-		<?php endif; ?>
 	</div>
 
 	<?php /* ── DEACTIVATE CARD ── */ ?>
-	<?php if ( $license_key && ! $developer_override_active ): ?>
+	<?php if ( $license_key ): ?>
 	<div class="bm-lic-card">
-		<h2>🔓 <?php esc_html_e('Dezaktywacja licencji', 'basemgmt'); ?></h2>
+		<h2>🔓 <?php esc_html_e('Dezaktywacja Enterprise', 'basemgmt'); ?></h2>
 		<p style="font-size:13px;color:#555;margin:0 0 12px;">
-			<?php esc_html_e('Dezaktywacja zwalnia slot aktywacji na serwerze, umożliwiając przeniesienie licencji na inną domenę.', 'basemgmt'); ?>
+			<?php esc_html_e('Dezaktywacja zwalnia slot aktywacji na serwerze i przywraca tryb Standard. Wszystkie dane wtyczki pozostają bez zmian.', 'basemgmt'); ?>
 		</p>
 		<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
 			<?php wp_nonce_field('bm_deactivate_license'); ?>
 			<input type="hidden" name="action" value="bm_deactivate_license">
 			<button type="submit" class="bm-lic-deactivate-btn"
-					onclick="return confirm('<?php echo esc_js(__('Czy na pewno chcesz dezaktywować licencję?', 'basemgmt')); ?>')">
-				🚫 <?php esc_html_e('Dezaktywuj licencję', 'basemgmt'); ?>
+					onclick="return confirm('<?php echo esc_js(__('Czy na pewno chcesz dezaktywować licencję Enterprise? Wtyczka wróci do trybu Standard.', 'basemgmt')); ?>')">
+				🚫 <?php esc_html_e('Dezaktywuj Enterprise', 'basemgmt'); ?>
 			</button>
 		</form>
 	</div>
 	<?php endif; ?>
+
+	<?php endif; /* not developer_override */ ?>
+
 </div>
 
 <?php /* ── BETA CHANNEL WARNING MODAL ── */ ?>
-<?php if ( $beta_allowed && ! $beta_locked ): ?>
+<?php if ( $beta_allowed && ! $beta_locked && ! $developer_override_active ): ?>
 <div class="bm-modal-overlay" id="bm-beta-modal" role="dialog" aria-modal="true"
 	 aria-labelledby="bm-beta-modal-title">
 	<div class="bm-modal-box">
@@ -442,7 +478,6 @@ $masked_key = '' !== $license_key
 (function () {
 	'use strict';
 
-	// ── Server preset toggle ────────────────────────────────────────────────
 	function bmLicServerChange(preset) {
 		var row = document.getElementById('bm-custom-url-row');
 		if (row) row.style.display = (preset === 'custom') ? 'block' : 'none';
@@ -453,7 +488,6 @@ $masked_key = '' !== $license_key
 		var sel = document.getElementById('bm-server-preset');
 		if (sel) bmLicServerChange(sel.value);
 
-		// ── Beta channel warning modal ──────────────────────────────────────
 		var betaRadio   = document.getElementById('bm-channel-beta');
 		var stableRadio = document.getElementById('bm-channel-stable');
 		var modal       = document.getElementById('bm-beta-modal');
@@ -463,10 +497,8 @@ $masked_key = '' !== $license_key
 
 		if (!betaRadio || !modal) return;
 
-		// When user selects beta, show warning modal first.
 		betaRadio.addEventListener('change', function () {
 			if (betaRadio.checked) {
-				// Revert radio to stable temporarily — only commit after modal confirm.
 				betaRadio.checked = false;
 				if (stableRadio) stableRadio.checked = true;
 				openBetaModal();
@@ -486,7 +518,6 @@ $masked_key = '' !== $license_key
 		if (cancelBtn) {
 			cancelBtn.addEventListener('click', function () {
 				closeBetaModal();
-				// Ensure stable stays selected.
 				if (stableRadio) stableRadio.checked = true;
 			});
 		}
@@ -501,7 +532,6 @@ $masked_key = '' !== $license_key
 			confirmBtn.addEventListener('click', function () {
 				if (!confirmChk || !confirmChk.checked) return;
 				closeBetaModal();
-				// Now actually select beta and submit.
 				betaRadio.checked = true;
 				if (stableRadio) stableRadio.checked = false;
 				var form = document.getElementById('bm-activate-form');
@@ -509,7 +539,6 @@ $masked_key = '' !== $license_key
 			});
 		}
 
-		// Close modal on overlay click.
 		modal.addEventListener('click', function (e) {
 			if (e.target === modal) {
 				closeBetaModal();
@@ -517,7 +546,6 @@ $masked_key = '' !== $license_key
 			}
 		});
 
-		// Close on Escape key.
 		document.addEventListener('keydown', function (e) {
 			if (e.key === 'Escape' && modal.classList.contains('bm-modal-open')) {
 				closeBetaModal();
@@ -527,3 +555,4 @@ $masked_key = '' !== $license_key
 	});
 })();
 </script>
+

@@ -349,15 +349,6 @@ final class AdminMenu {
 			[$this->settings, 'render']
 		);
 
-		add_submenu_page(
-			'basemgmt',
-			__('Licencja', 'basemgmt'),
-			__('Licencja', 'basemgmt'),
-			'manage_options',
-			'basemgmt-license',
-			[$this->license, 'render']
-		);
-
 		// Logs page: registered as a hidden page (no sidebar entry); accessible via the Settings → Logi tab.
 		add_submenu_page(
 			null,

@@ -121,6 +121,27 @@ final class LicenseManager {
 	}
 
 	/**
+	 * Returns the current plugin edition.
+	 *
+	 * 'enterprise' – a valid (not blocked) license key is configured.
+	 *                Adds producer support and automatic plugin updates.
+	 * 'standard'   – no key or invalid key; the plugin is fully functional.
+	 */
+	public function get_edition(): string {
+		if ( DeveloperOverride::is_active() ) {
+			return 'enterprise';
+		}
+		return $this->is_valid() ? 'enterprise' : 'standard';
+	}
+
+	/**
+	 * Returns true when the plugin is running in Enterprise edition.
+	 */
+	public function is_enterprise(): bool {
+		return $this->get_edition() === 'enterprise';
+	}
+
+	/**
 	 * Returns the plan name from the last API response (e.g. 'starter', 'pro').
 	 */
 	public function get_plan(): string {
@@ -133,12 +154,15 @@ final class LicenseManager {
 	}
 
 	/**
-	 * Returns whether updates are allowed according to the last API response.
-	 * Falls back to true when no cached data is available (grace period).
+	 * Returns whether updates are allowed.
+	 * Only Enterprise edition receives automatic plugin updates.
 	 */
 	public function updates_allowed(): bool {
 		if ( DeveloperOverride::is_active() ) {
 			return true;
+		}
+		if ( ! $this->is_enterprise() ) {
+			return false;
 		}
 
 		$status = $this->get_status();
@@ -149,11 +173,15 @@ final class LicenseManager {
 	}
 
 	/**
-	 * Returns whether support is active according to the last API response.
+	 * Returns whether producer support is active.
+	 * Only Enterprise edition includes producer support.
 	 */
 	public function support_active(): bool {
 		if ( DeveloperOverride::is_active() ) {
 			return true;
+		}
+		if ( ! $this->is_enterprise() ) {
+			return false;
 		}
 
 		$status = $this->get_status();

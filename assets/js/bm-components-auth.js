@@ -31,6 +31,11 @@ window.bmLogin = function () {
 
 		async submit() {
 			if (!this.campId || !this.staffId || !this.code) return;
+
+			// Capture redirect URL synchronously before any await – this.$el may
+			// not be reliably accessible on the Alpine proxy after async resumptions.
+			const redirectUrl = this.$el ? (this.$el.dataset.bmRedirect || '') : '';
+
 			this.loading = true;
 			this.error   = '';
 
@@ -49,8 +54,6 @@ window.bmLogin = function () {
 				await Alpine.store('bm').loadAnnouncements();
 				// Trigger a custom event so Breakdance visibility conditions can react.
 				window.dispatchEvent(new CustomEvent('bm:login', { detail: data }));
-				// Redirect if the shortcode supplied a redirect_url attribute.
-				const redirectUrl = this.$el.dataset.bmRedirect;
 				if (redirectUrl) {
 					window.location.href = redirectUrl;
 				}
@@ -87,6 +90,26 @@ window.bmCamp = function () {
 		get latestCount()    { return Alpine.store('bm').latestCount; },
 		get submittedToday() { return Alpine.store('bm').submittedToday; },
 		get authenticated()  { return Alpine.store('bm').authenticated; },
+
+		// Three check-in states: 'required' | 'completed' | 'unavailable'
+		get checkinStatus() {
+			const camp = Alpine.store('bm').camp;
+			if (!camp) return 'unavailable';
+			if (camp.start_date) {
+				const today = new Date();
+				today.setHours(0, 0, 0, 0);
+				const start = new Date(camp.start_date);
+				if (today < start) return 'unavailable';
+			}
+			return Alpine.store('bm').submittedToday ? 'completed' : 'required';
+		},
+
+		get nightsCount() {
+			const camp = Alpine.store('bm').camp;
+			if (!camp || !camp.start_date || !camp.end_date) return 0;
+			const diff = new Date(camp.end_date) - new Date(camp.start_date);
+			return Math.round(diff / 86400000);
+		},
 
 		async init() {
 			if (this.authenticated && !this.camp) {

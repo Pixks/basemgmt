@@ -18,7 +18,7 @@ wp_enqueue_script('wp-theme-plugin-editor');
 wp_enqueue_style('wp-codemirror');
 
 $current_tab = sanitize_key($_GET['tab'] ?? 'email');
-$valid_tabs  = ['email', 'pdf', 'wyglad', 'powiadomienia', 'dane', 'shortcodes', 'logi', 'info'];
+$valid_tabs  = ['email', 'pdf', 'wyglad', 'powiadomienia', 'dane', 'shortcodes', 'logi', 'info', 'licencja'];
 if ( ! in_array($current_tab, $valid_tabs, true) ) {
 	$current_tab = 'email';
 }
@@ -34,6 +34,7 @@ $tabs = [
 	'shortcodes'    => '[ ]  ' . __('Shortcodes', 'basemgmt'),
 	'logi'          => __('Logi', 'basemgmt'),
 	'info'          => 'ℹ️ ' . __('O pluginie', 'basemgmt'),
+	'licencja'      => '🔑 ' . __('Licencja', 'basemgmt'),
 ];
 ?>
 <div class="wrap bm-wrap">
@@ -959,6 +960,43 @@ $font_labels = [
                     'desc'   => __('Inicjalizuje frontend wtyczki (skrypty, style). Umieść na każdej stronie, która używa panelu.', 'basemgmt'),
                     'params' => [],
                 ],
+                '[bm_var]' => [
+                    'desc'   => __('Wyświetla wybraną zmienną sesji jako czysty tekst (plaintext). Przydatny do wplatania danych kadry lub obozu bezpośrednio w treść strony, nagłówki, przyciski itp.', 'basemgmt'),
+                    'params' => [
+                        'var'      => __('Nazwa zmiennej (wymagane). Dostępne zmienne:<br>
+                            <strong>Kadra:</strong>
+                            <code>first_name</code> imię,
+                            <code>last_name</code> nazwisko,
+                            <code>full_name</code> imię i nazwisko,
+                            <code>role_in_camp</code> rola/funkcja,
+                            <code>phone</code> telefon,
+                            <code>email</code> e-mail.<br>
+                            <strong>Obóz:</strong>
+                            <code>camp_name</code> nazwa obozu,
+                            <code>camp_start</code> data przyjazdu (słownie, np. „17 sierpnia 2026"),
+                            <code>camp_end</code> data wyjazdu (słownie),
+                            <code>camp_start_raw</code> data przyjazdu (dd.mm.rrrr),
+                            <code>camp_end_raw</code> data wyjazdu (dd.mm.rrrr),
+                            <code>camp_status</code> status obozu,
+                            <code>camp_nights</code> liczba nocy (np. „6"),
+                            <code>camp_day</code> bieżący dzień obozu (np. „3"),
+                            <code>camp_days_left</code> ile dni do końca obozu,
+                            <code>camp_progress</code> postęp obozu w % (np. „50").<br>
+                            <strong>Data / czas:</strong>
+                            <code>today</code> dziś (dd.mm.rrrr),
+                            <code>today_raw</code> dziś (rrrr-mm-dd),
+                            <code>today_long</code> dziś słownie (np. „30 sierpnia 2026"),
+                            <code>today_full</code> pełna data z dniem tygodnia (np. „niedziela, 30 sierpnia 2026"),
+                            <code>day_of_week</code> nazwa dnia tygodnia,
+                            <code>month</code> nazwa miesiąca,
+                            <code>year</code> rok,
+                            <code>time</code> bieżąca godzina (HH:MM).<br>
+                            <strong>Sesja:</strong>
+                            <code>logged_in</code> <code>1</code> jeśli zalogowany, <code>0</code> jeśli nie,
+                            <code>session_expires</code> czas do wygaśnięcia sesji w minutach.', 'basemgmt'),
+                        'fallback' => __('Tekst zastępczy wyświetlany gdy wartość jest pusta lub użytkownik nie jest zalogowany. Domyślnie: pusty ciąg.', 'basemgmt'),
+                    ],
+                ],
                 '[bm_auth_state]' => [
                     'desc'   => __('Renderuje blok warunkowy zależny od stanu zalogowania. Używany wewnętrznie przez inne shortcody.', 'basemgmt'),
                     'params' => [],
@@ -991,7 +1029,7 @@ $font_labels = [
             ],
             __('Obóz – informacje ogólne', 'basemgmt') => [
                 '[bm_panel_camp_header]' => [
-                    'desc'   => __('Nagłówek obozu: nazwa, lokalizacja, daty.', 'basemgmt'),
+                    'desc'   => __('Nagłówek obozu: nazwa, gość, daty pobytu oraz sekcja statusu meldunku (wymagany / potwierdzony / niedostępny). Obsługuje trzy warianty wizualne.', 'basemgmt'),
                     'params' => [],
                 ],
                 '[bm_panel_unread_counter]' => [
@@ -1030,6 +1068,36 @@ $font_labels = [
             __('Rezerwacje', 'basemgmt') => [
                 '[bm_panel_reservations]' => [
                     'desc'   => __('Lista rezerwacji zasobów i formularz nowej rezerwacji.', 'basemgmt'),
+                    'params' => [],
+                ],
+            ],
+            __('Dokumenty i foldery', 'basemgmt') => [
+                '[bm_panel_folder_docs]' => [
+                    'desc'   => __('Lista dokumentów przypisanych do folderu (np. wybranej kategorii dokumentów kadry).', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_camp_documents]' => [
+                    'desc'   => __('Dokumenty obozowe przypisane do aktywnego obozu (ogłoszenia, regulaminy, pisma itp.).', 'basemgmt'),
+                    'params' => [],
+                ],
+            ],
+            __('Deklaracje', 'basemgmt') => [
+                '[bm_panel_declaration]' => [
+                    'desc'   => __('Formularz i lista wpisów deklaracji dziennej obozu (liczba osób, godziny przyjazdu/wyjazdu).', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_decl_docs]' => [
+                    'desc'   => __('Lista dokumentów deklaracji – podgląd, pobieranie i zatwierdzanie przez uprawnioną kadrę.', 'basemgmt'),
+                    'params' => [],
+                ],
+            ],
+            __('Szkody i sprzęt', 'basemgmt') => [
+                '[bm_panel_damages]' => [
+                    'desc'   => __('Zgłoszenia szkód obozowych – lista, formularz nowego zgłoszenia z opisem i kosztem.', 'basemgmt'),
+                    'params' => [],
+                ],
+                '[bm_panel_equipment]' => [
+                    'desc'   => __('Rejestr sprzętu obozowego – lista wydanego ekwipunku z możliwością rejestracji zwrotu.', 'basemgmt'),
                     'params' => [],
                 ],
             ],
@@ -1280,6 +1348,12 @@ $font_labels = [
     </div>
 
 <?php endif; ?>
+
+<?php /* ═══════════════════════════════════════════════════ LICENCJA TAB ══ */ ?>
+<?php if ($current_tab === 'licencja'): ?>
+<?php include BASEMGMT_DIR . 'templates/admin/license/index.php'; ?>
+<?php endif; ?>
+
 </div><!-- /.wrap -->
 
 <script>

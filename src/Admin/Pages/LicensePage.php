@@ -59,7 +59,7 @@ final class LicensePage {
 
 		if ( '' === $api_url || '' === $license_key ) {
 			AdminMenu::set_notice(__('Podaj URL serwera licencji oraz klucz licencji.', 'basemgmt'), 'error');
-			wp_safe_redirect(admin_url('admin.php?page=basemgmt-license'));
+			wp_safe_redirect(admin_url('admin.php?page=basemgmt-settings&tab=licencja'));
 			exit;
 		}
 
@@ -76,7 +76,7 @@ final class LicensePage {
 			AdminMenu::set_notice(esc_html($msg), 'error');
 		}
 
-		wp_safe_redirect(admin_url('admin.php?page=basemgmt-license'));
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-settings&tab=licencja'));
 		exit;
 	}
 
@@ -95,7 +95,7 @@ final class LicensePage {
 			AdminMenu::set_notice(esc_html($msg), 'error');
 		}
 
-		wp_safe_redirect(admin_url('admin.php?page=basemgmt-license'));
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-settings&tab=licencja'));
 		exit;
 	}
 
@@ -117,7 +117,7 @@ final class LicensePage {
 			AdminMenu::set_notice(esc_html($msg), 'error');
 		}
 
-		wp_safe_redirect(admin_url('admin.php?page=basemgmt-license'));
+		wp_safe_redirect(admin_url('admin.php?page=basemgmt-settings&tab=licencja'));
 		exit;
 	}
 }

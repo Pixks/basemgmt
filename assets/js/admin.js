@@ -152,9 +152,25 @@
             'custom':    'sans-serif'
         };
 
+        // Live-preview: inject a <style> tag with high-specificity selector so that
+        // dynamically-set CSS custom properties WIN over the `.bm-ui { --var: saved }` rule
+        // in bm-shortcodes.css (which also matches child .bm-ui elements in the preview).
+        var _previewVars = {};
+        var _previewStyleEl = null;
         function css(prop, val) {
-            var p = document.getElementById('bm-style-preview');
-            if (p) p.style.setProperty(prop, val);
+            _previewVars[prop] = val;
+            if (!_previewStyleEl) {
+                _previewStyleEl = document.createElement('style');
+                _previewStyleEl.id = 'bm-preview-live-vars';
+                document.head.appendChild(_previewStyleEl);
+            }
+            var decls = Object.keys(_previewVars).map(function (p) {
+                return p + ':' + _previewVars[p];
+            }).join(';');
+            // #bm-style-preview has ID specificity (1,0,0) which beats .bm-ui (0,1,0)
+            // on all matched elements – both the root and nested .bm-ui children.
+            _previewStyleEl.textContent =
+                '#bm-style-preview,#bm-style-preview .bm-ui{' + decls + '}';
         }
         function updateHeader() {
             var isGrad  = $('[name=bm_ui_header_gradient]').prop('checked');
@@ -297,6 +313,121 @@
         }
     }
 
+    /* ── Collapsible sidebar sub-groups ──────────────────────────────────────
+     * Groups of related sub-pages (e.g. Organizacja, Plan dnia, Jadłospis)
+     * are collapsed/expanded via an arrow toggle. State is persisted in
+     * localStorage so that WP sidebar refreshes don't lose the position.
+     * Default state: COLLAPSED. localStorage stores the list of EXPANDED groups.
+     * ─────────────────────────────────────────────────────────────────────── */
+    function initCollapsibleMenu() {
+        var GROUPS = [
+            {
+                id: 'org',
+                parentSlug: 'basemgmt-org',
+                childSlugs: [
+                    'basemgmt-org-documents',
+                    'basemgmt-org-doc-templates',
+                    'basemgmt-org-declarations',
+                    'basemgmt-org-finance',
+                    'basemgmt-org-tasks',
+                    'basemgmt-org-accommodations',
+                    'basemgmt-org-diets',
+                ],
+            },
+            {
+                id: 'schedule',
+                parentSlug: 'basemgmt-schedule',
+                childSlugs: ['basemgmt-plan-templates'],
+            },
+            {
+                id: 'meal',
+                parentSlug: 'basemgmt-menu',
+                childSlugs: ['basemgmt-meal-templates', 'basemgmt-meal-options'],
+            },
+        ];
+
+        // localStorage stores IDs of EXPANDED groups. Default = collapsed.
+        var STORAGE_KEY = 'bm_menu_expanded';
+        var topMenu = document.querySelector('#toplevel_page_basemgmt > ul.wp-submenu');
+        if (!topMenu) return;
+
+        function loadState() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; }
+        }
+        function saveState(expanded) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(expanded)); } catch (e) {}
+        }
+
+        function findItem(slug) {
+            return topMenu.querySelector('li > a[href*="page=' + slug + '"]');
+        }
+
+        var currentPage = (function () {
+            var m = window.location.search.match(/[?&]page=([^&]+)/);
+            return m ? decodeURIComponent(m[1]) : '';
+        }());
+
+        GROUPS.forEach(function (g) {
+            var parentA = findItem(g.parentSlug);
+            if (!parentA) return;
+            var parentLi = parentA.parentElement;
+
+            var childLis = [];
+            g.childSlugs.forEach(function (slug) {
+                var a = findItem(slug);
+                if (a) childLis.push(a.parentElement);
+            });
+            if (!childLis.length) return;
+
+            parentLi.setAttribute('data-bm-group', g.id);
+            childLis.forEach(function (li) { li.setAttribute('data-bm-group-child', g.id); });
+
+            var arrow = document.createElement('span');
+            arrow.className = 'bm-menu-arrow';
+            arrow.setAttribute('aria-hidden', 'true');
+            parentA.appendChild(arrow);
+
+            // Group is forced open when one of its pages is currently active.
+            var groupIsActive = currentPage === g.parentSlug ||
+                g.childSlugs.indexOf(currentPage) !== -1;
+
+            // Default: collapsed. Open only if localStorage says expanded OR group is active.
+            var expanded = loadState();
+            var isCollapsed = !groupIsActive && expanded.indexOf(g.id) === -1;
+
+            function applyState() {
+                if (isCollapsed) {
+                    parentLi.setAttribute('data-bm-collapsed', '1');
+                    arrow.setAttribute('data-bm-collapsed', '1');
+                    childLis.forEach(function (li) { li.setAttribute('data-bm-hidden', '1'); });
+                } else {
+                    parentLi.removeAttribute('data-bm-collapsed');
+                    arrow.removeAttribute('data-bm-collapsed');
+                    childLis.forEach(function (li) { li.removeAttribute('data-bm-hidden'); });
+                }
+            }
+
+            applyState();
+
+            parentA.addEventListener('click', function (e) {
+                if (g.parentSlug === 'basemgmt-org' || e.target === arrow || e.target.classList.contains('bm-menu-arrow')) {
+                    e.preventDefault();
+                    isCollapsed = !isCollapsed;
+                    applyState();
+                    var st = loadState();
+                    if (isCollapsed) {
+                        // Remove from expanded list
+                        st = st.filter(function (x) { return x !== g.id; });
+                    } else {
+                        // Add to expanded list
+                        if (st.indexOf(g.id) === -1) st.push(g.id);
+                    }
+                    saveState(st);
+                }
+            });
+        });
+    }
+
     /* ── Bootstrap ───────────────────────────────────────────────────────────  */
     $(function () {
         initCampTabs();
@@ -304,6 +435,7 @@
         initSortable();
         initCalendar();
         initStylePreview();
+        initCollapsibleMenu();
     });
 
 }(jQuery));
