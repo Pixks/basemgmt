@@ -1,6 +1,7 @@
 /* Baza Obozowa – Admin JS */
 (function ($) {
     'use strict';
+    console.log('[BM admin.js] loaded, jQuery version:', $.fn && $.fn.jquery);
 
     /* ── Camp dashboard tabs ──────────────────────────────────────────────── */
     var HASH_MAP = {
@@ -134,7 +135,9 @@
 
     /* ── Style preview (Wygląd tab) ──────────────────────────────────────── */
     function initStylePreview() {
-        if (!$('[data-bm-preset]').length) return;
+        var presets = document.querySelectorAll('[data-bm-preset]');
+        console.log('[BM initStylePreview] presets found:', presets.length, 'jQuery:', typeof $);
+        if (!presets.length) return;
 
         var SHADOWS = {
             none: 'none',
@@ -215,46 +218,61 @@
         $fontName.on('input', updateFont);
         $('[name=bm_ui_header_gradient]').on('change', updateHeader);
 
-        $(document).on('click', '[data-bm-preset]', function (e) {
-            e.preventDefault(); e.stopImmediatePropagation();
-            var $btn = $(this), d;
-            try { d = JSON.parse($btn.attr('data-bm-preset') || '{}'); } catch (ex) { return; }
-            var cmap = {
-                'bm-ui-primary-color':       'primary_color',
-                'bm-ui-primary-hover-color': 'primary_hover',
-                'bm-ui-badge-color':         'badge_color',
-                'bm-ui-badge-text-color':    'badge_text_color',
-                'bm-ui-btn-text-color':      'btn_text_color',
-                'bm-ui-link-color':          'link_color',
-                'bm-ui-text-color':          'text_color',
-                'bm-ui-heading-color':       'heading_color',
-                'bm-ui-surface-color':       'surface_color',
-                'bm-ui-background-color':    'background',
-                'bm-ui-border-color':        'border_color'
-            };
-            $.each(cmap, function (id, key) {
-                if (d[key] !== undefined) { $('#' + id).val(d[key]).trigger('input'); }
-            });
-            if (d.radius !== undefined)     { $rng.val(d.radius).trigger('input'); }
-            if (d.btn_radius !== undefined) { $btnRng.val(Math.min(32, parseInt(d.btn_radius, 10))); updateBtnRadius(); }
-            if (d.shadow)      { $shd.val(d.shadow).trigger('change'); }
-            if (d.font_family) { $fnt.val(d.font_family).trigger('change'); }
-            $('[name=bm_ui_header_gradient]').prop('checked', d.header_gradient === '1').trigger('change');
-            if (d.key) { $('#bm-ui-style-preset').val(d.key); }
-            $('[data-bm-preset]').removeClass('button-primary').addClass('button');
-            $btn.addClass('button-primary').removeClass('button');
-        });
+        // Use native addEventListener on document for maximum compatibility.
+        document.addEventListener('click', function (e) {
+            // Preset buttons
+            var presetBtn = e.target.closest('[data-bm-preset]');
+            if (presetBtn) {
+                e.preventDefault();
+                console.log('[BM] preset click', presetBtn.getAttribute('data-bm-preset').substring(0, 40));
+                var d;
+                try { d = JSON.parse(presetBtn.getAttribute('data-bm-preset') || '{}'); } catch (ex) { return; }
+                var cmap = {
+                    'bm-ui-primary-color':       'primary_color',
+                    'bm-ui-primary-hover-color': 'primary_hover',
+                    'bm-ui-badge-color':         'badge_color',
+                    'bm-ui-badge-text-color':    'badge_text_color',
+                    'bm-ui-btn-text-color':      'btn_text_color',
+                    'bm-ui-link-color':          'link_color',
+                    'bm-ui-text-color':          'text_color',
+                    'bm-ui-heading-color':       'heading_color',
+                    'bm-ui-surface-color':       'surface_color',
+                    'bm-ui-background-color':    'background',
+                    'bm-ui-border-color':        'border_color'
+                };
+                Object.keys(cmap).forEach(function (id) {
+                    var key = cmap[id], el = document.getElementById(id);
+                    if (el && d[key] !== undefined) { el.value = d[key]; $(el).trigger('input'); }
+                });
+                if (d.radius !== undefined)     { $rng.val(d.radius).trigger('input'); }
+                if (d.btn_radius !== undefined) { $btnRng.val(Math.min(32, parseInt(d.btn_radius, 10))); updateBtnRadius(); }
+                if (d.shadow)      { $shd.val(d.shadow).trigger('change'); }
+                if (d.font_family) { $fnt.val(d.font_family).trigger('change'); }
+                $('[name=bm_ui_header_gradient]').prop('checked', d.header_gradient === '1').trigger('change');
+                if (d.key) { $('#bm-ui-style-preset').val(d.key); }
+                document.querySelectorAll('[data-bm-preset]').forEach(function (b) {
+                    b.classList.remove('button-primary'); b.classList.add('button');
+                });
+                presetBtn.classList.add('button-primary'); presetBtn.classList.remove('button');
+                return;
+            }
+            // Preview tab buttons
+            var tabBtn = e.target.closest('.bm-prev-tab');
+            if (tabBtn) {
+                e.preventDefault();
+                console.log('[BM] tab click', tabBtn.dataset.pane);
+                document.querySelectorAll('.bm-prev-tab').forEach(function (b) { b.classList.remove('active'); });
+                document.querySelectorAll('.bm-prev-pane').forEach(function (p) { p.classList.remove('active'); });
+                tabBtn.classList.add('active');
+                var pane = tabBtn.getAttribute('data-pane');
+                if (pane) { var el = document.getElementById(pane); if (el) el.classList.add('active'); }
+                return;
+            }
+            // Preview links – block navigation
+            if (e.target.closest('[data-bm-preview-link]')) { e.preventDefault(); }
+        }, true); // capture phase to run before any stopPropagation
 
-        $(document).on('click', '.bm-prev-tab', function (e) {
-            e.preventDefault(); e.stopImmediatePropagation();
-            $('.bm-prev-tab').removeClass('active');
-            $('.bm-prev-pane').removeClass('active');
-            $(this).addClass('active');
-            var pane = $(this).data('pane');
-            if (pane) { $('#' + pane).addClass('active'); }
-        });
-
-        $(document).on('click', '[data-bm-preview-link]', function (e) { e.preventDefault(); });
+        console.log('[BM initStylePreview] handlers attached');
 
         // Initialize preview with current form values.
         if ($('#bm-style-preview').length) {
