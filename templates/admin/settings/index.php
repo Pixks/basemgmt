@@ -232,7 +232,7 @@ $font_labels = [
 
     <!-- Left: form -->
     <div class="postbox" style="padding:20px 24px;">
-        <h2 class="hndle" style="padding:0 0 10px;">🎨 <?php esc_html_e('Wygląd shortcode panelu kadry', 'basemgmt'); ?> <span style="font-size:.7rem;background:#d63638;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle;font-weight:400;">v2.0.3-beta ✓</span></h2>
+        <h2 class="hndle" style="padding:0 0 10px;">🎨 <?php esc_html_e('Wygląd shortcode panelu kadry', 'basemgmt'); ?> <span style="font-size:.7rem;background:#d63638;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle;font-weight:400;">v2.0.4-beta ✓</span></h2>
         <p class="description" style="margin:0 0 16px;">
             <?php esc_html_e('Wybierz gotowy preset i dopasuj każdy szczegół wyglądu elementów wyświetlanych przez shortcode panelu kadry.', 'basemgmt'); ?>
         </p>
@@ -757,25 +757,6 @@ $font_labels = [
     </div>
 </div><!-- /grid -->
 
-<script>
-/* BM WYGLAD DEBUG - jeśli to widzisz w konsoli, inline scripts działają */
-window._bmDebug = 'inline_ok';
-console.log('[BM] inline script loaded, jQuery:', typeof jQuery, 'bmStyleSettings:', typeof window.bmStyleSettings);
-jQuery(function($){
-    console.log('[BM] jQuery ready, presets:', $('[data-bm-preset]').length, 'tabs:', $('.bm-prev-tab').length);
-    $(document).on('click', '[data-bm-preset]', function(e){
-        e.preventDefault(); e.stopImmediatePropagation();
-        console.log('[BM] preset clicked');
-    });
-    $(document).on('click', '.bm-prev-tab', function(e){
-        e.preventDefault(); e.stopImmediatePropagation();
-        console.log('[BM] tab clicked');
-        $('.bm-prev-tab').removeClass('active'); $('.bm-prev-pane').removeClass('active');
-        $(this).addClass('active');
-        var pane = $(this).data('pane'); if(pane){ $('#'+pane).addClass('active'); }
-    });
-});
-</script>
 
 <?php /* ══════════════════════════════════════════ POWIADOMIENIA TAB ══ */ ?>
 <?php elseif ($current_tab === 'powiadomienia'): ?>

@@ -132,12 +132,166 @@
         }
     }
 
+    /* ── Style preview (Wygląd tab) ──────────────────────────────────────── */
+    function initStylePreview() {
+        if (!$('[data-bm-preset]').length) return;
+
+        var SHADOWS = {
+            none: 'none',
+            sm:   '0 1px 4px rgba(0,0,0,.08)',
+            md:   '0 2px 12px rgba(0,0,0,.10)',
+            lg:   '0 4px 24px rgba(0,0,0,.14)'
+        };
+        var FONTS = {
+            'lato':      'Lato, "Open Sans", system-ui, sans-serif',
+            'open-sans': '"Open Sans", Lato, system-ui, sans-serif',
+            'roboto':    'Roboto, "Open Sans", system-ui, sans-serif',
+            'nunito':    'Nunito, "Open Sans", system-ui, sans-serif',
+            'system':    'system-ui, -apple-system, sans-serif',
+            'custom':    'sans-serif'
+        };
+
+        function css(prop, val) {
+            var p = document.getElementById('bm-style-preview');
+            if (p) p.style.setProperty(prop, val);
+        }
+        function updateHeader() {
+            var isGrad  = $('[name=bm_ui_header_gradient]').prop('checked');
+            var primary = $('#bm-ui-primary-color').val() || '';
+            var hover   = $('#bm-ui-primary-hover-color').val() || '';
+            css('--bm-header-bg', isGrad ? 'linear-gradient(135deg,' + primary + ',' + hover + ')' : primary);
+        }
+        function bindColor(id, prop) {
+            $('#' + id).on('input', function () {
+                css(prop, this.value);
+                $(this).closest('.bm-style-form-group').find('.color-hex').text(this.value);
+                updateHeader();
+            });
+        }
+        bindColor('bm-ui-primary-color',       '--bm-primary');
+        bindColor('bm-ui-primary-hover-color', '--bm-primary-hover');
+        bindColor('bm-ui-badge-color',         '--bm-badge-bg');
+        bindColor('bm-ui-badge-text-color',    '--bm-badge-text');
+        bindColor('bm-ui-btn-text-color',      '--bm-btn-text');
+        bindColor('bm-ui-link-color',          '--bm-link');
+        bindColor('bm-ui-text-color',          '--bm-text');
+        bindColor('bm-ui-heading-color',       '--bm-heading');
+        bindColor('bm-ui-surface-color',       '--bm-surface');
+        bindColor('bm-ui-background-color',    '--bm-bg');
+        bindColor('bm-ui-border-color',        '--bm-border');
+
+        var $rng     = $('#bm-ui-radius');
+        var $rvLabel = $('#bm-radius-val');
+        $rng.on('input', function () {
+            var v = parseInt(this.value, 10);
+            css('--bm-radius', v + 'px');
+            css('--bm-radius-sm', Math.max(0, v - 2) + 'px');
+            $rvLabel.text(this.value);
+        });
+
+        var $btnRng    = $('#bm-ui-btn-radius');
+        var $btnActual = $('#bm-ui-btn-radius-actual');
+        var $btnLabel  = $('#bm-btn-radius-val');
+        function updateBtnRadius() {
+            var v = parseInt($btnRng.val(), 10), actual = (v >= 32) ? 999 : v;
+            $btnActual.val(actual);
+            $btnLabel.text(v >= 32 ? 'Pill' : v);
+            css('--bm-radius-pill', actual + 'px');
+        }
+        $btnRng.on('input', updateBtnRadius);
+
+        var $shd = $('#bm-ui-shadow');
+        $shd.on('change', function () { css('--bm-shadow', SHADOWS[this.value] || 'none'); });
+
+        var $fnt = $('#bm-ui-font-family'), $fontName = $('#bm-ui-custom-font-name');
+        function updateFont() {
+            var isCustom = $fnt.val() === 'custom';
+            $('#bm-row-custom-font-url, #bm-row-custom-font-name').toggle(isCustom);
+            css('--bm-font', (isCustom && $fontName.val())
+                ? ('"' + $fontName.val() + '", sans-serif')
+                : (FONTS[$fnt.val()] || 'sans-serif'));
+        }
+        $fnt.on('change', updateFont);
+        $fontName.on('input', updateFont);
+        $('[name=bm_ui_header_gradient]').on('change', updateHeader);
+
+        $(document).on('click', '[data-bm-preset]', function (e) {
+            e.preventDefault(); e.stopImmediatePropagation();
+            var $btn = $(this), d;
+            try { d = JSON.parse($btn.attr('data-bm-preset') || '{}'); } catch (ex) { return; }
+            var cmap = {
+                'bm-ui-primary-color':       'primary_color',
+                'bm-ui-primary-hover-color': 'primary_hover',
+                'bm-ui-badge-color':         'badge_color',
+                'bm-ui-badge-text-color':    'badge_text_color',
+                'bm-ui-btn-text-color':      'btn_text_color',
+                'bm-ui-link-color':          'link_color',
+                'bm-ui-text-color':          'text_color',
+                'bm-ui-heading-color':       'heading_color',
+                'bm-ui-surface-color':       'surface_color',
+                'bm-ui-background-color':    'background',
+                'bm-ui-border-color':        'border_color'
+            };
+            $.each(cmap, function (id, key) {
+                if (d[key] !== undefined) { $('#' + id).val(d[key]).trigger('input'); }
+            });
+            if (d.radius !== undefined)     { $rng.val(d.radius).trigger('input'); }
+            if (d.btn_radius !== undefined) { $btnRng.val(Math.min(32, parseInt(d.btn_radius, 10))); updateBtnRadius(); }
+            if (d.shadow)      { $shd.val(d.shadow).trigger('change'); }
+            if (d.font_family) { $fnt.val(d.font_family).trigger('change'); }
+            $('[name=bm_ui_header_gradient]').prop('checked', d.header_gradient === '1').trigger('change');
+            if (d.key) { $('#bm-ui-style-preset').val(d.key); }
+            $('[data-bm-preset]').removeClass('button-primary').addClass('button');
+            $btn.addClass('button-primary').removeClass('button');
+        });
+
+        $(document).on('click', '.bm-prev-tab', function (e) {
+            e.preventDefault(); e.stopImmediatePropagation();
+            $('.bm-prev-tab').removeClass('active');
+            $('.bm-prev-pane').removeClass('active');
+            $(this).addClass('active');
+            var pane = $(this).data('pane');
+            if (pane) { $('#' + pane).addClass('active'); }
+        });
+
+        $(document).on('click', '[data-bm-preview-link]', function (e) { e.preventDefault(); });
+
+        // Initialize preview with current form values.
+        if ($('#bm-style-preview').length) {
+            $.each({
+                'bm-ui-primary-color':       '--bm-primary',
+                'bm-ui-primary-hover-color': '--bm-primary-hover',
+                'bm-ui-badge-color':         '--bm-badge-bg',
+                'bm-ui-badge-text-color':    '--bm-badge-text',
+                'bm-ui-btn-text-color':      '--bm-btn-text',
+                'bm-ui-link-color':          '--bm-link',
+                'bm-ui-text-color':          '--bm-text',
+                'bm-ui-heading-color':       '--bm-heading',
+                'bm-ui-surface-color':       '--bm-surface',
+                'bm-ui-background-color':    '--bm-bg',
+                'bm-ui-border-color':        '--bm-border'
+            }, function (id, prop) { var v = $('#' + id).val(); if (v) css(prop, v); });
+            if ($rng.length) {
+                var rv = parseInt($rng.val(), 10);
+                css('--bm-radius', rv + 'px');
+                css('--bm-radius-sm', Math.max(0, rv - 2) + 'px');
+            }
+            updateBtnRadius();
+            if ($shd.length) css('--bm-shadow', SHADOWS[$shd.val()] || 'none');
+            updateFont();
+            updateHeader();
+        } else {
+            updateFont();
+        }
+    }
+
     /* ── Bootstrap ───────────────────────────────────────────────────────────  */
     $(function () {
         initCampTabs();
         initAddTaskRow();
         initSortable();
         initCalendar();
+        initStylePreview();
     });
 
 }(jQuery));
